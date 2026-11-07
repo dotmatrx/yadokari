@@ -9,9 +9,34 @@ Each spike lives in its own directory as a `package main` and runs with
 
 | Spike | Dir | Exit criterion | Result |
 |---|---|---|---|
-| 1. kitty Unicode placeholders in Bubble Tea v2 | `placeholders/` | 漢 in a 20×10 grid survives resize/re-render in kitty (toolbox, dnf); no flicker, no stray glyphs. Later: WezTerm/Rio flatpaks as a compatibility check | — |
+| 1. kitty Unicode placeholders in Bubble Tea v2 | `placeholders/` | 漢 in a 20×10 grid survives resize/re-render in kitty (toolbox, dnf); no flicker, no stray glyphs. Later: WezTerm/Rio flatpaks as a compatibility check | **Pass** (2026-11-07, kitty in toolbox) |
 | 2. OSC 66 text sizing in Bubble Tea v2 | `textsize/` | Renders at s=4 without corrupting surrounding rows | — |
 | 3. IME feel | `imefeel/` | kyouiku, gakkou, kon'nichiha, shinbun (incl. backspace) feel like WaniKani's site | — |
 
 Spike 4 (API read path + mock) is not here: it graduates directly into `internal/wk`
 and `internal/wkmock`.
+
+## Spike 1 findings (kitty Unicode placeholders)
+
+Passed: crisp glyphs at 10×5 to 60×26 cells, with and without a type-colour
+background; no flicker at 10 Hz re-render; window resize works (font-size change not
+explicitly tested);
+both raw SGR and Lip Gloss foreground encodings carry the image ID.
+
+- `tea.Raw` appends to the program's output buffer under a lock, so a whole
+  multi-chunk transmit goes out in one write (answers a design-doc open question).
+  Each tick flushes `tea.Raw` output *before* the renderer's frame.
+- Charm's `x/ansi/kitty` has the encoder, `Placeholder` and the row/column
+  `Diacritic` table; no need to hand-write them.
+- Gotcha: `kitty.Options.Transmission` must be set to `kitty.Direct`; its zero
+  value sends a command with no image data.
+- `lipgloss.Width` / `ansi.StringWidth` count each placeholder cell (U+10EEEE +
+  two diacritics) as one column, and Bubble Tea's renderer agrees in practice.
+- Image IDs < 256 sent as `38;5;<id>` survive the renderer unchanged.
+- Cell pixel size from `TIOCGWINSZ` works in kitty. Font-size changes should
+  arrive as `WindowSizeMsg`; the spike re-measures and re-rasterizes there
+  (untested).
+- Anomaly: in one early run the first image (sent from `Init`) never appeared.
+  Not reproducible, including with `--early`, which deterministically sends it
+  before the alt-screen switch. Kept the simple mitigation (first send after the
+  first frame); re-evaluate only if it recurs.
