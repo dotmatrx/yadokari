@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"time"
 
-	"yadokari/internal/wk"
+	"github.com/jtharris/yadokari/internal/wk"
 )
 
 // defaultIntervals are the default SRS's stage intervals in seconds, used when

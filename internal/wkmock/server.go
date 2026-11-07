@@ -21,7 +21,7 @@ import (
 	"sync"
 	"time"
 
-	"yadokari/internal/wk"
+	"github.com/jtharris/yadokari/internal/wk"
 )
 
 // Write is a logged non-GET request.
