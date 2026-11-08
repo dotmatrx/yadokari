@@ -11,7 +11,7 @@ Each spike lives in its own directory as a `package main` and runs with
 |---|---|---|---|
 | 1. kitty Unicode placeholders in Bubble Tea v2 | `placeholders/` | 漢 in a 20×10 grid survives resize/re-render in kitty (toolbox, dnf); no flicker, no stray glyphs. Later: WezTerm/Rio flatpaks as a compatibility check | **Pass** (2026-11-07, kitty in toolbox) |
 | 2. OSC 66 text sizing in Bubble Tea v2 | `textsize/` | Renders at s=4 without corrupting surrounding rows | — |
-| 3. IME feel | `imefeel/` | kyouiku, gakkou, kon'nichiha, shinbun (incl. backspace) feel like WaniKani's site | — |
+| 3. IME feel | `imefeel/` | kyouiku, gakkou, kon'nichiha, shinbun (incl. backspace) feel like WaniKani's site | **Pass** (2026-11-07) |
 
 Spike 4 (API read path + mock) is not here: it graduates directly into `internal/wk`
 and `internal/wkmock`.
@@ -40,3 +40,18 @@ both raw SGR and Lip Gloss foreground encodings carry the image ID.
   Not reproducible, including with `--early`, which deterministically sends it
   before the alt-screen switch. Kept the simple mitigation (first send after the
   first frame); re-evaluate only if it recurs.
+
+## Spike 3 findings (IME feel)
+
+Passed: typing feels smooth and WaniKani-like, including backspace. The
+converter is real code in `internal/ime` (round-trips all 11,346 readings in a
+recorded account); only the input-line wrapper in `imefeel/` is throwaway.
+
+- Bubble Tea v2's `View.Cursor` (bar shape) placed with `lipgloss.Width` of
+  committed + pending text tracks correctly over double-width kana.
+- `KeyPressMsg.Text` carries the typed text (including shifted uppercase and
+  system-IME kana); `PasteMsg` covers bracketed paste.
+- Matches WaniKani: `nn` → ん immediately, so こんにちは needs `kon'nichiha` or
+  `konnnichiha`. **Future setting:** a "relaxed n" mode where `konnichiha` →
+  こんにちは. Not needed now (user decision, 2026-11-07).
+- Added Hepburn `tch` → っ (matcha, itchi), found by tests.
