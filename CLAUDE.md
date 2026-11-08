@@ -56,6 +56,7 @@ anything with `--live` yourself. Tokens used during development are read-only.
 - `internal/ui` — Bubble Tea screens: dashboard (from the store, sync in the
   background via a channel) and the first-run token form (Huh).
 - `docs/wanikani-api.md` — API notes and known doc ambiguities.
+- `docs/backlog.md` — deferred ideas; add to it rather than leaving them in chat.
 - `internal/` — real packages (still planned: `session`, `answer`, `glyph`, `gfx`,
   `audio`). Keep `session`, `answer` and `ime`
   free of I/O and UI code, and table-test them heavily.
