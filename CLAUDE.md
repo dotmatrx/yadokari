@@ -5,6 +5,9 @@ A terminal (TUI) client for WaniKani reviews and lessons, in Go with the Charm v
 
 Design doc (Claude Doc): https://claude.ai/artifact/PWpS9zby83Lyos5tgJr7xF
 
+**Start here in a new session:** `docs/roadmap.md` (milestone status, where work was
+left, the next plan), then `docs/backlog.md` (deferred ideas). Keep both current.
+
 ## Commands
 
 Use `just` (no Makefile):
@@ -28,7 +31,7 @@ Use `just` (no Makefile):
 
 WaniKani review submissions (`POST /reviews`) and lesson starts
 (`PUT /assignments/:id/start`) are **irreversible**. All development runs against the
-mock server (`internal/wkmock`, Phase 0.2). Code must not perform a write against
+mock server (`internal/wkmock`). Code must not perform a write against
 `api.wanikani.com` unless the user passed `--live`; dry-run is the default. Never run
 anything with `--live` yourself. Tokens used during development are read-only.
 
@@ -64,31 +67,31 @@ anything with `--live` yourself. Tokens used during development are read-only.
 - `internal/answer` — meaning/reading checks: blacklist → exact (meanings, whitelist,
   synonyms) → warnings → OSA typo tolerance (RadicalGuessr reconstruction of WK; unverified,
   hence `Strictness`). Readings exact after `ToHiragana`; kanji off-type readings warn. Pure.
-- `internal/glyph` — font discovery (checks kanji/kana coverage: the toolbox's fontconfig
-  returns a Latin font for `:lang=ja`), text → alpha masks (optional supersampling),
+- `internal/glyph` — font discovery (checks every candidate covers kanji and kana, since
+  fontconfig may return a Latin font for `:lang=ja`), text → alpha masks,
   radical SVGs (normalized for oksvg: inline CSS classes, resolve `var()`, drop clip
   paths, scale stroke widths), disk cache for downloads. Radical PNG URLs are dead (403).
 - `internal/gfx` — tiers `kitty` (placeholders; image IDs < 256, recycled) and `plain`;
   half-block was tried and dropped (unreadable). `Draw` queues kitty uploads; send
   `Flush()` via `tea.Raw` from Update. `Detect` from env, `CellSize`. `Source.Mask` must
   return exactly w×h.
+- `docs/roadmap.md` — milestone status and next steps.
 - `docs/wanikani-api.md` — API notes and known doc ambiguities.
 - `docs/backlog.md` — deferred ideas; add to it rather than leaving them in chat.
 - `internal/` — real packages (still planned: `audio`, lessons). Keep `session`, `answer` and `ime`
   free of I/O and UI code, and table-test them heavily.
-- `spikes/` — throwaway Phase 0 experiments; see `spikes/README.md`
+- `spikes/` — throwaway experiments and their findings; see `spikes/README.md`
 
 ## Environment notes
 
-- Developed in a Fedora toolbox on Bluefin. The toolbox has no fontconfig; host fonts
-  (including Noto Sans CJK JP) are under `/run/host/usr/share/fonts/`. Font discovery
-  must fall back to that path.
+- Developed in a Fedora toolbox (`yadokari`) on Bluefin. The toolbox's fontconfig can't
+  see host fonts (they're under `/run/host/usr/share/fonts/`), so font discovery also
+  checks that path. `google-noto-sans-cjk-fonts` is now installed in the toolbox.
 - The default terminal is Ptyxis (VTE 0.84). It supports neither the kitty graphics/text
   sizing protocols nor sixel, so it gets the plain tier.
-- kitty inside the toolbox needs `google-noto-sans-cjk-fonts` installed there: the
-  toolbox's fontconfig can't see host fonts, so otherwise kitty can't draw kanji.
-- Graphics tiers A/B are developed in kitty installed *inside the toolbox* via dnf
-  (avoids flatpak sandboxing). WezTerm, Rio and foot are installed as flatpaks for later
-  compatibility checks.
+- kitty is installed *inside the toolbox* via dnf (avoids flatpak sandboxing) and is
+  where the kitty tier is tested; it needs the CJK fonts above to draw kanji. Mesa
+  prints harmless NVIDIA probe warnings at startup. WezTerm, Rio and foot are
+  installed as flatpaks for later compatibility checks.
 - Sixel is deliberately out of scope for v1: it draws outside the cell grid, which fights
   Bubble Tea's diffing renderer.
