@@ -7,8 +7,9 @@ import (
 	"github.com/jtharris/yadokari/internal/store"
 )
 
-// Two candidate dashboard designs (see Deps.Layout). Both pin a header to
-// the top row and the status/key bar to the bottom row, and fill the width.
+// The dashboard view: thin rounded panels on a grid that fills the
+// terminal, the header pinned to the top row and the status/key bar to the
+// bottom row (chosen 2026-11-08 over a borderless "rules" design).
 
 func (m *Dashboard) headerParts() (left, right string) {
 	left = boldSt.Render("yadokari")
@@ -82,8 +83,7 @@ func markOf(objType string) string {
 	return lessonSt.Foreground(typeColour[objType]).Render("▌")
 }
 
-// renderPanels: thin rounded panels on a grid.
-func (m *Dashboard) renderPanels() string {
+func (m *Dashboard) render() string {
 	w, h := max(m.width, 60), max(m.height, 20)
 	l, r := m.headerParts()
 	header := spread(" "+l, r+" ", w)
@@ -134,53 +134,4 @@ func (m *Dashboard) renderPanels() string {
 		footer = " " + warnSt.Render(m.notice) + "\n" + footer
 	}
 	return frame(header, strings.Join(body, "\n"), footer, h)
-}
-
-// renderRules: no boxes; sections divided by titled full-width rules.
-func (m *Dashboard) renderRules() string {
-	w, h := max(m.width, 60), max(m.height, 20)
-	l, r := m.headerParts()
-	header := spread(" "+l, r+" ", w) + "\n" + lineSt.Render(strings.Repeat("─", w))
-	footer := lineSt.Render(strings.Repeat("─", w)) + "\n" + m.footerLine(w)
-	if !m.loaded {
-		return frame(header, "\n   "+m.firstSyncLine(), footer, h)
-	}
-	const indent = "   "
-	inner := w - 2*len(indent)
-	var b []string
-
-	// Headline: counts and level progress in three columns.
-	col := inner / 4
-	p := m.progress
-	barW := max(inner-2*col-2, 10)
-	b = append(b, "",
-		indent+padRight(labelSt.Render("Lessons"), col)+padRight(labelSt.Render("Reviews"), col)+labelSt.Render(fmt.Sprintf("Level %d", p.Level)),
-		indent+padRight(lessonSt.Render("▌")+boldSt.Render(fmt.Sprint(m.queue.Lessons)), col)+
-			padRight(reviewSt.Render("▌")+boldSt.Render(fmt.Sprint(m.queue.Reviews)), col)+
-			progressBar(progressLike{p.Passed, p.Needed, p.Kanji}, barW),
-		indent+strings.Repeat(" ", 2*col)+padRight(levelText(p), inner-2*col),
-		"")
-
-	if len(m.rejected) > 0 {
-		b = append(b, rule(warnSt.Render(fmt.Sprintf("Rejected by WaniKani (%d)", len(m.rejected))), "not recorded", w))
-		for _, line := range m.rejectedLines(inner) {
-			b = append(b, indent+line)
-		}
-		b = append(b, "")
-	}
-
-	used := 2 + len(b) + 1 + 1 + 2 + 4 + 2
-	chartH := min(max(h-used-4, 2), 16)
-	b = append(b, rule(titleSt.Render("Next 24 hours"), m.forecastNote(), w), "")
-	for _, line := range strings.Split(m.forecastBody(inner, chartH), "\n") {
-		b = append(b, indent+line)
-	}
-	b = append(b, "", rule(titleSt.Render("SRS stages"), "", w), "")
-	for _, line := range strings.Split(stageColumns(m.srs, inner), "\n") {
-		b = append(b, indent+line)
-	}
-	if m.notice != "" {
-		b = append(b, "", indent+warnSt.Render(m.notice))
-	}
-	return frame(header, strings.Join(b, "\n"), footer, h)
 }

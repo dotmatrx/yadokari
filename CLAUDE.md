@@ -23,7 +23,7 @@ Use `just` (no Makefile):
   `just dev --sync` syncs and prints a summary without the TUI.
 - `just mock [--fixtures=DIR] [--demo] [--per-page=N]` — fake API on `http://127.0.0.1:8642/v2/`
   (`--demo`: a believable level 8 account, `wkmock.DemoData`)
-- `just preview [screen...] [--size=WxH,...] [--layout=a,b] [--html=FILE]` — render screens
+- `just preview [screen...] [--size=WxH,...] [--html=FILE]` — render screens
   once from demo data (kitty glyphs in Ghostty); `--html` writes a gallery page. Screens:
   `dashboard`, `review`, `review-reading`, `review-wrong`, `summary`. Use it to iterate on
   layout; `--fixtures=DIR` uses a recording (personal data: never publish that).
@@ -67,7 +67,9 @@ anything with `--live` yourself. Tokens used during development are read-only.
   `~/.local/share/yadokari/yadokari.db`), settings, and the token store: env
   `WANIKANI_API_TOKEN` → OS keyring → `0600` file fallback. Tests use a fake keyring;
   don't touch the real keyring from tests or tooling without asking the user.
-- `internal/ui` — Bubble Tea screens under a root `App`: dashboard (from the store, sync in
+- `internal/ui` — Bubble Tea screens under a root `App`, all in one frame (`layout.go`:
+  header on the top row, key/status bar on the bottom, rounded `panel`s in ANSI 8
+  grey, no painted backgrounds except the review glyph field): dashboard (from the store, sync in
   the background via a channel), review (session + IME + answer + gfx; snapshot saved
   after every answer; completions → outbox → `wksync.Uploader`), summary, and the
   first-run token form (Huh). Review sessions are refused against the live API without

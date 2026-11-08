@@ -10,7 +10,6 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	"github.com/charmbracelet/x/ansi"
 
 	"github.com/jtharris/yadokari/internal/store"
 	"github.com/jtharris/yadokari/internal/wk"
@@ -40,9 +39,6 @@ type Deps struct {
 	Now      func() time.Time
 	Location *time.Location
 	Endpoint string // shown in the header, e.g. "live API" or "mock"
-	// Layout picks a dashboard design while exploring ("", "panels",
-	// "rules"); temporary, removed once one is chosen.
-	Layout string
 }
 
 // Dashboard is the home screen: counts, forecast and level progress, drawn
@@ -270,50 +266,6 @@ func (m *Dashboard) View() tea.View {
 	return v
 }
 
-func (m *Dashboard) render() string {
-	switch m.deps.Layout {
-	case "panels":
-		return m.renderPanels()
-	case "rules":
-		return m.renderRules()
-	}
-	width := max(m.width, 40)
-	var b strings.Builder
-
-	// Header.
-	left := boldSt.Render("yadokari")
-	if m.user != nil {
-		left += mutedSt.Render(fmt.Sprintf(" · %s · level %d", m.user.Data.Username, m.user.Data.Level))
-	}
-	right := mutedSt.Render(m.deps.Endpoint)
-	gap := max(width-lipgloss.Width(left)-lipgloss.Width(right)-2, 1)
-	b.WriteString(" " + left + strings.Repeat(" ", gap) + right + "\n\n")
-
-	if !m.loaded {
-		b.WriteString(" " + m.firstSyncLine() + "\n")
-		b.WriteString("\n " + m.statusLine())
-		return b.String()
-	}
-
-	// Headline counts: neutral ink with a coloured mark beside each.
-	b.WriteString(" " + lessonSt.Render("▌") + "Lessons  " + boldSt.Render(fmt.Sprint(m.queue.Lessons)) +
-		"      " + reviewSt.Render("▌") + "Reviews  " + boldSt.Render(fmt.Sprint(m.queue.Reviews)) + "\n\n")
-
-	forecast := renderForecast(m.queue.Forecast, m.queue.Start, m.queue.Next, width, m.deps.Location, barSt, mutedSt)
-	for _, line := range strings.Split(forecast, "\n") {
-		b.WriteString(" " + line + "\n")
-	}
-	b.WriteString("\n " + m.levelLine(width) + "\n\n")
-	if r := m.rejectedBlock(width); r != "" {
-		b.WriteString(r + "\n")
-	}
-	if m.notice != "" {
-		b.WriteString(" " + warnSt.Render(m.notice) + "\n\n")
-	}
-	b.WriteString(" " + m.statusLine())
-	return b.String()
-}
-
 func (m *Dashboard) firstSyncLine() string {
 	if m.syncErr != nil {
 		return errSt.Render("First sync failed: " + m.syncErr.Error())
@@ -323,32 +275,6 @@ func (m *Dashboard) firstSyncLine() string {
 		return fmt.Sprintf("First sync: %s %s / %s", e.Collection, comma(e.Fetched), comma(e.Total))
 	}
 	return "First sync: " + m.phase + "…"
-}
-
-func (m *Dashboard) levelLine(width int) string {
-	p := m.progress
-	if p.Kanji == 0 {
-		return mutedSt.Render(fmt.Sprintf("Level %d: no kanji", p.Level))
-	}
-	barW := min(30, max(width-50, 10))
-	filled := p.Passed * barW / p.Kanji
-	mark := min(p.Needed*barW/p.Kanji, barW-1) // where level-up happens
-	var bar strings.Builder
-	for i := range barW {
-		switch {
-		case i < filled:
-			bar.WriteString(lessonSt.Render("━"))
-		case i == mark:
-			bar.WriteString("┃")
-		default:
-			bar.WriteString(mutedSt.Render("━"))
-		}
-	}
-	text := fmt.Sprintf("%d / %d kanji passed", p.Passed, p.Kanji)
-	if p.Passed < p.Needed {
-		text += fmt.Sprintf(" · %d more to level up", p.Needed-p.Passed)
-	}
-	return fmt.Sprintf("Level %d  %s  %s", p.Level, bar.String(), text)
 }
 
 func (m *Dashboard) statusLine() string {
@@ -447,35 +373,3 @@ func (m *Dashboard) dismissRejected() tea.Cmd {
 
 // maxRejectedShown caps the rejected list; the rest are summarized.
 const maxRejectedShown = 5
-
-// rejectedBlock lists reviews WaniKani refused. They were not recorded, so
-// the user may want to redo them on the website.
-func (m *Dashboard) rejectedBlock(width int) string {
-	if len(m.rejected) == 0 {
-		return ""
-	}
-	n := len(m.rejected)
-	title := "1 review was rejected by WaniKani and not recorded"
-	if n > 1 {
-		title = fmt.Sprintf("%d reviews were rejected by WaniKani and not recorded", n)
-	}
-	var b strings.Builder
-	b.WriteString(" " + warnSt.Render(title) + "\n")
-	for i, r := range m.rejected {
-		if i == maxRejectedShown {
-			b.WriteString(mutedSt.Render(fmt.Sprintf("   … and %d more", n-i)) + "\n")
-			break
-		}
-		mark := lipgloss.NewStyle().Foreground(typeColour[r.item.Type]).Render("▌")
-		head := "   " + mark + r.item.Characters
-		if r.item.Meaning != "" {
-			head += " " + r.item.Meaning
-		}
-		reason := r.reason
-		if room := width - lipgloss.Width(head) - 4; room < lipgloss.Width(reason) {
-			reason = ansi.Truncate(reason, max(room, 10), "…")
-		}
-		b.WriteString(head + mutedSt.Render("  "+reason) + "\n")
-	}
-	return b.String()
-}

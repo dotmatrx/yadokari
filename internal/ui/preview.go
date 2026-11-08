@@ -82,7 +82,7 @@ func Preview(ctx context.Context, d Deps, rd ReviewDeps, screen string, w, h int
 		if err != nil {
 			return "", err
 		}
-		return fit(s.View(w), h), nil
+		return fit(s.View(w, h), h), nil
 	}
 	return "", fmt.Errorf("preview: unknown screen %q (%s)", screen, strings.Join(PreviewScreens, ", "))
 }

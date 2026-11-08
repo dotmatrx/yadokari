@@ -56,7 +56,6 @@ func run() error {
 	fixtures := flag.String("fixtures", "", "recording directory to use instead of demo data (personal data: don't publish)")
 	htmlOut := flag.String("html", "", "write an HTML gallery to this file instead of drawing in the terminal")
 	gfxFlag := flag.String("gfx", "auto", "graphics tier in the terminal: auto, kitty or plain")
-	layouts := flag.String("layout", "", "comma-separated dashboard layouts to compare (e.g. current,panels,rules)")
 	screens, err := parseArgs(flag.CommandLine, os.Args[1:])
 	if err != nil {
 		return err
@@ -102,43 +101,26 @@ func run() error {
 		}
 	}
 
-	layoutList := []string{""}
-	if *layouts != "" {
-		layoutList = strings.Split(*layouts, ",")
-	}
-
 	ctx := context.Background()
 	var shots []shot
 	for _, sz := range sizes {
 		for _, screen := range screens {
-			for _, layout := range layoutList {
-				if layout == "current" {
-					layout = ""
-				}
-				if layout != "" && screen != "dashboard" && len(layoutList) > 1 {
-					continue // layouts only change the dashboard so far
-				}
-				// A fresh store each time: review previews queue reviews.
-				st, err := loadStore(ctx, data, now)
-				if err != nil {
-					return err
-				}
-				deps := ui.Deps{Store: st, Now: func() time.Time { return now }, Location: time.Local, Endpoint: "mock demo", Layout: layout}
-				rd := ui.ReviewDeps{Renderer: renderer, Font: font}
-				out, err := ui.Preview(ctx, deps, rd, screen, sz.w, sz.h)
-				st.Close()
-				if err != nil {
-					return fmt.Errorf("%s at %s: %w", screen, sz, err)
-				}
-				name := screen
-				if screen == "dashboard" && len(layoutList) > 1 {
-					name += " · " + map[string]string{"": "current"}[layout] + layout
-				}
-				shots = append(shots, shot{screen: name, size: sz, ansi: out})
-				if *htmlOut == "" {
-					fmt.Print(renderer.Flush())
-					fmt.Printf("\x1b[2m── %s %s %s\x1b[m\n%s\n", name, sz, strings.Repeat("─", max(sz.w-len([]rune(name))-len(sz.String())-5, 0)), out)
-				}
+			// A fresh store each time: review previews queue reviews.
+			st, err := loadStore(ctx, data, now)
+			if err != nil {
+				return err
+			}
+			deps := ui.Deps{Store: st, Now: func() time.Time { return now }, Location: time.Local, Endpoint: "mock demo"}
+			rd := ui.ReviewDeps{Renderer: renderer, Font: font}
+			out, err := ui.Preview(ctx, deps, rd, screen, sz.w, sz.h)
+			st.Close()
+			if err != nil {
+				return fmt.Errorf("%s at %s: %w", screen, sz, err)
+			}
+			shots = append(shots, shot{screen: screen, size: sz, ansi: out})
+			if *htmlOut == "" {
+				fmt.Print(renderer.Flush())
+				fmt.Printf("\x1b[2m── %s %s %s\x1b[m\n%s\n", screen, sz, strings.Repeat("─", max(sz.w-len(screen)-len(sz.String())-5, 0)), out)
 			}
 		}
 	}
@@ -206,7 +188,7 @@ func raw[T any](rs []wk.Resource[T]) []store.RawResource {
 }
 
 // parseArgs parses flags wherever they appear (Go's flag package stops at
-// the first non-flag), so `preview dashboard --layout=panels` works. A flag
+// the first non-flag), so `preview dashboard --size=80x24` works. A flag
 // without "=" takes the next argument as its value unless it is boolean.
 func parseArgs(fs *flag.FlagSet, args []string) ([]string, error) {
 	var flags, rest []string

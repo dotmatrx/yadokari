@@ -42,13 +42,12 @@ var typeName = map[string]string{
 }
 
 var (
-	meaningBar = lipgloss.NewStyle().Background(lipgloss.Color("#e9e9e9")).Foreground(lipgloss.Color("#333333")).Bold(true)
-	readingBar = lipgloss.NewStyle().Background(lipgloss.Color("#333333")).Foreground(lipgloss.Color("#ffffff")).Bold(true)
-	inputSt    = lipgloss.NewStyle().Padding(0, 1)
-	correctSt  = inputSt.Background(lipgloss.Color("#88cc00")).Foreground(lipgloss.Color("#ffffff"))
-	wrongSt    = inputSt.Background(lipgloss.Color("#ff0033")).Foreground(lipgloss.Color("#ffffff"))
-	warnSt     = lipgloss.NewStyle().Foreground(lipgloss.Color("#ffcc00")).Bold(true)
-	pendingSt  = lipgloss.NewStyle().Underline(true)
+	// Correct and wrong colour the answer box's border and mark; nothing
+	// paints a background except the glyph field.
+	correctSt = lipgloss.NewStyle().Foreground(lipgloss.Color("#88cc00"))
+	wrongSt   = lipgloss.NewStyle().Foreground(lipgloss.Color("#ff0033"))
+	warnSt    = lipgloss.NewStyle().Foreground(lipgloss.Color("#ffcc00")).Bold(true)
+	pendingSt = lipgloss.NewStyle().Underline(true)
 )
 
 // ReviewDeps are what the review screen needs beyond Deps.
@@ -462,9 +461,10 @@ func primaryMeaning(s wk.Subject) string {
 	return ""
 }
 
-// glyphSize is the glyph field: the full width, about 40% of the height.
+// glyphSize is the glyph field: the full width, half the rows between
+// header and footer.
 func (r *Review) glyphSize() (cols, rows int) {
-	return max(r.width, 20), max(r.height*2/5, 5)
+	return max(r.width, 20), max((r.height-2)/2, 5)
 }
 
 func (r *Review) source(it store.ReviewItem) gfx.Source {
@@ -494,80 +494,106 @@ func (r *Review) source(it store.ReviewItem) gfx.Source {
 }
 
 func (r *Review) View() string {
+	w, h := max(r.width, 40), max(r.height, 12)
+	help := "Enter submit · Esc dashboard · ctrl+w wrap-up"
+	if r.state == graded {
+		help = "Enter next · Tab answer · Esc dashboard · ctrl+w wrap-up"
+	}
+	header, footer := r.header(w), " "+mutedSt.Render(help)
 	q, it, ok := r.shown()
 	if !ok {
-		return "\n  Session complete. Press Enter."
+		return frame(header, "\n "+"Session complete. Press Enter.", footer, h)
 	}
-	width := max(r.width, 40)
-	var b strings.Builder
 
-	// Header: progress and upload status.
-	st := r.sess.Stats()
-	acc := "—"
-	if total := r.correct + r.wrong; total > 0 {
-		acc = fmt.Sprintf("%d%%", r.correct*100/total)
-	}
-	left := boldSt.Render(fmt.Sprintf(" %d / %d", st.Done, st.Total)) + mutedSt.Render("  accuracy "+acc)
-	if r.sess.WrappingUp() {
-		left += warnSt.Render("  wrapping up")
-	}
-	right := mutedSt.Render(r.uploadStatus() + " ")
-	b.WriteString(left + strings.Repeat(" ", max(width-lipgloss.Width(left)-lipgloss.Width(right), 1)) + right + "\n")
-
-	// Glyph field.
+	var b []string
 	cols, rows := r.glyphSize()
 	bg := typeColour[it.Subject.Object]
 	cells, err := r.drawGlyph(it, cols, rows, bg)
 	if err != nil {
 		cells, _ = gfx.New(gfx.Plain, 0, 0).Draw(r.source(it), cols, rows, glyphFG, bg)
 	}
-	b.WriteString(cells + "\n")
+	b = append(b, cells, "")
 
-	// Prompt bar.
-	bar := meaningBar
-	kind := "Meaning"
-	if q.Kind == session.Reading {
-		bar, kind = readingBar, "Reading"
+	left, bw := answerBox(w)
+	indent := strings.Repeat(" ", left)
+	for _, line := range strings.Split(r.answerPanel(q, it, bw), "\n") {
+		b = append(b, indent+line)
 	}
-	if it.Subject.Object == wk.ObjectRadical {
-		kind = "Name"
-	}
-	b.WriteString(bar.Width(width).Align(lipgloss.Center).Render(typeName[it.Subject.Object]+" "+kind) + "\n\n")
-
-	// Input line.
-	mode := "A"
-	text := string(r.plain)
-	if q.Kind == session.Reading {
-		mode = "あ"
-		text = r.conv.Committed() + pendingSt.Render(r.conv.Pending())
-	}
-	line := inputSt.Render(mode + "  " + text)
-	switch {
-	case r.state == graded && r.result.Verdict == answer.Correct:
-		line = correctSt.Render(mode + "  " + text + "  ✓")
-	case r.state == graded:
-		line = wrongSt.Render(mode + "  " + text + "  ✗")
-	}
-	b.WriteString(lipgloss.PlaceHorizontal(width, lipgloss.Center, line) + "\n")
-
-	// Feedback.
 	switch {
 	case r.warn != "":
-		b.WriteString(lipgloss.PlaceHorizontal(width, lipgloss.Center, warnSt.Render("⚠ "+r.warn)) + "\n")
+		b = append(b, lipgloss.PlaceHorizontal(w, lipgloss.Center, warnSt.Render("⚠ "+r.warn)))
 	case r.state == graded && r.result.Inexact:
-		b.WriteString(lipgloss.PlaceHorizontal(width, lipgloss.Center, warnSt.Render(r.result.Message)) + "\n")
+		b = append(b, lipgloss.PlaceHorizontal(w, lipgloss.Center, warnSt.Render(r.result.Message)))
 	default:
-		b.WriteString("\n")
+		b = append(b, "")
 	}
 	if r.info {
-		b.WriteString("\n" + r.infoPanel(q, it, width))
+		for _, line := range strings.Split(r.infoPanel(q, it, bw), "\n") {
+			b = append(b, indent+line)
+		}
 	}
-	help := "Enter submit · Esc dashboard · ctrl+w wrap-up"
+	return frame(header, strings.Join(b, "\n"), footer, h)
+}
+
+// header: the app name left; progress, accuracy and uploads right.
+func (r *Review) header(w int) string {
+	st := r.sess.Stats()
+	right := fmt.Sprintf("%d / %d", st.Done, st.Total)
+	if total := r.correct + r.wrong; total > 0 {
+		right += fmt.Sprintf(" · %d%% correct", r.correct*100/total)
+	}
+	right = mutedSt.Render(right)
+	if r.sess.WrappingUp() {
+		right += mutedSt.Render(" · ") + warnSt.Render("wrapping up")
+	}
+	if u := r.uploadStatus(); u != "" {
+		right += mutedSt.Render(" · " + u)
+	}
+	return spread(" "+boldSt.Render("yadokari")+mutedSt.Render(" · reviews"), right+" ", w)
+}
+
+// answerBox is where the answer box sits: its left column and width.
+func answerBox(w int) (left, width int) {
+	width = min(w-2, 64)
+	return (w - width) / 2, width
+}
+
+// promptKind names what is asked: "meaning", "reading", or a radical's
+// "name".
+func promptKind(q session.Question, it store.ReviewItem) string {
+	switch {
+	case it.Subject.Object == wk.ObjectRadical:
+		return "name"
+	case q.Kind == session.Reading:
+		return "reading"
+	}
+	return "meaning"
+}
+
+// inputText is the mode marker and the typed text, as shown in the box.
+func (r *Review) inputText(q session.Question) (mode, text string) {
+	if q.Kind == session.Reading {
+		return "あ", r.conv.Committed() + pendingSt.Render(r.conv.Pending())
+	}
+	return "A", string(r.plain)
+}
+
+// answerPanel is the answer box: the question as its title, the typed
+// answer inside, and after grading a coloured border and ✓ or ✗.
+func (r *Review) answerPanel(q session.Question, it store.ReviewItem, width int) string {
+	title := mutedSt.Render(typeName[it.Subject.Object]+" ") + titleSt.Render(promptKind(q, it))
+	mode, text := r.inputText(q)
+	line := mutedSt.Render(mode) + "  " + text
+	border := lineSt
 	if r.state == graded {
-		help = "Enter next · Tab answer · Esc dashboard · ctrl+w wrap-up"
+		mark := correctSt.Render("✓")
+		border = correctSt
+		if r.result.Verdict != answer.Correct {
+			mark, border = wrongSt.Render("✗"), wrongSt
+		}
+		line = spread(line, mark, width-4)
 	}
-	b.WriteString("\n" + mutedSt.Render(" "+help))
-	return b.String()
+	return panelWith(border, title, line, width, 0)
 }
 
 func (r *Review) drawGlyph(it store.ReviewItem, cols, rows int, bg color.Color) (string, error) {
@@ -637,8 +663,7 @@ func (r *Review) infoPanel(q session.Question, it store.ReviewItem, width int) s
 		}
 		lines = append(lines, boldSt.Render("Reading  ")+strings.Join(readings, ", "))
 	}
-	box := lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).Padding(0, 1).Width(min(width-4, 80))
-	return lipgloss.PlaceHorizontal(width, lipgloss.Center, box.Render(strings.Join(lines, "\n")))
+	return panel(titleSt.Render("Answer"), strings.Join(lines, "\n"), width, 0)
 }
 
 // Cursor returns where the terminal cursor belongs (after the typed text),
@@ -648,15 +673,12 @@ func (r *Review) Cursor() *tea.Cursor {
 	if !ok || r.state != answering {
 		return nil
 	}
-	width := max(r.width, 40)
-	mode, text := "A", string(r.plain)
-	if q.Kind == session.Reading {
-		mode, text = "あ", r.conv.String()
-	}
-	line := inputSt.Render(mode + "  " + text)
+	w := max(r.width, 40)
+	left, _ := answerBox(w)
+	mode, text := r.inputText(q)
 	_, rows := r.glyphSize()
-	x := (width-lipgloss.Width(line))/2 + lipgloss.Width(inputSt.Render(mode+"  "+text)) - 1
-	y := 1 + rows + 1 + 1 // header, glyph, prompt bar, blank line
+	x := left + 2 + lipgloss.Width(mode+"  "+text) // border, space, then the text
+	y := 1 + rows + 1 + 1                          // header, glyph, blank, box top
 	c := tea.NewCursor(x, y)
 	c.Shape = tea.CursorBar
 	return c

@@ -121,7 +121,7 @@ func (h *harness) answerFor() string {
 
 func TestReviewAllCorrect(t *testing.T) {
 	h := newHarness(t)
-	if !strings.Contains(h.screen(), "Reviews  4") {
+	if !strings.Contains(h.screen(), "Reviews      4") {
 		t.Fatalf("dashboard:\n%s", h.screen())
 	}
 	h.key("r")
@@ -154,7 +154,7 @@ func TestReviewAllCorrect(t *testing.T) {
 		t.Errorf("mock received %d reviews, want 4", len(w))
 	}
 	h.key("enter")
-	if h.app.screen != dashScreen || !strings.Contains(h.screen(), "Reviews  0") {
+	if h.app.screen != dashScreen || !strings.Contains(h.screen(), "Reviews      0") {
 		t.Errorf("back on the dashboard with nothing due:\n%s", h.screen())
 	}
 	if ok, _ := h.st.LoadSession(context.Background(), sessionName, &session.Snapshot{}); ok {
@@ -310,13 +310,13 @@ func TestSummaryMovementAfterLateUpload(t *testing.T) {
 	if err := sum.Refresh(ctx, h.st); err != nil {
 		t.Fatal(err)
 	}
-	if out := ansi.Strip(sum.View(100)); !strings.Contains(out, "1 reviews still uploading") || strings.Contains(out, "↓") {
+	if out := ansi.Strip(sum.View(100, 30)); !strings.Contains(out, "1 reviews still uploading") || strings.Contains(out, "↓") {
 		t.Errorf("before upload:\n%s", out)
 	}
 	h.app.review = &Review{deps: h.app.deps, rdeps: h.app.rdeps}
 	h.send(ReviewDoneMsg{Summary: sum})
 	h.send(h.app.review.upload()())
-	if out := h.screen(); !strings.Contains(out, "一 One Apprentice 1 ↓") || !strings.Contains(out, "All reviews uploaded.") {
+	if out := h.screen(); !strings.Contains(out, "一 One") || !strings.Contains(out, "Apprentice 1 ↓") || !strings.Contains(out, "All reviews uploaded.") {
 		t.Errorf("after upload:\n%s", out)
 	}
 }
@@ -337,7 +337,7 @@ func TestDashboardRejectedReviews(t *testing.T) {
 	h.send(h.app.dash.Reload()())
 	out := h.screen()
 	for _, want := range []string{
-		"1 review was rejected by WaniKani and not recorded",
+		"Rejected by WaniKani (1) · not recorded",
 		"二 Two  HTTP 422: assignment is not available for review",
 		"· 1 to upload", "x dismiss rejected",
 	} {
@@ -404,7 +404,7 @@ func TestOfflineReviewsUploadOnNextSync(t *testing.T) {
 	if w := h.mock.Writes(); len(w) != 1 {
 		t.Fatalf("mock received %d reviews, want 1", len(w))
 	}
-	if out := ansi.Strip(d.render()); strings.Contains(out, "to upload") || !strings.Contains(out, "Reviews  3") {
+	if out := ansi.Strip(d.render()); strings.Contains(out, "to upload") || !strings.Contains(out, "Reviews      3") {
 		t.Errorf("online: queue should be empty and 3 due:\n%s", out)
 	}
 }

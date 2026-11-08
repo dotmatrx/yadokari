@@ -52,10 +52,17 @@ space, thin borders), **colour only where it means something** (type marks, bars
   panels**: rounded boxes with titles in the border, Now | Level, forecast, SRS stages.
   **B, rules**: no boxes, titled full-width rules. Both pin the header to the top row
   and the status/key bar to the bottom, and draw lines in ANSI 8 (theme grey).
-  Selected by the temporary `Deps.Layout`; remove the loser and the old renderer once
-  the user picks.
-- Next: apply the chosen frame to the review and summary screens (the review screen's
-  prompt bar and answer boxes still paint backgrounds).
+  The user chose **panels** (checked in Ghostty too); rules and the old renderer are
+  gone.
+- Round 2 (2026-11-08): the same frame on every screen. Review: header (progress,
+  accuracy, uploads) and key hints pinned; the glyph field (still type-coloured, the
+  one painted background) takes half the height; the answer is a centred panel titled
+  with the question ("Kanji reading") whose border turns green/red with ✓/✗; the
+  answer panel below matches its width. Summary: panels of items in aligned columns
+  with SRS movement right-aligned. Every screen is tested to fill the terminal exactly
+  at 120×36, 80×24 and 60×20.
+- Next: the user's feedback on round 2, in Ghostty (`just preview`, `just mock --demo`
+  + `just dev`).
 
 ## M3 plan: live reviews (agreed 2026-11-08)
 

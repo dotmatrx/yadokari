@@ -137,7 +137,7 @@ func (a *App) View() tea.View {
 		v = tea.NewView(a.review.View())
 		v.Cursor = a.review.Cursor()
 	case summaryScreen:
-		v = tea.NewView(a.summary.View(a.width))
+		v = tea.NewView(a.summary.View(a.width, a.height))
 	default:
 		return a.dash.View()
 	}

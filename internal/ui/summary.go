@@ -87,55 +87,71 @@ func (s *Summary) Refresh(ctx context.Context, st *store.Store) error {
 	return err
 }
 
-func (s Summary) View(width int) string {
-	width = max(width, 40)
+func (s Summary) View(w, h int) string {
+	w, h = max(w, 40), max(h, 10)
 	total := len(s.Correct) + len(s.Incorrect)
-	var b strings.Builder
-	b.WriteString(" " + boldSt.Render("Review summary") + "\n\n")
-	if total == 0 {
-		b.WriteString(" No items were completed.\n")
-	} else {
-		b.WriteString(fmt.Sprintf(" %d reviewed · %d%% correct\n", total, len(s.Correct)*100/total))
+	right := "no items completed"
+	if total > 0 {
+		right = fmt.Sprintf("%d reviewed · %d%% correct", total, len(s.Correct)*100/total)
 	}
-	list := func(title string, items []SummaryItem) {
-		if len(items) == 0 {
-			return
-		}
-		b.WriteString("\n " + boldSt.Render(fmt.Sprintf("%s (%d)", title, len(items))) + "\n")
-		var cells []string
-		for _, it := range items {
-			mark := lipgloss.NewStyle().Foreground(typeColour[it.Type]).Render("▌")
-			cell := mark + it.Characters + mutedSt.Render(" "+it.Meaning)
-			if mv := it.movement(); mv != "" {
-				cell += " " + mv
-			}
-			cells = append(cells, cell)
-		}
-		// Wrap entries across the width.
-		line := " "
-		for _, c := range cells {
-			if lipgloss.Width(line)+lipgloss.Width(c)+3 > width {
-				b.WriteString(line + "\n")
-				line = " "
-			}
-			line += c + "   "
-		}
-		b.WriteString(line + "\n")
-	}
-	list("Answered incorrectly", s.Incorrect)
-	list("Answered correctly", s.Correct)
+	header := spread(" "+boldSt.Render("yadokari")+mutedSt.Render(" · summary"), mutedSt.Render(right)+" ", w)
 
-	b.WriteString("\n")
+	var status string
 	switch {
 	case s.Held && s.Pending > 0:
-		b.WriteString(" " + warnSt.Render(fmt.Sprintf("%d reviews held, not sent: writes to the live API need --live", s.Pending)) + "\n")
+		status = warnSt.Render(fmt.Sprintf("%d reviews held, not sent: writes to the live API need --live", s.Pending))
 	case s.Pending > 0:
-		b.WriteString(mutedSt.Render(fmt.Sprintf(" %d reviews still uploading", s.Pending)) + "\n")
+		status = mutedSt.Render(fmt.Sprintf("%d reviews still uploading", s.Pending))
 	default:
-		b.WriteString(mutedSt.Render(" All reviews uploaded.") + "\n")
+		status = mutedSt.Render("All reviews uploaded.")
 	}
-	b.WriteString("\n" + mutedSt.Render(" Enter dashboard"))
-	return b.String()
+	footer := spread(" "+status, mutedSt.Render("Enter dashboard")+" ", w)
+
+	var body []string
+	if len(s.Incorrect) > 0 {
+		body = append(body, panel(titleSt.Render(fmt.Sprintf("Answered incorrectly (%d)", len(s.Incorrect))), itemGrid(s.Incorrect, w-4), w, 0))
+	}
+	if len(s.Correct) > 0 {
+		body = append(body, panel(titleSt.Render(fmt.Sprintf("Answered correctly (%d)", len(s.Correct))), itemGrid(s.Correct, w-4), w, 0))
+	}
+	return frame(header, strings.Join(body, "\n"), footer, h)
+}
+
+// itemGrid lays items out in equal columns: the item on the left of each
+// cell, its SRS movement right-aligned.
+func itemGrid(items []SummaryItem, width int) string {
+	const gap = 3
+	cellW := 0
+	for _, it := range items {
+		cellW = max(cellW, lipgloss.Width(summaryCell(it, 0)))
+	}
+	cellW = min(cellW+2, width)
+	cols := max((width+gap)/(cellW+gap), 1)
+	cellW = (width+gap)/cols - gap // share the spare width out
+	var lines []string
+	for start := 0; start < len(items); start += cols {
+		var row []string
+		for _, it := range items[start:min(start+cols, len(items))] {
+			row = append(row, summaryCell(it, cellW))
+		}
+		lines = append(lines, strings.Join(row, strings.Repeat(" ", gap)))
+	}
+	return strings.Join(lines, "\n")
+}
+
+// summaryCell renders one item; with w > 0 the movement is right-aligned
+// in w cells.
+func summaryCell(it SummaryItem, w int) string {
+	mark := lipgloss.NewStyle().Foreground(typeColour[it.Type]).Render("▌")
+	left := mark + it.Characters + mutedSt.Render(" "+it.Meaning)
+	mv := it.movement()
+	if w == 0 {
+		return left + "  " + mv
+	}
+	if mv == "" {
+		return padRight(left, w)
+	}
+	return spread(padRight(left, max(w-lipgloss.Width(mv)-1, 1)), mv, w)
 }
 
 // isEnter reports whether a key returns from the summary.
