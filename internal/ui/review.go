@@ -558,7 +558,7 @@ func (r *Review) View() string {
 		b.WriteString("\n")
 	}
 	if r.info {
-		b.WriteString("\n" + r.infoPanel(it, width))
+		b.WriteString("\n" + r.infoPanel(q, it, width))
 	}
 	help := "Enter submit · Esc dashboard · ctrl+w wrap-up"
 	if r.state == graded {
@@ -597,17 +597,26 @@ func (r *Review) uploadStatus() string {
 	return ""
 }
 
-func (r *Review) infoPanel(it store.ReviewItem, width int) string {
+// infoPanel shows the answer for the part just asked, plus any part already
+// attempted (answered or missed, so its answer is no secret). A part not yet
+// asked stays hidden so it can still be recalled when its question comes up.
+func (r *Review) infoPanel(q session.Question, it store.ReviewItem, width int) string {
 	d := it.Subject.Data
-	var meanings []string
-	for _, m := range d.Meanings {
-		if m.AcceptedAnswer {
-			meanings = append(meanings, m.Meaning)
+	state := r.sess.Item(q.Index)
+	showMeaning := q.Kind == session.Meaning || state.MeaningDone || state.MeaningMisses > 0
+	showReading := q.Kind == session.Reading || state.ReadingDone || state.ReadingMisses > 0
+	var lines []string
+	if showMeaning {
+		var meanings []string
+		for _, m := range d.Meanings {
+			if m.AcceptedAnswer {
+				meanings = append(meanings, m.Meaning)
+			}
 		}
+		meanings = append(meanings, it.Synonyms...)
+		lines = append(lines, boldSt.Render("Meaning  ")+strings.Join(meanings, ", "))
 	}
-	meanings = append(meanings, it.Synonyms...)
-	lines := []string{boldSt.Render("Meaning  ") + strings.Join(meanings, ", ")}
-	if len(d.Readings) > 0 {
+	if showReading && len(d.Readings) > 0 {
 		var readings []string
 		for _, rd := range d.Readings {
 			if !rd.AcceptedAnswer {

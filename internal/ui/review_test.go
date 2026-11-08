@@ -238,3 +238,61 @@ func TestReviewsDisabledShowsNotice(t *testing.T) {
 		t.Error("nothing should be written")
 	}
 }
+
+// TestAnswerPanelHidesUnaskedPart: missing a kanji's reading before its
+// meaning has been asked must not reveal the meaning.
+func TestAnswerPanelHidesUnaskedPart(t *testing.T) {
+	h := newHarness(t)
+	h.key("r")
+	for n := 0; ; n++ {
+		if n > 20 {
+			t.Fatal("never got the kanji's reading before its meaning")
+		}
+		q, it, _ := h.app.review.current()
+		state := h.app.review.sess.Item(q.Index)
+		if it.Subject.Object == wk.ObjectKanji && q.Kind == session.Reading && !state.MeaningDone {
+			break
+		}
+		if it.Subject.Object == wk.ObjectKanji {
+			// Restart until the reading comes first (the order is random).
+			h.key("esc")
+			h.st.ClearSession(context.Background(), sessionName)
+			h.key("r")
+			continue
+		}
+		h.key(h.answerFor())
+		h.key("enter")
+		h.key("enter")
+	}
+	h.key("に") // wrong reading for 一
+	h.key("enter")
+	out := h.screen()
+	if !strings.Contains(out, "Reading  いち") {
+		t.Errorf("the reading should be shown:\n%s", out)
+	}
+	if strings.Contains(out, "Meaning  ") || strings.Contains(out, "One") {
+		t.Errorf("the unasked meaning must stay hidden:\n%s", out)
+	}
+	h.key("enter")
+
+	// Later, answering the meaning: the reading was already missed (and so
+	// revealed), so Tab shows both.
+	for n := 0; n < 20; n++ {
+		q, it, ok := h.app.review.current()
+		if !ok {
+			break
+		}
+		h.key(h.answerFor())
+		h.key("enter")
+		if it.Subject.Object == wk.ObjectKanji && q.Kind == session.Meaning {
+			h.send(tea.KeyPressMsg{Code: tea.KeyTab})
+			out := h.screen()
+			if !strings.Contains(out, "Meaning  One") || !strings.Contains(out, "Reading  いち") {
+				t.Errorf("after both parts, the panel shows both:\n%s", out)
+			}
+			return
+		}
+		h.key("enter")
+	}
+	t.Fatal("never reached the kanji's meaning question")
+}
