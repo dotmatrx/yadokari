@@ -13,6 +13,9 @@ left, the next plan), then `docs/backlog.md` (deferred ideas). Keep both current
 Use `just` (no Makefile):
 
 - `just build` — build `bin/yadokari`
+- `just install` — static binary (`CGO_ENABLED=0`, version from `git describe`) to
+  `~/.local/bin/yadokari`, which the host and the toolbox share; it runs on the host too
+  (pure-Go SQLite, keyring over D-Bus).
 - `just run [flags]` — run the app
 - `just test [go test flags]` — all tests except `spikes/`. Some tests also run
   against the newest local recording in `testdata/recordings/` and skip without one.

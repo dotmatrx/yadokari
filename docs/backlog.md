@@ -5,6 +5,8 @@ up; delete it when done or dropped.
 
 | Added | Item | Notes |
 |---|---|---|
+| 2026-11-08 | Packaging beyond `just install`: tagged releases (goreleaser), then maybe COPR / AUR / Homebrew | Design doc open question; M5. The binary is static, so release artefacts are simple |
+| 2026-11-08 | A config setting to make `--live` the default | Needs the user to relax the safety rule in CLAUDE.md (writes only with `--live`); a shell alias does the job meanwhile |
 | 2026-11-07 | Expose settings that exist in code but have no way to set them: answer strictness (`answer.Strictness`), session order / back-to-back / reading-first / active-set size / item limit (`session.Options`), retype-after-typo (`AllowUndo`, a key like ctrl+z), graphics tier override (`--gfx` flag exists; config key missing), font path (`glyph.FindFont`) | Config file first, settings screen in M5 |
 | 2026-11-07 | Add the typed answer as a user synonym (ctrl+s after a wrong meaning) | Needs `POST/PUT /study_materials`; design doc puts it in M5 |
 | 2026-11-07 | Mnemonics and hints in the answer panel | Needs the WK markup renderer (`<kanji>`, `<reading>`, `<ja>`…), planned for lessons (M4) |

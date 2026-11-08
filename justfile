@@ -11,6 +11,11 @@ default:
 build:
     go build -o {{bin}} ./cmd/yadokari
 
+# Install a static binary to ~/.local/bin (shared by the host and the toolbox)
+install:
+    CGO_ENABLED=0 go build -trimpath -ldflags "-s -w -X main.version=$(git describe --always --dirty --tags)" -o ~/.local/bin/yadokari ./cmd/yadokari
+    @echo "installed ~/.local/bin/yadokari $(~/.local/bin/yadokari --version)"
+
 # Run the app (dry-run by default); pass extra flags after the recipe name
 run *args:
     go run ./cmd/yadokari {{args}}
