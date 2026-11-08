@@ -445,3 +445,33 @@ func TestPreviewKittyUploadsReachTheCaller(t *testing.T) {
 		}
 	}
 }
+
+func TestAnswerBoxModeAndPlaceholder(t *testing.T) {
+	h := newHarness(t)
+	h.key("r")
+	q, _, _ := h.app.review.current()
+	box := func() string {
+		for _, l := range strings.Split(h.screen(), "\n") {
+			if strings.Contains(l, "╭─ ") && (strings.Contains(l, "kana") || strings.Contains(l, "english")) {
+				return l
+			}
+		}
+		t.Fatalf("no answer box:\n%s", h.screen())
+		return ""
+	}
+	wantMode, wantPlaceholder := "A english", "Your answer"
+	if q.Kind == session.Reading {
+		wantMode, wantPlaceholder = "あ kana", "答え"
+	}
+	if !strings.Contains(box(), wantMode) || !strings.Contains(h.screen(), "│ "+wantPlaceholder) {
+		t.Errorf("empty box should show %q in the border and %q inside:\n%s", wantMode, wantPlaceholder, h.screen())
+	}
+	first := string([]rune(h.answerFor())[:1])
+	h.key(first)
+	if strings.Contains(h.screen(), wantPlaceholder) {
+		t.Errorf("placeholder should go once typing starts:\n%s", h.screen())
+	}
+	if c := h.app.review.Cursor(); c == nil || c.X != (100-64)/2+2+ansi.StringWidth(first) {
+		t.Errorf("cursor %+v should follow the typed text", c)
+	}
+}

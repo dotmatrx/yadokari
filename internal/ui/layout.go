@@ -32,10 +32,11 @@ func spread(left, right string, w int) string {
 
 // panel draws a thin rounded box w cells wide with the title (already
 // styled) set into its top border. h is the total height including borders (0: fit the body).
-func panel(title, body string, w, h int) string { return panelWith(lineSt, title, body, w, h) }
+func panel(title, body string, w, h int) string { return panelWith(lineSt, title, "", body, w, h) }
 
-// panelWith is panel with its border drawn in the given style.
-func panelWith(border lipgloss.Style, title, body string, w, h int) string {
+// panelWith is panel with its border drawn in the given style and an
+// optional (styled) note set into the right of the top border.
+func panelWith(border lipgloss.Style, title, note, body string, w, h int) string {
 	inner := max(w-4, 1)
 	lines := strings.Split(body, "\n")
 	if h > 0 {
@@ -53,7 +54,11 @@ func panelWith(border lipgloss.Style, title, body string, w, h int) string {
 	if title != "" {
 		used += 2
 	}
-	b.WriteString(border.Render(strings.Repeat("─", max(w-used-1, 0)) + "╮"))
+	right := border.Render("╮")
+	if note != "" {
+		right = " " + note + " " + border.Render("─╮")
+	}
+	b.WriteString(border.Render(strings.Repeat("─", max(w-used-lipgloss.Width(right), 0))) + right)
 	for _, l := range lines {
 		b.WriteString("\n" + border.Render("│") + " " + padRight(l, inner) + " " + border.Render("│"))
 	}

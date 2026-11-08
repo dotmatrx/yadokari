@@ -570,20 +570,39 @@ func promptKind(q session.Question, it store.ReviewItem) string {
 	return "meaning"
 }
 
-// inputText is the mode marker and the typed text, as shown in the box.
-func (r *Review) inputText(q session.Question) (mode, text string) {
+// inputText is the typed text as shown in the box, and whether nothing has
+// been typed yet.
+func (r *Review) inputText(q session.Question) (text string, empty bool) {
 	if q.Kind == session.Reading {
-		return "あ", r.conv.Committed() + pendingSt.Render(r.conv.Pending())
+		return r.conv.Committed() + pendingSt.Render(r.conv.Pending()), r.conv.String() == ""
 	}
-	return "A", string(r.plain)
+	return string(r.plain), len(r.plain) == 0
+}
+
+// inputMode says what the box expects, for the right of its top border.
+func inputMode(q session.Question) string {
+	if q.Kind == session.Reading {
+		return "あ kana"
+	}
+	return "A english"
+}
+
+// placeholder fills an empty answer box, as on WaniKani's site.
+func placeholder(q session.Question) string {
+	if q.Kind == session.Reading {
+		return "答え"
+	}
+	return "Your answer"
 }
 
 // answerPanel is the answer box: the question as its title, the typed
 // answer inside, and after grading a coloured border and ✓ or ✗.
 func (r *Review) answerPanel(q session.Question, it store.ReviewItem, width int) string {
 	title := mutedSt.Render(typeName[it.Subject.Object]+" ") + titleSt.Render(promptKind(q, it))
-	mode, text := r.inputText(q)
-	line := mutedSt.Render(mode) + "  " + text
+	line, empty := r.inputText(q)
+	if empty && r.state == answering {
+		line = mutedSt.Render(placeholder(q))
+	}
 	border := lineSt
 	if r.state == graded {
 		mark := correctSt.Render("✓")
@@ -593,7 +612,7 @@ func (r *Review) answerPanel(q session.Question, it store.ReviewItem, width int)
 		}
 		line = spread(line, mark, width-4)
 	}
-	return panelWith(border, title, line, width, 0)
+	return panelWith(border, title, mutedSt.Render(inputMode(q)), line, width, 0)
 }
 
 func (r *Review) drawGlyph(it store.ReviewItem, cols, rows int, bg color.Color) (string, error) {
@@ -675,10 +694,13 @@ func (r *Review) Cursor() *tea.Cursor {
 	}
 	w := max(r.width, 40)
 	left, _ := answerBox(w)
-	mode, text := r.inputText(q)
+	text, empty := r.inputText(q)
+	if empty {
+		text = "" // the cursor sits at the start of the placeholder
+	}
 	_, rows := r.glyphSize()
-	x := left + 2 + lipgloss.Width(mode+"  "+text) // border, space, then the text
-	y := 1 + rows + 1 + 1                          // header, glyph, blank, box top
+	x := left + 2 + lipgloss.Width(text) // border, space, then the text
+	y := 1 + rows + 1 + 1                // header, glyph, blank, box top
 	c := tea.NewCursor(x, y)
 	c.Shape = tea.CursorBar
 	return c

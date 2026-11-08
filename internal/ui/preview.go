@@ -13,7 +13,7 @@ import (
 )
 
 // PreviewScreens are the screens and states Preview can render.
-var PreviewScreens = []string{"dashboard", "review", "review-reading", "review-wrong", "summary"}
+var PreviewScreens = []string{"dashboard", "review-empty", "review", "review-reading", "review-wrong", "summary"}
 
 // Preview renders one screen once at w×h from the store, without a running
 // program: for iterating on layout (cmd/preview) and golden tests. Review
@@ -32,7 +32,7 @@ func Preview(ctx context.Context, d Deps, rd ReviewDeps, screen string, w, h int
 		}
 		return fit(m.render(), h), nil
 
-	case "review", "review-reading", "review-wrong":
+	case "review-empty", "review", "review-reading", "review-wrong":
 		u, err := d.Store.User(ctx)
 		if err != nil || u == nil {
 			return "", fmt.Errorf("preview: no user in the store: %v", err)
@@ -65,6 +65,7 @@ func Preview(ctx context.Context, d Deps, rd ReviewDeps, screen string, w, h int
 		q, it, _ := r.current()
 		answer := []rune(correctAnswer(q, it))
 		switch screen {
+		case "review-empty": // nothing typed: the placeholder shows
 		case "review": // half-typed meaning
 			typeKeys(r, string(answer[:max(len(answer)/2, 1)]))
 		case "review-reading": // kana so far plus a pending consonant
