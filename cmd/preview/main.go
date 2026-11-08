@@ -57,9 +57,10 @@ func run() error {
 	htmlOut := flag.String("html", "", "write an HTML gallery to this file instead of drawing in the terminal")
 	gfxFlag := flag.String("gfx", "auto", "graphics tier in the terminal: auto, kitty or plain")
 	layouts := flag.String("layout", "", "comma-separated dashboard layouts to compare (e.g. current,panels,rules)")
-	flag.Parse()
-
-	screens := flag.Args()
+	screens, err := parseArgs(flag.CommandLine, os.Args[1:])
+	if err != nil {
+		return err
+	}
 	if len(screens) == 0 {
 		screens = ui.PreviewScreens
 	}
@@ -202,4 +203,37 @@ func raw[T any](rs []wk.Resource[T]) []store.RawResource {
 		out[i] = store.RawResource{ID: r.ID, Object: r.Object, URL: r.URL, DataUpdatedAt: r.DataUpdatedAt, Data: data}
 	}
 	return out
+}
+
+// parseArgs parses flags wherever they appear (Go's flag package stops at
+// the first non-flag), so `preview dashboard --layout=panels` works. A flag
+// without "=" takes the next argument as its value unless it is boolean.
+func parseArgs(fs *flag.FlagSet, args []string) ([]string, error) {
+	var flags, rest []string
+	for i := 0; i < len(args); i++ {
+		a := args[i]
+		if a == "--" {
+			rest = append(rest, args[i+1:]...)
+			break
+		}
+		if !strings.HasPrefix(a, "-") || a == "-" {
+			rest = append(rest, a)
+			continue
+		}
+		flags = append(flags, a)
+		name := strings.TrimLeft(a, "-")
+		if strings.Contains(name, "=") {
+			continue
+		}
+		if f := fs.Lookup(name); f != nil && i+1 < len(args) {
+			if bf, ok := f.Value.(interface{ IsBoolFlag() bool }); !ok || !bf.IsBoolFlag() {
+				i++
+				flags = append(flags, args[i])
+			}
+		}
+	}
+	if err := fs.Parse(flags); err != nil {
+		return nil, err
+	}
+	return append(rest, fs.Args()...), nil
 }
