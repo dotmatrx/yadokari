@@ -45,6 +45,10 @@ anything with `--live` yourself. Tokens used during development are read-only.
   by `PRAGMA user_version`). Dashboard queries live here.
 - `internal/wksync` — full then incremental sync (`updated_after` bookmarks, user ETag);
   `Foreground` collections first, `review_statistics` in `Background`. Read-only.
+- `internal/config` — XDG paths (config `~/.config/yadokari/config.toml`, database
+  `~/.local/share/yadokari/yadokari.db`), settings, and the token store: env
+  `WANIKANI_API_TOKEN` → OS keyring → `0600` file fallback. Tests use a fake keyring;
+  don't touch the real keyring from tests or tooling without asking the user.
 - `docs/wanikani-api.md` — API notes and known doc ambiguities.
 - `internal/` — real packages (still planned: `session`, `answer`, `glyph`, `gfx`,
   `audio`, `ui`). Keep `session`, `answer` and `ime`
