@@ -11,7 +11,8 @@ Use `just` (no Makefile):
 
 - `just build` — build `bin/yadokari`
 - `just run [flags]` — run the app
-- `just test [go test flags]` — all tests except `spikes/`
+- `just test [go test flags]` — all tests except `spikes/`. Some tests also run
+  against the newest local recording in `testdata/recordings/` and skip without one.
 - `just check` — gofmt check + `go vet`
 - `just spike <name>` — run `spikes/<name>`
 - `just mock [--fixtures=DIR] [--per-page=N]` — fake API on `http://127.0.0.1:8642/v2/`
@@ -37,9 +38,16 @@ anything with `--live` yourself. Tokens used during development are read-only.
   unless built `WithLiveWrites(true)`.
 - `internal/wkmock` — in-memory fake API (fixtures or `SampleData`), logs all writes,
   approximates SRS stage changes.
+- `internal/ime` — incremental romaji→kana converter (WanaKana IME-mode behaviour) and
+  kana helpers. Pure.
+- `internal/store` — SQLite cache: raw API JSON + indexed columns, timestamps as Unix
+  microseconds, embedded migrations (`internal/store/migrations/NNN_*.sql`, tracked
+  by `PRAGMA user_version`). Dashboard queries live here.
+- `internal/wksync` — full then incremental sync (`updated_after` bookmarks, user ETag);
+  `Foreground` collections first, `review_statistics` in `Background`. Read-only.
 - `docs/wanikani-api.md` — API notes and known doc ambiguities.
-- `internal/` — real packages (planned: `wk`, `wkmock`, `store`, `sync`, `session`,
-  `answer`, `ime`, `glyph`, `gfx`, `audio`, `ui`). Keep `session`, `answer` and `ime`
+- `internal/` — real packages (still planned: `session`, `answer`, `glyph`, `gfx`,
+  `audio`, `ui`). Keep `session`, `answer` and `ime`
   free of I/O and UI code, and table-test them heavily.
 - `spikes/` — throwaway Phase 0 experiments; see `spikes/README.md`
 

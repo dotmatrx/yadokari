@@ -141,3 +141,9 @@ func (c *Client) GetRaw(ctx context.Context, path string) (*Resource[json.RawMes
 func (c *Client) EachRaw(ctx context.Context, path string, q url.Values, fn func(*Collection[json.RawMessage]) error) error {
 	return each(ctx, c, path, q, fn)
 }
+
+// GetRawConditional fetches a single resource undecoded, honouring
+// validators from a previous response. On 304 the resource is nil.
+func (c *Client) GetRawConditional(ctx context.Context, path string, cond Conditional) (*Resource[json.RawMessage], Meta, error) {
+	return getOne[json.RawMessage](ctx, c, path, cond)
+}
