@@ -135,7 +135,17 @@ func reviewDeps(client *wk.Client, st *store.Store, gfxTier string) (ui.ReviewDe
 	}
 	rd.Images = glyph.ImageCache{Dir: filepath.Join(cacheDir, "yadokari", "images")}
 
-	tier, err := gfx.Choose(gfxTier, os.Getenv, func() (bool, error) { return gfx.Probe(time.Second) })
+	// Ask the terminal at most once, and only if needed.
+	var probed *gfx.Probed
+	var probeErr error
+	probe := func() (gfx.Probed, error) {
+		if probed == nil {
+			p, err := gfx.Probe(time.Second)
+			probed, probeErr = &p, err
+		}
+		return *probed, probeErr
+	}
+	tier, err := gfx.Choose(gfxTier, os.Getenv, probe)
 	if err != nil {
 		return rd, "", err
 	}
@@ -146,7 +156,10 @@ func reviewDeps(client *wk.Client, st *store.Store, gfxTier string) (ui.ReviewDe
 		tier = gfx.Plain
 	}
 	rd.Font = font
-	cw, ch := gfx.CellSize()
+	cw, ch := 0, 0
+	if tier == gfx.Kitty {
+		cw, ch = gfx.CellSize(probe)
+	}
 	rd.Renderer = gfx.New(tier, cw, ch)
 	return rd, warning, nil
 }

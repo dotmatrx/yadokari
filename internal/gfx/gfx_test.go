@@ -166,19 +166,25 @@ func TestWrongMaskSizeIsAnError(t *testing.T) {
 func TestParseProbe(t *testing.T) {
 	da1 := "\x1b[?62;22c"
 	for _, tt := range []struct {
-		reply       string
-		kitty, done bool
+		reply string
+		want  Probed
+		done  bool
 	}{
-		{"", false, false},
-		{"\x1b_Gi=31;OK\x1b\\", true, false},
-		{"\x1b_Gi=31;OK\x1b\\" + da1, true, true},
-		{da1, false, true},                                 // Ptyxis: DA1 only
-		{"\x1b_Gi=31;EINVAL:bad\x1b\\" + da1, false, true}, // graphics refused
-		{"\x1b[?62;22", false, false},                      // DA1 not complete yet
+		{"", Probed{}, false},
+		{"\x1b_Gi=31;OK\x1b\\", Probed{Kitty: true}, false},
+		// Ghostty in a toolbox.
+		{"\x1b_Gi=31;OK\x1b\\\x1b[6;30;12t" + da1, Probed{Kitty: true, CellW: 12, CellH: 30}, true},
+		// No graphics, but a cell size.
+		{"\x1b[6;17;8t" + da1, Probed{CellW: 8, CellH: 17}, true},
+		{da1, Probed{}, true},
+		// Graphics refused.
+		{"\x1b_Gi=31;EINVAL:bad\x1b\\" + da1, Probed{}, true},
+		// DA1 not complete yet.
+		{"\x1b[?62;22", Probed{}, false},
 	} {
-		kitty, done := parseProbe([]byte(tt.reply))
-		if kitty != tt.kitty || done != tt.done {
-			t.Errorf("parseProbe(%q) = %v, %v; want %v, %v", tt.reply, kitty, done, tt.kitty, tt.done)
+		got, done := parseProbe([]byte(tt.reply))
+		if got != tt.want || done != tt.done {
+			t.Errorf("parseProbe(%q) = %+v, %v; want %+v, %v", tt.reply, got, done, tt.want, tt.done)
 		}
 	}
 }
@@ -191,15 +197,15 @@ func TestChoose(t *testing.T) {
 		}
 		return func(k string) string { return m[k] }
 	}
-	yes := func() (bool, error) { return true, nil }
-	no := func() (bool, error) { return false, nil }
-	fails := func() (bool, error) { return false, errors.New("no tty") }
-	mustNot := func() (bool, error) { t.Error("probe should not run"); return false, nil }
+	yes := func() (Probed, error) { return Probed{Kitty: true}, nil }
+	no := func() (Probed, error) { return Probed{}, nil }
+	fails := func() (Probed, error) { return Probed{}, errors.New("no tty") }
+	mustNot := func() (Probed, error) { t.Error("probe should not run"); return Probed{}, nil }
 	for _, tt := range []struct {
 		name     string
 		override string
 		getenv   func(string) string
-		probe    func() (bool, error)
+		probe    func() (Probed, error)
 		want     Tier
 	}{
 		{"override plain", "plain", env("TERM", "xterm-kitty"), mustNot, Plain},

@@ -77,8 +77,9 @@ anything with `--live` yourself. Tokens used during development are read-only.
 - `internal/gfx` — tiers `kitty` (placeholders; image IDs < 256, recycled) and `plain`;
   half-block was tried and dropped (unreadable). `Draw` queues kitty uploads; send
   `Flush()` via `tea.Raw` from Update. `Choose` picks the tier: `--gfx` override, then
-  env (`Detect`), then `Probe` (kitty graphics query + DA1 on `/dev/tty`, before Bubble
-  Tea starts). `CellSize`. `Source.Mask` must
+  env (`Detect`), then `Probe` (kitty graphics query + `CSI 16 t` + DA1 on `/dev/tty`,
+  before Bubble Tea starts). `CellSize` uses the tty ioctl, else the probe: the
+  toolbox pty reports no pixel size (Ghostty: 12×30 real vs the 10×20 guess). `Source.Mask` must
   return exactly w×h.
 - `docs/roadmap.md` — milestone status and next steps.
 - `docs/wanikani-api.md` — API notes and known doc ambiguities.

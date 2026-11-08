@@ -62,7 +62,7 @@ func Detect(getenv func(string) string) Tier {
 // Choose picks the tier: an explicit override ("kitty", "plain"), else
 // the environment, else the terminal's answer to probe. tmux always gets
 // Plain (kitty graphics would need passthrough). A probe error means Plain.
-func Choose(override string, getenv func(string) string, probe func() (bool, error)) (Tier, error) {
+func Choose(override string, getenv func(string) string, probe func() (Probed, error)) (Tier, error) {
 	if t, ok, err := ParseTier(override); err != nil || ok {
 		return t, err
 	}
@@ -72,7 +72,7 @@ func Choose(override string, getenv func(string) string, probe func() (bool, err
 	if Detect(getenv) == Kitty {
 		return Kitty, nil
 	}
-	if ok, err := probe(); err == nil && ok {
+	if p, err := probe(); err == nil && p.Kitty {
 		return Kitty, nil
 	}
 	return Plain, nil
@@ -111,14 +111,19 @@ func New(t Tier, cellW, cellH int) Renderer {
 	return plain{}
 }
 
-// CellSize reports the terminal cell size in pixels, or a 10×20 guess when
-// the terminal doesn't say.
-func CellSize() (w, h int) {
+// CellSize reports the terminal cell size in pixels from the tty, falling
+// back to the probe's answer (nil: none), then to a 10×20 guess.
+func CellSize(probe func() (Probed, error)) (w, h int) {
 	ws, err := unix.IoctlGetWinsize(int(os.Stdout.Fd()), unix.TIOCGWINSZ)
-	if err != nil || ws.Col == 0 || ws.Row == 0 || ws.Xpixel == 0 || ws.Ypixel == 0 {
-		return 10, 20
+	if err == nil && ws.Col > 0 && ws.Row > 0 && ws.Xpixel > 0 && ws.Ypixel > 0 {
+		return int(ws.Xpixel) / int(ws.Col), int(ws.Ypixel) / int(ws.Row)
 	}
-	return int(ws.Xpixel) / int(ws.Col), int(ws.Ypixel) / int(ws.Row)
+	if probe != nil {
+		if p, err := probe(); err == nil && p.CellW > 0 && p.CellH > 0 {
+			return p.CellW, p.CellH
+		}
+	}
+	return 10, 20
 }
 
 func rgb(c color.Color) (r, g, b uint8) {
