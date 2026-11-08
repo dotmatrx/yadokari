@@ -100,12 +100,22 @@ against and where the docs are ambiguous.
 - Full sync = 53 requests: user 1, summary 1, subjects 10, assignments 19,
   study_materials 1, SRS 1, review_statistics 19, plus 1 incremental check.
 
-## Not documented — verify against the live API with a read-only token
+## Observed on live writes (first `--live` session, 2026-11-08)
 
-The app logs every write attempt and reply to `writes.log` next to its database;
-that's where the answers to the write questions below will come from.
+From `writes.log` (the app logs every write attempt and reply next to its database);
+11 reviews, all accepted.
 
-- Token permission names required for each write.
-- Success status codes for writes (assume any 2xx).
-- Exact 422 bodies for invalid reviews / starts.
-- Trailing slash on write URLs (headers say `/reviews/`, examples use `/reviews`).
+- `POST /v2/reviews` (no trailing slash) returns **201 Created**.
+- `assignment_id` alone is enough; `subject_id` isn't needed.
+- `created_at` with nanosecond precision is accepted and truncated to microseconds.
+- Response as documented: a `review` with `id` 0 (`url` `…/reviews/0`) carrying
+  `starting_srs_stage` / `ending_srs_stage`, plus `resources_updated.assignment` and
+  `resources_updated.review_statistic`.
+- SRS movement matched the mock's `nextStage` approximation in all 11 cases (e.g.
+  7→5 with 1 miss, 8→6 with 2, 2→1 with 3, 1→1 with 1), covering both the Apprentice
+  and the doubled Guru-and-up penalty.
+
+## Not documented — still to verify
+
+- Token permission names required for each write (the user's token has full write).
+- Exact 422 bodies for invalid reviews / starts (none seen yet).

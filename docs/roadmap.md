@@ -26,6 +26,8 @@ a milestone moves.
   by probing the terminal (`gfx.Probe`) and a `--gfx` override. The probe also reads the
   cell size (the toolbox pty reports none). Confirmed in Ghostty: `env tier plain`,
   probe `{Kitty:true CellW:12 CellH:30}`. See CLAUDE.md.
+- **First live session done (2026-11-08):** 11 reviews, all accepted, outbox empty
+  afterwards; the user finds it "already feeling very usable". Dogfooding has begun.
 - M3 items 4 and 6 (summary half) are done: rejected reviews and the pending count on
   the dashboard (`x` dismisses rejected rows), and per-item SRS movement in the
   summary, filled in as uploads land.
@@ -42,13 +44,10 @@ a milestone moves.
 2. **Decided: one token.** The keyring holds a token with `reviews:create`, used for
    everything by the real app; live writes stay blocked unless `--live` is passed.
    `.env` keeps the read-only token for `probe-live` and anything Claude runs. Next:
-   the user swapped the keyring token on 2026-11-08 (a full-write token). First
-   `--live` session not yet run.
-3. Confirm against the live API what the docs leave open: success status of
-   `POST /reviews`, the 422 body for a not-due assignment, and whether
-   `assignment_id` alone is enough (see `docs/wanikani-api.md`). Every write attempt
-   is now logged to `~/.local/share/yadokari/writes.log` (added 2026-11-08); read it
-   after the first `--live` session and record the answers in the API notes.
+   the user swapped the keyring token on 2026-11-08 (a full-write token).
+3. ~~Confirm the open write behaviour against the live API.~~ Done 2026-11-08: first
+   `--live` session, 11 reviews, all 201; findings in `docs/wanikani-api.md`. Still
+   unseen: a 422 body. Every write is logged to `~/.local/share/yadokari/writes.log`.
 4. ~~Surface rejected (failed) outbox rows on the dashboard.~~ Done 2026-11-08.
 5. Offline handling: reviews completed offline stay queued and upload on the next run;
    test with the network down. Today pending reviews only upload once the review
