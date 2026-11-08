@@ -10,8 +10,10 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/charmbracelet/x/ansi/kitty"
 
 	"github.com/jtharris/yadokari/internal/gfx"
+	"github.com/jtharris/yadokari/internal/glyph"
 	"github.com/jtharris/yadokari/internal/session"
 	"github.com/jtharris/yadokari/internal/store"
 	"github.com/jtharris/yadokari/internal/wk"
@@ -406,5 +408,40 @@ func TestOfflineReviewsUploadOnNextSync(t *testing.T) {
 	}
 	if out := ansi.Strip(d.render()); strings.Contains(out, "to upload") || !strings.Contains(out, "Reviews      3") {
 		t.Errorf("online: queue should be empty and 3 due:\n%s", out)
+	}
+}
+
+// TestPreviewKittyUploadsReachTheCaller: the final frame's image upload must
+// still be queued when Preview returns, for the caller to send.
+func TestPreviewKittyUploadsReachTheCaller(t *testing.T) {
+	font, err := glyph.FindFont("")
+	if err != nil {
+		t.Skip("no CJK font:", err)
+	}
+	ctx := context.Background()
+	st, err := store.Open(ctx, ":memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer st.Close()
+	d := wkmock.DemoData(now)
+	st.Upsert(ctx, store.Subjects, toRaw(d.Subjects))
+	st.Upsert(ctx, store.Assignments, toRaw(d.Assignments))
+	userRaw, _ := json.Marshal(d.User)
+	st.PutSingleton(ctx, "user", store.Singleton{Raw: userRaw, FetchedAt: now})
+
+	for _, screen := range []string{"review", "review-wrong", "review-reading"} {
+		r := gfx.New(gfx.Kitty, 10, 20)
+		out, err := Preview(ctx, Deps{Store: st, Now: func() time.Time { return now }, Location: time.UTC},
+			ReviewDeps{Renderer: r, Font: font}, screen, 80, 24)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !strings.ContainsRune(out, kitty.Placeholder) {
+			t.Errorf("%s: no placeholders in the frame", screen)
+		}
+		if up := r.Flush(); !strings.Contains(up, "\x1b_G") {
+			t.Errorf("%s: the frame's image upload was lost", screen)
+		}
 	}
 }

@@ -42,7 +42,9 @@ func Preview(ctx context.Context, d Deps, rd ReviewDeps, screen string, w, h int
 			return "", err
 		}
 		r.Update(size)
-		r.Update(reviewReadyMsg{})
+		// Not ready while typing: each Update would otherwise queue a kitty
+		// upload into a command this function discards, and the final frame
+		// would point at an image the terminal never received.
 		want := session.Meaning
 		if screen == "review-reading" {
 			want = session.Reading
@@ -75,6 +77,7 @@ func Preview(ctx context.Context, d Deps, rd ReviewDeps, screen string, w, h int
 			typeKeys(r, wrong)
 			enterKey(r)
 		}
+		r.ready = true // the caller sends the View's uploads (Flush)
 		return fit(r.View(), h), nil
 
 	case "summary":
