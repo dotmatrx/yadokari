@@ -61,10 +61,15 @@ anything with `--live` yourself. Tokens used during development are read-only.
 - `internal/answer` — meaning/reading checks: blacklist → exact (meanings, whitelist,
   synonyms) → warnings → OSA typo tolerance (RadicalGuessr reconstruction of WK; unverified,
   hence `Strictness`). Readings exact after `ToHiragana`; kanji off-type readings warn. Pure.
+- `internal/glyph` — font discovery (checks kanji/kana coverage: the toolbox's fontconfig
+  returns a Latin font for `:lang=ja`), text → alpha masks (optional supersampling),
+  radical SVGs (normalized for oksvg: inline CSS classes, resolve `var()`, drop clip
+  paths, scale stroke widths), disk cache for downloads. Radical PNG URLs are dead (403).
+- `internal/gfx` — tiers `kitty` (placeholders; image IDs < 256, recycled) / `halfblock` /
+  `plain`, `Detect` from env, `CellSize`. A `Source.Mask` must return exactly w×h.
 - `docs/wanikani-api.md` — API notes and known doc ambiguities.
 - `docs/backlog.md` — deferred ideas; add to it rather than leaving them in chat.
-- `internal/` — real packages (still planned: `session`, `answer`, `glyph`, `gfx`,
-  `audio`). Keep `session`, `answer` and `ime`
+- `internal/` — real packages (still planned: `audio`, review screen in `ui`). Keep `session`, `answer` and `ime`
   free of I/O and UI code, and table-test them heavily.
 - `spikes/` — throwaway Phase 0 experiments; see `spikes/README.md`
 

@@ -11,6 +11,7 @@ Each spike lives in its own directory as a `package main` and runs with
 |---|---|---|---|
 | 1. kitty Unicode placeholders in Bubble Tea v2 | `placeholders/` | 漢 in a 20×10 grid survives resize/re-render in kitty (toolbox, dnf); no flicker, no stray glyphs. Later: WezTerm/Rio flatpaks as a compatibility check | **Pass** (2026-11-07, kitty in toolbox) |
 | 2. OSC 66 text sizing in Bubble Tea v2 | `textsize/` | Renders at s=4 without corrupting surrounding rows | — |
+| 5. Tier comparison | `tiers/` | Eyeball kitty / half-block / plain side by side in kitty and Ptyxis | — |
 | 3. IME feel | `imefeel/` | kyouiku, gakkou, kon'nichiha, shinbun (incl. backspace) feel like WaniKani's site | **Pass** (2026-11-07) |
 
 Spike 4 (API read path + mock) is not here: it graduates directly into `internal/wk`

@@ -46,8 +46,9 @@ against and where the docs are ambiguous.
   whitelist|blacklist}], meaning_mnemonic, hidden_at, document_url, created_at,
   spaced_repetition_system_id`.
   - radical: `amalgamation_subject_ids, character_images[{url, content_type,
-    metadata}]`. The docs say SVG only; real data has several PNG sizes plus one SVG
-    per image radical.
+    metadata}]`. Each image radical lists seven PNG sizes plus one SVG, but only the
+    SVG URL is served: every PNG URL answers 403 (checked 2026-11-07). The docs' "SVG
+    only" is right in practice.
   - kanji: `component_subject_ids, amalgamation_subject_ids,
     visually_similar_subject_ids, readings[{reading, primary, accepted_answer, type:
     onyomi|kunyomi|nanori}], reading_mnemonic, meaning_hint, reading_hint`.
@@ -89,7 +90,9 @@ against and where the docs are ambiguous.
 - 9,452 subjects: 6,786 vocabulary, 2,102 kanji, 504 radicals, 60 kana_vocabulary.
   43 hidden. 19 radicals have `characters: null`.
 - `auxiliary_meanings` on 4,358 subjects: 16,394 whitelist, 1,407 blacklist entries.
-- Character images: 3,479 `image/png`, 498 `image/svg+xml`.
+- Character images: 3,479 `image/png` entries (all 403 when fetched) and 498
+  `image/svg+xml` (served). The SVGs style strokes through a CSS `<style>` class with
+  `var(--color-text, #000)` and use clip paths; see `internal/glyph/svg.go`.
 - Audio: `audio/webm` and `audio/mpeg` (no ogg), two per recording.
 - Kanji reading types: onyomi, kunyomi, nanori. Kanji always carry `reading_hint`
   (often null); vocabulary never has hints.
