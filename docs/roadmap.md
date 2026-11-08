@@ -23,8 +23,8 @@ a milestone moves.
 - **Terminal switch:** the user now runs Ghostty (host, rpm-ostree) as the daily
   driver, with the app run from the `yadokari` toolbox inside it. The spikes looked
   right, but the app fell back to the plain tier: toolbox hides Ghostty's `TERM`. Fixed
-  by probing the terminal (`gfx.Probe`) and a `--gfx` override; needs the user to
-  confirm in Ghostty. See CLAUDE.md.
+  by probing the terminal (`gfx.Probe`) and a `--gfx` override. Confirmed in Ghostty:
+  `env tier plain, probe kitty=true`. See CLAUDE.md.
 - M3 items 4 and 6 (summary half) are done: rejected reviews and the pending count on
   the dashboard (`x` dismisses rejected rows), and per-item SRS movement in the
   summary, filled in as uploads land.
