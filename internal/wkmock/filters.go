@@ -114,7 +114,7 @@ func assignmentFilter(s *Server, q url.Values, r wk.Resource[wk.Assignment]) (bo
 		{"burned", d.BurnedAt != nil},
 		{"in_review", d.StartedAt != nil && d.BurnedAt == nil},
 		{"immediately_available_for_lessons", d.UnlockedAt != nil && d.StartedAt == nil && s.levelGrantedLocked(level)},
-		{"immediately_available_for_review", d.AvailableAt != nil && !d.AvailableAt.After(now) && d.BurnedAt == nil && s.levelGrantedLocked(level)},
+		{"immediately_available_for_review", d.AvailableAt != nil && !d.AvailableAt.After(now) && s.levelGrantedLocked(level)},
 	}
 	for _, c := range checks {
 		want, present, err := boolParam(q, c.key)

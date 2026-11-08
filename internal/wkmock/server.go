@@ -206,7 +206,7 @@ func (s *Server) getSummary(w http.ResponseWriter, r *http.Request) {
 			lessons.SubjectIDs = append(lessons.SubjectIDs, d.SubjectID)
 			continue
 		}
-		if d.AvailableAt == nil || d.BurnedAt != nil {
+		if d.AvailableAt == nil { // burned items have none; resurrected ones keep burned_at
 			continue
 		}
 		at := *d.AvailableAt

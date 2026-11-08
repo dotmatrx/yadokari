@@ -79,7 +79,7 @@ func (s *Server) postReview(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		a := &s.data.Assignments[i]
-		if a.Data.AvailableAt == nil || a.Data.AvailableAt.After(now) || a.Data.BurnedAt != nil {
+		if a.Data.AvailableAt == nil || a.Data.AvailableAt.After(now) {
 			writeError(w, http.StatusUnprocessableEntity, "assignment is not available for review")
 			return
 		}
