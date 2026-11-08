@@ -58,6 +58,9 @@ anything with `--live` yourself. Tokens used during development are read-only.
 - `internal/session` — review engine: backlog → active set (default 10) → random question; per-part
   misses; `Completion` = what `POST /reviews` needs; wrap-up, limit, ordering, back-to-back,
   undo of a wrong answer; JSON `Snapshot`/`Restore`. Pure.
+- `internal/answer` — meaning/reading checks: blacklist → exact (meanings, whitelist,
+  synonyms) → warnings → OSA typo tolerance (RadicalGuessr reconstruction of WK; unverified,
+  hence `Strictness`). Readings exact after `ToHiragana`; kanji off-type readings warn. Pure.
 - `docs/wanikani-api.md` — API notes and known doc ambiguities.
 - `docs/backlog.md` — deferred ideas; add to it rather than leaving them in chat.
 - `internal/` — real packages (still planned: `session`, `answer`, `glyph`, `gfx`,
