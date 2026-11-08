@@ -74,16 +74,22 @@ func run() error {
 		baseURL = cfg.APIBaseURL
 	}
 
-	ctx := context.Background()
-	client, err := clientWithToken(ctx, tokens, baseURL, *live)
-	if err != nil {
-		return err
-	}
-
 	if *dbPath == "" {
 		*dbPath = paths.Database
 	}
 	if err := os.MkdirAll(filepath.Dir(*dbPath), 0o700); err != nil {
+		return err
+	}
+	// Every write attempt and WaniKani's reply, next to the database.
+	writeLog, err := os.OpenFile(filepath.Join(filepath.Dir(*dbPath), "writes.log"), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o600)
+	if err != nil {
+		return err
+	}
+	defer writeLog.Close()
+
+	ctx := context.Background()
+	client, err := clientWithToken(ctx, tokens, baseURL, wk.WithLiveWrites(*live), wk.WithWriteLog(writeLog))
+	if err != nil {
 		return err
 	}
 	st, err := store.Open(ctx, *dbPath)
@@ -140,10 +146,11 @@ func reviewDeps(client *wk.Client, st *store.Store) (ui.ReviewDeps, string) {
 
 // clientWithToken loads the stored token, or runs the first-run form, checks
 // the token against GET /user and saves it.
-func clientWithToken(ctx context.Context, tokens config.TokenStore, baseURL string, live bool) (*wk.Client, error) {
+func clientWithToken(ctx context.Context, tokens config.TokenStore, baseURL string, opts ...wk.Option) (*wk.Client, error) {
+	opts = append([]wk.Option{wk.WithBaseURL(baseURL)}, opts...)
 	token, _, err := tokens.Load()
 	if err == nil {
-		return wk.New(token, wk.WithBaseURL(baseURL), wk.WithLiveWrites(live))
+		return wk.New(token, opts...)
 	}
 	if !errors.Is(err, config.ErrNoToken) {
 		return nil, err
@@ -153,7 +160,7 @@ func clientWithToken(ctx context.Context, tokens config.TokenStore, baseURL stri
 	if err != nil {
 		return nil, err
 	}
-	client, err := wk.New(token, wk.WithBaseURL(baseURL), wk.WithLiveWrites(live))
+	client, err := wk.New(token, opts...)
 	if err != nil {
 		return nil, err
 	}

@@ -1,10 +1,14 @@
 package wk_test
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
+	"strings"
 	"testing"
 	"time"
 
@@ -211,5 +215,50 @@ func TestLiveWritesBlockedByDefault(t *testing.T) {
 	}
 	if _, err := c.StartAssignment(ctx, 1, nil); !errors.Is(err, wk.ErrLiveWritesDisabled) {
 		t.Errorf("StartAssignment: got %v", err)
+	}
+}
+
+func TestWriteLog(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodGet {
+			w.Write([]byte(`{"object":"user","data":{}}`))
+			return
+		}
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		w.Write([]byte(`{"error":"not due","code":422}`))
+	}))
+	defer srv.Close()
+	var log bytes.Buffer
+	c, err := wk.New("secret-token", wk.WithBaseURL(srv.URL+"/v2/"), wk.WithWriteLog(&log), wk.WithRateLimit(6000, 100))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := c.User(context.Background(), wk.Conditional{}); err != nil {
+		t.Fatal(err)
+	}
+	if log.Len() != 0 {
+		t.Errorf("GETs must not be logged: %s", log.String())
+	}
+	if _, err := c.CreateReview(context.Background(), wk.ReviewInput{AssignmentID: 7, IncorrectMeaningAnswers: 1}); !wk.IsStatus(err, 422) {
+		t.Fatalf("want 422, got %v", err)
+	}
+	lines := strings.Split(strings.TrimSpace(log.String()), "\n")
+	if len(lines) != 1 {
+		t.Fatalf("want one line, got %q", log.String())
+	}
+	var e struct {
+		Method, URL, Response string
+		Status                int
+		Request               map[string]map[string]any
+	}
+	if err := json.Unmarshal([]byte(lines[0]), &e); err != nil {
+		t.Fatal(err)
+	}
+	if e.Method != "POST" || !strings.HasSuffix(e.URL, "/v2/reviews") || e.Status != 422 ||
+		e.Response != `{"error":"not due","code":422}` || e.Request["review"]["assignment_id"] != float64(7) {
+		t.Errorf("log entry %+v", e)
+	}
+	if strings.Contains(log.String(), "secret-token") {
+		t.Error("token leaked into the write log")
 	}
 }

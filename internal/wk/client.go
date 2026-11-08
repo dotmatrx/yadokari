@@ -89,6 +89,9 @@ type Client struct {
 	blockedUntil time.Time
 
 	requests atomic.Int64
+
+	writeLog   io.Writer
+	writeLogMu sync.Mutex
 }
 
 // Option configures a Client.
@@ -126,6 +129,43 @@ func WithRateLimit(perMinute, burst int) Option {
 // WithLiveWrites allows writes to the live API. Only the --live flag should set this.
 func WithLiveWrites(allow bool) Option {
 	return func(c *Client) error { c.liveWrites = allow; return nil }
+}
+
+// WithWriteLog appends one JSON line per write attempt (POST/PUT/DELETE) to
+// w: the request body, the HTTP status and the raw response body, or the
+// transport error. The token is never logged. This is the record of what
+// WaniKani actually accepted or refused.
+func WithWriteLog(w io.Writer) Option {
+	return func(c *Client) error { c.writeLog = w; return nil }
+}
+
+// logWrite records one write attempt; failures to log are ignored.
+func (c *Client) logWrite(method string, u *url.URL, payload []byte, status int, body []byte, err error) {
+	if c.writeLog == nil || method == http.MethodGet {
+		return
+	}
+	entry := struct {
+		Time     time.Time       `json:"time"`
+		Method   string          `json:"method"`
+		URL      string          `json:"url"`
+		Request  json.RawMessage `json:"request,omitempty"`
+		Status   int             `json:"status,omitempty"`
+		Response string          `json:"response,omitempty"`
+		Error    string          `json:"error,omitempty"`
+	}{Time: c.now().UTC(), Method: method, URL: u.String(), Status: status, Response: string(body)}
+	if json.Valid(payload) {
+		entry.Request = payload
+	}
+	if err != nil {
+		entry.Error = err.Error()
+	}
+	line, mErr := json.Marshal(entry)
+	if mErr != nil {
+		return
+	}
+	c.writeLogMu.Lock()
+	defer c.writeLogMu.Unlock()
+	_, _ = c.writeLog.Write(append(line, '\n'))
 }
 
 // New builds a client for the given personal API token.
@@ -227,10 +267,12 @@ func (c *Client) do(ctx context.Context, method string, u *url.URL, body any, co
 		c.requests.Add(1)
 		resp, err := c.hc.Do(req)
 		if err != nil {
+			c.logWrite(method, u, payload, 0, nil, err)
 			return Meta{}, fmt.Errorf("wk: %s %s: %w", method, u.Path, err)
 		}
 		raw, err := io.ReadAll(io.LimitReader(resp.Body, 64<<20))
 		resp.Body.Close()
+		c.logWrite(method, u, payload, resp.StatusCode, raw, err)
 		if err != nil {
 			return Meta{}, fmt.Errorf("wk: read body: %w", err)
 		}

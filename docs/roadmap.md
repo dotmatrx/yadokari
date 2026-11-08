@@ -39,11 +39,13 @@ a milestone moves.
 2. **Decided: one token.** The keyring holds a token with `reviews:create`, used for
    everything by the real app; live writes stay blocked unless `--live` is passed.
    `.env` keeps the read-only token for `probe-live` and anything Claude runs. Next:
-   the user swaps the keyring token (`--logout`, then enter the new one).
+   the user swapped the keyring token on 2026-11-08 (a full-write token). First
+   `--live` session not yet run.
 3. Confirm against the live API what the docs leave open: success status of
    `POST /reviews`, the 422 body for a not-due assignment, and whether
-   `assignment_id` alone is enough (see `docs/wanikani-api.md`). Add logging of the
-   status and response body before the first `--live` session.
+   `assignment_id` alone is enough (see `docs/wanikani-api.md`). Every write attempt
+   is now logged to `~/.local/share/yadokari/writes.log` (added 2026-11-08); read it
+   after the first `--live` session and record the answers in the API notes.
 4. ~~Surface rejected (failed) outbox rows on the dashboard.~~ Done 2026-11-08.
 5. Offline handling: reviews completed offline stay queued and upload on the next run;
    test with the network down. Today pending reviews only upload once the review

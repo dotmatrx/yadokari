@@ -42,7 +42,9 @@ anything with `--live` yourself. Tokens used during development are read-only.
 - `internal/wk` — typed API client: auth, pagination via `next_url` (same-host only),
   ETags, client-side rate limit + `RateLimit-*` handling, 429 retry; GETs retry on 5xx,
   writes never auto-retry; non-GET to the live host fails with `ErrLiveWritesDisabled`
-  unless built `WithLiveWrites(true)`.
+  unless built `WithLiveWrites(true)`. `WithWriteLog` appends each write attempt
+  (request, status, raw response; never the token) as a JSON line; the app writes it
+  to `writes.log` next to the database (`~/.local/share/yadokari/`, or `.dev/`).
 - `internal/wkmock` — in-memory fake API (fixtures or `SampleData`), logs all writes,
   approximates SRS stage changes.
 - `internal/ime` — incremental romaji→kana converter (WanaKana IME-mode behaviour) and

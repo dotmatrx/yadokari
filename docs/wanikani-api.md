@@ -102,6 +102,9 @@ against and where the docs are ambiguous.
 
 ## Not documented — verify against the live API with a read-only token
 
+The app logs every write attempt and reply to `writes.log` next to its database;
+that's where the answers to the write questions below will come from.
+
 - Token permission names required for each write.
 - Success status codes for writes (assume any 2xx).
 - Exact 422 bodies for invalid reviews / starts.
