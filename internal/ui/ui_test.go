@@ -123,3 +123,39 @@ func TestComma(t *testing.T) {
 }
 
 func windowSize(w, h int) tea.WindowSizeMsg { return tea.WindowSizeMsg{Width: w, Height: h} }
+
+func TestDashboardLayoutsFillTheTerminal(t *testing.T) {
+	ctx := context.Background()
+	st, err := store.Open(ctx, ":memory:")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer st.Close()
+	d := wkmock.DemoData(now)
+	st.Upsert(ctx, store.Subjects, toRaw(d.Subjects))
+	st.Upsert(ctx, store.Assignments, toRaw(d.Assignments))
+	userRaw, _ := json.Marshal(d.User)
+	st.PutSingleton(ctx, "user", store.Singleton{Raw: userRaw, FetchedAt: now})
+
+	for _, layout := range []string{"panels", "rules"} {
+		for _, sz := range [][2]int{{120, 36}, {80, 24}, {60, 20}} {
+			out, err := Preview(ctx, Deps{Store: st, Now: func() time.Time { return now }, Location: time.UTC, Layout: layout},
+				ReviewDeps{}, "dashboard", sz[0], sz[1])
+			if err != nil {
+				t.Fatal(err)
+			}
+			lines := strings.Split(ansi.Strip(out), "\n")
+			if len(lines) != sz[1] {
+				t.Errorf("%s %v: %d lines", layout, sz, len(lines))
+			}
+			for i, l := range lines {
+				if w := ansi.StringWidth(l); w > sz[0] {
+					t.Errorf("%s %v: line %d is %d wide: %q", layout, sz, i, w, l)
+				}
+			}
+			if !strings.Contains(lines[len(lines)-1], "r reviews") {
+				t.Errorf("%s %v: footer not on the last row: %q", layout, sz, lines[len(lines)-1])
+			}
+		}
+	}
+}

@@ -88,3 +88,29 @@ func (s *Store) LevelProgress(ctx context.Context, level int) (LevelProgress, er
 	p.Needed = (p.Kanji*9 + 9) / 10
 	return p, err
 }
+
+// SRSCounts counts started, visible assignments by SRS stage (index 1–9;
+// 0 stays empty), within maxLevel (0: no cap).
+func (s *Store) SRSCounts(ctx context.Context, maxLevel int) ([10]int, error) {
+	var out [10]int
+	if maxLevel <= 0 {
+		maxLevel = 1 << 30
+	}
+	rows, err := s.db.QueryContext(ctx, `
+		SELECT a.srs_stage, count(*) FROM assignments a JOIN subjects s ON s.id = a.subject_id
+		WHERE a.started_at IS NOT NULL AND a.hidden = 0 AND s.hidden = 0 AND s.level <= ?
+		  AND a.srs_stage BETWEEN 1 AND 9
+		GROUP BY a.srs_stage`, maxLevel)
+	if err != nil {
+		return out, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var stage, n int
+		if err := rows.Scan(&stage, &n); err != nil {
+			return out, err
+		}
+		out[stage] = n
+	}
+	return out, rows.Err()
+}

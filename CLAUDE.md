@@ -21,7 +21,12 @@ Use `just` (no Makefile):
 - `just mock-recorded` + `just dev [flags]` — serve the newest recording through the
   mock, then run the app against it with a scratch database in `.dev/` (gitignored).
   `just dev --sync` syncs and prints a summary without the TUI.
-- `just mock [--fixtures=DIR] [--per-page=N]` — fake API on `http://127.0.0.1:8642/v2/`
+- `just mock [--fixtures=DIR] [--demo] [--per-page=N]` — fake API on `http://127.0.0.1:8642/v2/`
+  (`--demo`: a believable level 8 account, `wkmock.DemoData`)
+- `just preview [screen...] [--size=WxH,...] [--layout=a,b] [--html=FILE]` — render screens
+  once from demo data (kitty glyphs in Ghostty); `--html` writes a gallery page. Screens:
+  `dashboard`, `review`, `review-reading`, `review-wrong`, `summary`. Use it to iterate on
+  layout; `--fixtures=DIR` uses a recording (personal data: never publish that).
 - `just probe-mock` — read-only full sync against the running mock
 - `just probe-live` — read-only full sync against the live API; records fixtures to
   `testdata/recordings/` (gitignored: contains personal data). Needs a **read-only**
@@ -37,6 +42,7 @@ anything with `--live` yourself. Tokens used during development are read-only.
 
 ## Layout
 
+- `cmd/preview` — screen previews and the HTML gallery (`ui.Preview` does the work).
 - `cmd/yadokari` — entry point. Flags: `--base`, `--db`, `--sync` (no TUI), `--logout`,
   `--gfx auto|kitty|plain`,
   `--live` (writes; never use it yourself).

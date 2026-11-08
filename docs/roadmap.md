@@ -14,6 +14,7 @@ a milestone moves.
 | M1: read-only dashboard | Done | Store, incremental sync, token (keyring works in the toolbox), dashboard; verified on the live account |
 | M2: reviews against the mock | Done | Session engine, answer checking, glyph/gfx (kitty + plain), outbox + uploader, review and summary screens |
 | M3: live reviews | Dogfooding | All items done except the two weeks of daily use; see below |
+| UI pass | In progress | Calmer, grid-like, full-width frame; see below |
 | M4: lessons | Not started | Item pages with mnemonic markup, lesson quiz, `PUT /assignments/:id/start`, audio |
 | M5: polish | Not started | Settings screen, add synonym, font roulette, themes, packaging |
 
@@ -36,6 +37,25 @@ a milestone moves.
   token is in the desktop keyring (used by `go run ./cmd/yadokari`).
 - Five suggestions in the design doc (dropping the half-block tier) await the user's
   review.
+
+## UI pass (started 2026-11-08)
+
+The user finds the screens sparse and "too fluid" and wants a more TUI feel: borders,
+a grid that uses the full width. Their direction: **calm** (few panels, generous
+space, thin borders), **colour only where it means something** (type marks, bars),
+**no painted backgrounds** (they use a translucent terminal).
+
+- Workflow: `just preview` renders screens once (real Lip Gloss output, kitty glyphs in
+  Ghostty); `--html` turns them into a gallery published as an artifact for comments:
+  https://claude.ai/artifact/5tc3ofXbRg3m2gtBs3rztb (demo data only).
+- Round 1 (2026-11-08): two dashboard directions next to the current one. **A,
+  panels**: rounded boxes with titles in the border, Now | Level, forecast, SRS stages.
+  **B, rules**: no boxes, titled full-width rules. Both pin the header to the top row
+  and the status/key bar to the bottom, and draw lines in ANSI 8 (theme grey).
+  Selected by the temporary `Deps.Layout`; remove the loser and the old renderer once
+  the user picks.
+- Next: apply the chosen frame to the review and summary screens (the review screen's
+  prompt bar and answer boxes still paint backgrounds).
 
 ## M3 plan: live reviews (agreed 2026-11-08)
 

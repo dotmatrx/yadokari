@@ -18,9 +18,13 @@ func main() {
 	token := flag.String("token", "", "accepted API token (default: any)")
 	perPage := flag.Int("per-page", 0, "override page size")
 	rateLimit := flag.Int("rate-limit", 60, "requests per minute (0 = unlimited)")
+	demo := flag.Bool("demo", false, "serve the larger demo data set (level 8, busy forecast)")
 	flag.Parse()
 
 	data := wkmock.SampleData(time.Now())
+	if *demo {
+		data = wkmock.DemoData(time.Now())
+	}
 	if *fixtures != "" {
 		var err error
 		if data, err = wkmock.LoadDir(*fixtures); err != nil {

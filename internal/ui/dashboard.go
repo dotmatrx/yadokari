@@ -40,6 +40,9 @@ type Deps struct {
 	Now      func() time.Time
 	Location *time.Location
 	Endpoint string // shown in the header, e.g. "live API" or "mock"
+	// Layout picks a dashboard design while exploring ("", "panels",
+	// "rules"); temporary, removed once one is chosen.
+	Layout string
 }
 
 // Dashboard is the home screen: counts, forecast and level progress, drawn
@@ -52,6 +55,7 @@ type Dashboard struct {
 	user     *wk.Resource[wk.User]
 	queue    store.Queue
 	progress store.LevelProgress
+	srs      [10]int
 	loaded   bool
 	lastSync time.Time
 	pending  int        // reviews waiting to upload
@@ -84,6 +88,7 @@ type (
 		user     *wk.Resource[wk.User]
 		queue    store.Queue
 		progress store.LevelProgress
+		srs      [10]int
 		lastSync time.Time
 		pending  int
 		rejected []rejected
@@ -127,6 +132,9 @@ func (m *Dashboard) load() tea.Cmd {
 			return msg
 		}
 		msg.progress, msg.err = deps.Store.LevelProgress(ctx, u.Level)
+		if msg.err == nil {
+			msg.srs, msg.err = deps.Store.SRSCounts(ctx, u.Subscription.MaxLevelGranted)
+		}
 		st, _ := deps.Store.SyncState(ctx, store.Assignments)
 		msg.lastSync = st.SyncedAt
 		if msg.err == nil {
@@ -211,7 +219,7 @@ func (m *Dashboard) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if msg.user != nil {
 			m.user, m.queue, m.progress, m.lastSync, m.loaded = msg.user, msg.queue, msg.progress, msg.lastSync, true
-			m.pending, m.rejected = msg.pending, msg.rejected
+			m.pending, m.rejected, m.srs = msg.pending, msg.rejected, msg.srs
 		}
 	case syncEventMsg:
 		m.event = wksync.Event(msg)
@@ -263,6 +271,12 @@ func (m *Dashboard) View() tea.View {
 }
 
 func (m *Dashboard) render() string {
+	switch m.deps.Layout {
+	case "panels":
+		return m.renderPanels()
+	case "rules":
+		return m.renderRules()
+	}
 	width := max(m.width, 40)
 	var b strings.Builder
 

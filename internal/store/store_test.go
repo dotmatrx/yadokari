@@ -309,3 +309,15 @@ func TestRejectedAndOutcomes(t *testing.T) {
 		t.Errorf("after dismiss: %d pending, %d failed", p, f)
 	}
 }
+
+func TestSRSCounts(t *testing.T) {
+	s := openSample(t)
+	got, err := s.SRSCounts(context.Background(), 3)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Sample stages: 4, 1, 2, 5, 3, 6 started; two lessons (stage 0) excluded.
+	if got != [10]int{0, 1, 1, 1, 1, 1, 1, 0, 0, 0} {
+		t.Errorf("SRSCounts = %v", got)
+	}
+}

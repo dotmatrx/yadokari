@@ -53,3 +53,8 @@ spike name *args:
 
 clean:
     rm -rf bin
+
+# Render screens once from demo data, e.g. `just preview dashboard --size=120x36`
+# (flags after screen names are fine); --html=FILE writes a gallery page
+preview *args:
+    go run ./cmd/preview {{args}}
