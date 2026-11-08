@@ -26,11 +26,13 @@ a milestone moves.
 - `.dev/yadokari.db` (gitignored) may hold a saved review session; `r` resumes it.
 - A read-only API token is in `.env` (used by `just probe-live`); the user's real
   token is in the desktop keyring (used by `go run ./cmd/yadokari`).
+- Five suggestions in the design doc (dropping the half-block tier) await the user's
+  review.
 
 ## M3 plan: live reviews (proposed, not yet agreed)
 
-1. Lift the review block when `--live` is passed (it already enables live writes in the
-   client; the dashboard refuses review sessions without it).
+1. Mechanically, `--live` already works: it enables live writes in the client and lifts
+   the dashboard's review block. M3 is about using it safely, not building it.
 2. The user creates a token with `reviews:create` permission (and nothing else) for
    `--live` use; the read-only token stays for development. Decide how the two coexist
    (e.g. `--live` reads a separately stored write token).
