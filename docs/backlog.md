@@ -8,8 +8,6 @@ up; delete it when done or dropped.
 | 2026-11-07 | Expose settings that exist in code but have no way to set them: answer strictness (`answer.Strictness`), session order / back-to-back / reading-first / active-set size / item limit (`session.Options`), retype-after-typo (`AllowUndo`, a key like ctrl+z), graphics tier override (`gfx.ParseTier`), font path (`glyph.FindFont`) | Config file first, settings screen in M5 |
 | 2026-11-07 | Add the typed answer as a user synonym (ctrl+s after a wrong meaning) | Needs `POST/PUT /study_materials`; design doc puts it in M5 |
 | 2026-11-07 | Mnemonics and hints in the answer panel | Needs the WK markup renderer (`<kanji>`, `<reading>`, `<ja>`…), planned for lessons (M4) |
-| 2026-11-07 | Summary: SRS movement per item ("Guru ↑", "Apprentice 2 ↓") | From `resources_updated` after upload; planned for M3 |
-| 2026-11-07 | Show rejected (failed) outbox rows on the dashboard, with a way to dismiss them | Planned for M3 |
 | 2026-11-07 | Pre-upload the next 2–3 glyphs to kitty so Enter never waits | Design doc idea; not needed so far |
 | 2026-11-07 | Lightning mode (auto-advance after a correct answer) | Design doc option; not built |
 | 2026-11-07 | Probe kitty graphics support with a query instead of env variables | `gfx.Detect` is a heuristic |

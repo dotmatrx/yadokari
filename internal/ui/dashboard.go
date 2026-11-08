@@ -9,6 +9,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+	"github.com/charmbracelet/x/ansi"
 
 	"github.com/jtharris/yadokari/internal/store"
 	"github.com/jtharris/yadokari/internal/wk"
@@ -51,6 +52,8 @@ type Dashboard struct {
 	progress store.LevelProgress
 	loaded   bool
 	lastSync time.Time
+	pending  int        // reviews waiting to upload
+	rejected []rejected // reviews the API refused
 
 	notice   string
 	syncing  bool
@@ -79,6 +82,8 @@ type (
 		queue    store.Queue
 		progress store.LevelProgress
 		lastSync time.Time
+		pending  int
+		rejected []rejected
 		err      error
 	}
 	syncEventMsg wksync.Event
@@ -116,6 +121,9 @@ func (m *Dashboard) load() tea.Cmd {
 		msg.progress, msg.err = deps.Store.LevelProgress(ctx, u.Level)
 		st, _ := deps.Store.SyncState(ctx, store.Assignments)
 		msg.lastSync = st.SyncedAt
+		if msg.err == nil {
+			msg.pending, msg.rejected, msg.err = loadOutbox(ctx, deps.Store)
+		}
 		return msg
 	}
 }
@@ -173,6 +181,10 @@ func (m *Dashboard) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		case "s":
 			return m, m.startSync()
+		case "x":
+			if len(m.rejected) > 0 {
+				return m, m.dismissRejected()
+			}
 		case "r":
 			if m.loaded {
 				return m, func() tea.Msg { return StartReviewsMsg{User: m.user.Data} }
@@ -185,6 +197,7 @@ func (m *Dashboard) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if msg.user != nil {
 			m.user, m.queue, m.progress, m.lastSync, m.loaded = msg.user, msg.queue, msg.progress, msg.lastSync, true
+			m.pending, m.rejected = msg.pending, msg.rejected
 		}
 	case syncEventMsg:
 		m.event = wksync.Event(msg)
@@ -257,6 +270,9 @@ func (m *Dashboard) render() string {
 		b.WriteString(" " + line + "\n")
 	}
 	b.WriteString("\n " + m.levelLine(width) + "\n\n")
+	if r := m.rejectedBlock(width); r != "" {
+		b.WriteString(r + "\n")
+	}
 	if m.notice != "" {
 		b.WriteString(" " + warnSt.Render(m.notice) + "\n\n")
 	}
@@ -311,7 +327,14 @@ func (m *Dashboard) statusLine() string {
 	case m.loaded:
 		s = mutedSt.Render("synced " + ago(m.deps.Now(), m.lastSync))
 	}
-	help := mutedSt.Render("r reviews · s sync · q quit")
+	if m.pending > 0 {
+		s += mutedSt.Render(fmt.Sprintf(" · %d to upload", m.pending))
+	}
+	keys := "r reviews · s sync · q quit"
+	if len(m.rejected) > 0 {
+		keys = "r reviews · s sync · x dismiss rejected · q quit"
+	}
+	help := mutedSt.Render(keys)
 	gap := max(max(m.width, 40)-lipgloss.Width(s)-lipgloss.Width(help)-2, 1)
 	return s + strings.Repeat(" ", gap) + help
 }
@@ -347,4 +370,75 @@ func comma(n int) string {
 		s = s[:i] + "," + s[i:]
 	}
 	return s
+}
+
+// rejected is a review the API refused, for the dashboard.
+type rejected struct {
+	item   SummaryItem
+	reason string
+}
+
+func loadOutbox(ctx context.Context, st *store.Store) (int, []rejected, error) {
+	pending, _, err := st.OutboxCounts(ctx)
+	if err != nil {
+		return 0, nil, err
+	}
+	rows, err := st.Rejected(ctx)
+	if err != nil {
+		return 0, nil, err
+	}
+	var out []rejected
+	for _, r := range rows {
+		line := SummaryItem{Characters: fmt.Sprintf("assignment %d", r.Review.AssignmentID)}
+		if subj, err := st.Subject(ctx, r.SubjectID); err == nil && subj != nil {
+			line = SummaryItem{Characters: characters(*subj), Meaning: primaryMeaning(subj.Data), Type: subj.Object}
+		}
+		out = append(out, rejected{item: line, reason: r.Failed})
+	}
+	return pending, out, nil
+}
+
+func (m *Dashboard) dismissRejected() tea.Cmd {
+	st, load := m.deps.Store, m.load()
+	return func() tea.Msg {
+		if _, err := st.DismissRejected(context.Background()); err != nil {
+			return loadedMsg{err: err}
+		}
+		return load()
+	}
+}
+
+// maxRejectedShown caps the rejected list; the rest are summarized.
+const maxRejectedShown = 5
+
+// rejectedBlock lists reviews WaniKani refused. They were not recorded, so
+// the user may want to redo them on the website.
+func (m *Dashboard) rejectedBlock(width int) string {
+	if len(m.rejected) == 0 {
+		return ""
+	}
+	n := len(m.rejected)
+	title := "1 review was rejected by WaniKani and not recorded"
+	if n > 1 {
+		title = fmt.Sprintf("%d reviews were rejected by WaniKani and not recorded", n)
+	}
+	var b strings.Builder
+	b.WriteString(" " + warnSt.Render(title) + "\n")
+	for i, r := range m.rejected {
+		if i == maxRejectedShown {
+			b.WriteString(mutedSt.Render(fmt.Sprintf("   … and %d more", n-i)) + "\n")
+			break
+		}
+		mark := lipgloss.NewStyle().Foreground(typeColour[r.item.Type]).Render("▌")
+		head := "   " + mark + r.item.Characters
+		if r.item.Meaning != "" {
+			head += " " + r.item.Meaning
+		}
+		reason := r.reason
+		if room := width - lipgloss.Width(head) - 4; room < lipgloss.Width(reason) {
+			reason = ansi.Truncate(reason, max(room, 10), "…")
+		}
+		b.WriteString(head + mutedSt.Render("  "+reason) + "\n")
+	}
+	return b.String()
 }

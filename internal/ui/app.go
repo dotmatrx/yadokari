@@ -103,11 +103,16 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		_, cmd := a.dash.Update(msg)
 		return a, cmd
 	case imageMsg, uploadMsg, reviewReadyMsg:
+		var cmd tea.Cmd
 		if a.review != nil {
-			_, cmd := a.review.Update(msg)
-			return a, cmd
+			_, cmd = a.review.Update(msg)
 		}
-		return a, nil
+		if _, ok := msg.(uploadMsg); ok && a.screen == summaryScreen {
+			// Uploads finishing after the session fill in SRS movement.
+			_ = a.summary.Refresh(context.Background(), a.deps.Store)
+			a.summary.Held = a.review != nil && a.review.held
+		}
+		return a, cmd
 	}
 
 	switch a.screen {

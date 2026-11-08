@@ -431,13 +431,15 @@ func (r *Review) finish() tea.Cmd {
 		if err != nil || subj == nil {
 			continue
 		}
-		line := SummaryItem{Characters: characters(*subj), Meaning: primaryMeaning(subj.Data), Type: subj.Object}
+		line := SummaryItem{Characters: characters(*subj), Meaning: primaryMeaning(subj.Data), Type: subj.Object,
+			AssignmentID: it.AssignmentID, From: it.SRSStage}
 		if it.MeaningMisses == 0 && it.ReadingMisses == 0 {
 			sum.Correct = append(sum.Correct, line)
 		} else {
 			sum.Incorrect = append(sum.Incorrect, line)
 		}
 	}
+	_ = sum.Refresh(ctx, r.deps.Store)
 	return func() tea.Msg { return ReviewDoneMsg{Summary: sum} }
 }
 

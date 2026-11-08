@@ -9,9 +9,9 @@ Each spike lives in its own directory as a `package main` and runs with
 
 | Spike | Dir | Exit criterion | Result |
 |---|---|---|---|
-| 1. kitty Unicode placeholders in Bubble Tea v2 | `placeholders/` | 漢 in a 20×10 grid survives resize/re-render in kitty (toolbox, dnf); no flicker, no stray glyphs. Later: WezTerm/Rio flatpaks as a compatibility check | **Pass** (2026-11-07, kitty in toolbox) |
+| 1. kitty Unicode placeholders in Bubble Tea v2 | `placeholders/` | 漢 in a 20×10 grid survives resize/re-render in kitty (toolbox, dnf); no flicker, no stray glyphs. Later: WezTerm/Rio flatpaks as a compatibility check | **Pass** (2026-11-07, kitty in toolbox; 2026-11-08, Ghostty on the host) |
 | 2. OSC 66 text sizing in Bubble Tea v2 | `textsize/` | Renders at s=4 without corrupting surrounding rows | — |
-| 5. Tier comparison | `tiers/` | Eyeball the tiers side by side in kitty and Ptyxis | Half-block **dropped** (blurry); found the lost-first-upload bug (2026-11-07) |
+| 5. Tier comparison | `tiers/` | Eyeball the tiers side by side in kitty and Ptyxis | Half-block **dropped** (blurry); found the lost-first-upload bug (2026-11-07). Ghostty: kitty tier detected and drawn correctly (2026-11-08) |
 | 3. IME feel | `imefeel/` | kyouiku, gakkou, kon'nichiha, shinbun (incl. backspace) feel like WaniKani's site | **Pass** (2026-11-07) |
 
 Spike 4 (API read path + mock) is not here: it graduates directly into `internal/wk`

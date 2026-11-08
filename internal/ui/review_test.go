@@ -143,7 +143,9 @@ func TestReviewAllCorrect(t *testing.T) {
 		t.Fatalf("expected summary, screen %d", h.app.screen)
 	}
 	out := h.screen()
-	for _, want := range []string{"4 reviewed · 100% correct", "Answered correctly (4)", "All reviews uploaded."} {
+	// SRS movement comes from the assignments the mock returned.
+	for _, want := range []string{"4 reviewed · 100% correct", "Answered correctly (4)", "All reviews uploaded.",
+		"Guru 1 ↑", "Apprentice 2 ↑"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("summary missing %q:\n%s", want, out)
 		}
@@ -295,4 +297,56 @@ func TestAnswerPanelHidesUnaskedPart(t *testing.T) {
 		h.key("enter")
 	}
 	t.Fatal("never reached the kanji's meaning question")
+}
+
+func TestSummaryMovementAfterLateUpload(t *testing.T) {
+	h := newHarness(t)
+	ctx := context.Background()
+	// A wrong answer queued but not yet uploaded when the summary opens.
+	if err := h.st.QueueReview(ctx, 101, wk.ReviewInput{AssignmentID: 1002, IncorrectMeaningAnswers: 1}); err != nil {
+		t.Fatal(err)
+	}
+	sum := Summary{Incorrect: []SummaryItem{{Characters: "一", Meaning: "One", Type: wk.ObjectKanji, AssignmentID: 1002, From: 2}}}
+	if err := sum.Refresh(ctx, h.st); err != nil {
+		t.Fatal(err)
+	}
+	if out := ansi.Strip(sum.View(100)); !strings.Contains(out, "1 reviews still uploading") || strings.Contains(out, "↓") {
+		t.Errorf("before upload:\n%s", out)
+	}
+	h.app.review = &Review{deps: h.app.deps, rdeps: h.app.rdeps}
+	h.send(ReviewDoneMsg{Summary: sum})
+	h.send(h.app.review.upload()())
+	if out := h.screen(); !strings.Contains(out, "一 One Apprentice 1 ↓") || !strings.Contains(out, "All reviews uploaded.") {
+		t.Errorf("after upload:\n%s", out)
+	}
+}
+
+func TestDashboardRejectedReviews(t *testing.T) {
+	h := newHarness(t)
+	ctx := context.Background()
+	if err := h.st.QueueReview(ctx, 3, wk.ReviewInput{AssignmentID: 1001}); err != nil {
+		t.Fatal(err)
+	}
+	if err := h.st.QueueReview(ctx, 101, wk.ReviewInput{AssignmentID: 1002}); err != nil {
+		t.Fatal(err)
+	}
+	items, _ := h.st.Outbox(ctx, false)
+	if err := h.st.OutboxFailed(ctx, items[0].ID, "HTTP 422: assignment is not available for review"); err != nil {
+		t.Fatal(err)
+	}
+	h.send(h.app.dash.Reload()())
+	out := h.screen()
+	for _, want := range []string{
+		"1 review was rejected by WaniKani and not recorded",
+		"二 Two  HTTP 422: assignment is not available for review",
+		"· 1 to upload", "x dismiss rejected",
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("missing %q:\n%s", want, out)
+		}
+	}
+	h.key("x")
+	if out := h.screen(); strings.Contains(out, "rejected") || !strings.Contains(out, "1 to upload") {
+		t.Errorf("after dismiss:\n%s", out)
+	}
 }

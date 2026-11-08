@@ -87,11 +87,16 @@ anything with `--live` yourself. Tokens used during development are read-only.
 - Developed in a Fedora toolbox (`yadokari`) on Bluefin. The toolbox's fontconfig can't
   see host fonts (they're under `/run/host/usr/share/fonts/`), so font discovery also
   checks that path. `google-noto-sans-cjk-fonts` is now installed in the toolbox.
-- The default terminal is Ptyxis (VTE 0.84). It supports neither the kitty graphics/text
-  sizing protocols nor sixel, so it gets the plain tier.
-- kitty is installed *inside the toolbox* via dnf (avoids flatpak sandboxing) and is
-  where the kitty tier is tested; it needs the CJK fonts above to draw kanji. Mesa
-  prints harmless NVIDIA probe warnings at startup. WezTerm, Rio and foot are
-  installed as flatpaks for later compatibility checks.
+- The daily-driver terminal is **Ghostty**, installed on the host (rpm-ostree). Run the
+  app from the toolbox inside Ghostty; it gets the kitty tier (detected from
+  `TERM=xterm-ghostty`, which toolbox passes through). Verified 2026-11-08: spikes and
+  the review screen look right. The toolbox has no `xterm-ghostty` terminfo of its
+  own (it's under `/run/host/usr/share/terminfo/`); the app doesn't need it, but shell
+  tools may, so copy it to `~/.terminfo/x/` if they complain.
+- Ptyxis (VTE 0.84) supports neither the kitty graphics/text sizing protocols nor
+  sixel, so it gets the plain tier; it's now only a plain-tier check.
+- kitty is installed *inside the toolbox* via dnf and stays a secondary check for the
+  kitty tier; it needs the CJK fonts above. Mesa prints harmless NVIDIA probe warnings
+  at startup. WezTerm, Rio and foot are installed as flatpaks for later checks.
 - Sixel is deliberately out of scope for v1: it draws outside the cell grid, which fights
   Bubble Tea's diffing renderer.

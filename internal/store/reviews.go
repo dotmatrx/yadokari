@@ -67,11 +67,12 @@ var ErrAlreadyQueued = errors.New("store: a review for this assignment is alread
 
 // OutboxItem is a queued review.
 type OutboxItem struct {
-	ID       int64
-	Review   wk.ReviewInput
-	Created  time.Time
-	Attempts int
-	Failed   string
+	ID        int64
+	SubjectID int
+	Review    wk.ReviewInput
+	Created   time.Time
+	Attempts  int
+	Failed    string
 }
 
 // QueueReview adds a completed review to the outbox.
@@ -104,7 +105,7 @@ func (s *Store) QueueReview(ctx context.Context, subjectID int, r wk.ReviewInput
 // Outbox returns queued reviews, oldest first. Failed ones are included only
 // if withFailed is set.
 func (s *Store) Outbox(ctx context.Context, withFailed bool) ([]OutboxItem, error) {
-	q := `SELECT id, payload, created_at, attempts, failed FROM outbox`
+	q := `SELECT id, subject_id, payload, created_at, attempts, failed FROM outbox`
 	if !withFailed {
 		q += ` WHERE failed = ''`
 	}
@@ -118,7 +119,7 @@ func (s *Store) Outbox(ctx context.Context, withFailed bool) ([]OutboxItem, erro
 		var it OutboxItem
 		var payload string
 		var created int64
-		if err := rows.Scan(&it.ID, &payload, &created, &it.Attempts, &it.Failed); err != nil {
+		if err := rows.Scan(&it.ID, &it.SubjectID, &payload, &created, &it.Attempts, &it.Failed); err != nil {
 			return nil, err
 		}
 		if err := json.Unmarshal([]byte(payload), &it.Review); err != nil {
@@ -148,6 +149,66 @@ func (s *Store) OutboxAttempted(ctx context.Context, id int64) error {
 func (s *Store) OutboxFailed(ctx context.Context, id int64, reason string) error {
 	_, err := s.db.ExecContext(ctx, `UPDATE outbox SET attempts = attempts + 1, failed = ? WHERE id = ?`, reason, id)
 	return err
+}
+
+// Rejected returns only the reviews the API definitively refused, oldest first.
+func (s *Store) Rejected(ctx context.Context) ([]OutboxItem, error) {
+	all, err := s.Outbox(ctx, true)
+	var out []OutboxItem
+	for _, it := range all {
+		if it.Failed != "" {
+			out = append(out, it)
+		}
+	}
+	return out, err
+}
+
+// DismissRejected deletes every rejected review, returning how many. The
+// assignments become reviewable again if they are still due.
+func (s *Store) DismissRejected(ctx context.Context) (int, error) {
+	res, err := s.db.ExecContext(ctx, `DELETE FROM outbox WHERE failed != ''`)
+	if err != nil {
+		return 0, err
+	}
+	n, err := res.RowsAffected()
+	return int(n), err
+}
+
+// ReviewOutcome is where a reviewed assignment stands: still queued,
+// rejected, or posted (then SRSStage is the stage the API returned).
+type ReviewOutcome struct {
+	SRSStage int
+	Queued   bool   // still in the outbox (pending or rejected)
+	Failed   string // non-empty: rejected
+}
+
+// ReviewOutcomes looks up the given assignments. Missing ones are left out.
+func (s *Store) ReviewOutcomes(ctx context.Context, assignmentIDs []int) (map[int]ReviewOutcome, error) {
+	out := map[int]ReviewOutcome{}
+	if len(assignmentIDs) == 0 {
+		return out, nil
+	}
+	ids, err := json.Marshal(assignmentIDs)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := s.db.QueryContext(ctx, `
+		SELECT a.id, a.srs_stage, o.id IS NOT NULL, coalesce(o.failed, '')
+		FROM assignments a LEFT JOIN outbox o ON o.assignment_id = a.id
+		WHERE a.id IN (SELECT value FROM json_each(?))`, string(ids))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var id int
+		var o ReviewOutcome
+		if err := rows.Scan(&id, &o.SRSStage, &o.Queued, &o.Failed); err != nil {
+			return nil, err
+		}
+		out[id] = o
+	}
+	return out, rows.Err()
 }
 
 // OutboxDone removes a posted review and stores the resources the API

@@ -260,3 +260,52 @@ func TestResurrectedItemIsReviewable(t *testing.T) {
 		t.Errorf("reviews %d, want 5 (resurrected item counts)", q.Reviews)
 	}
 }
+
+func TestRejectedAndOutcomes(t *testing.T) {
+	ctx := context.Background()
+	s := openSample(t)
+	// 1000 (stage 4) stays pending, 1001 (stage 1) is rejected, 1002 (stage 2)
+	// is never queued.
+	for _, q := range []struct{ subject, assignment int }{{1, 1000}, {3, 1001}} {
+		if err := s.QueueReview(ctx, q.subject, wk.ReviewInput{AssignmentID: q.assignment}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	items, _ := s.Outbox(ctx, false)
+	if len(items) != 2 || items[1].SubjectID != 3 {
+		t.Fatalf("outbox %+v", items)
+	}
+	if err := s.OutboxFailed(ctx, items[1].ID, "HTTP 422: not due"); err != nil {
+		t.Fatal(err)
+	}
+
+	rej, err := s.Rejected(ctx)
+	if err != nil || len(rej) != 1 || rej[0].Review.AssignmentID != 1001 || rej[0].Failed != "HTTP 422: not due" {
+		t.Fatalf("rejected %+v %v", rej, err)
+	}
+
+	got, err := s.ReviewOutcomes(ctx, []int{1000, 1001, 1002, 9999})
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := map[int]ReviewOutcome{
+		1000: {SRSStage: 4, Queued: true},
+		1001: {SRSStage: 1, Queued: true, Failed: "HTTP 422: not due"},
+		1002: {SRSStage: 2},
+	}
+	if len(got) != len(want) {
+		t.Errorf("outcomes %+v", got)
+	}
+	for id, w := range want {
+		if got[id] != w {
+			t.Errorf("outcome %d = %+v, want %+v", id, got[id], w)
+		}
+	}
+
+	if n, err := s.DismissRejected(ctx); err != nil || n != 1 {
+		t.Fatalf("dismiss: %d %v", n, err)
+	}
+	if p, f, _ := s.OutboxCounts(ctx); p != 1 || f != 0 {
+		t.Errorf("after dismiss: %d pending, %d failed", p, f)
+	}
+}
