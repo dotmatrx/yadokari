@@ -53,8 +53,11 @@ anything with `--live` yourself. Tokens used during development are read-only.
   `~/.local/share/yadokari/yadokari.db`), settings, and the token store: env
   `WANIKANI_API_TOKEN` → OS keyring → `0600` file fallback. Tests use a fake keyring;
   don't touch the real keyring from tests or tooling without asking the user.
-- `internal/ui` — Bubble Tea screens: dashboard (from the store, sync in the
-  background via a channel) and the first-run token form (Huh).
+- `internal/ui` — Bubble Tea screens under a root `App`: dashboard (from the store, sync in
+  the background via a channel), review (session + IME + answer + gfx; snapshot saved
+  after every answer; completions → outbox → `wksync.Uploader`), summary, and the
+  first-run token form (Huh). Review sessions are refused against the live API without
+  `--live`.
 - `internal/session` — review engine: backlog → active set (default 10) → random question; per-part
   misses; `Completion` = what `POST /reviews` needs; wrap-up, limit, ordering, back-to-back,
   undo of a wrong answer; JSON `Snapshot`/`Restore`. Pure.
@@ -71,7 +74,7 @@ anything with `--live` yourself. Tokens used during development are read-only.
   return exactly w×h.
 - `docs/wanikani-api.md` — API notes and known doc ambiguities.
 - `docs/backlog.md` — deferred ideas; add to it rather than leaving them in chat.
-- `internal/` — real packages (still planned: `audio`, review screen in `ui`). Keep `session`, `answer` and `ime`
+- `internal/` — real packages (still planned: `audio`, lessons). Keep `session`, `answer` and `ime`
   free of I/O and UI code, and table-test them heavily.
 - `spikes/` — throwaway Phase 0 experiments; see `spikes/README.md`
 

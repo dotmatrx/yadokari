@@ -14,6 +14,8 @@ import (
 	tea "charm.land/bubbletea/v2"
 
 	"github.com/jtharris/yadokari/internal/config"
+	"github.com/jtharris/yadokari/internal/gfx"
+	"github.com/jtharris/yadokari/internal/glyph"
 	"github.com/jtharris/yadokari/internal/store"
 	"github.com/jtharris/yadokari/internal/ui"
 	"github.com/jtharris/yadokari/internal/wk"
@@ -100,9 +102,40 @@ func run() error {
 		return syncAndReport(ctx, syncer, st)
 	}
 
-	dash := ui.NewDashboard(ui.Deps{Store: st, Syncer: syncer, Endpoint: endpoint})
-	_, err = tea.NewProgram(dash).Run()
+	rdeps, warning := reviewDeps(client, st)
+	if client.IsLive() && !*live {
+		// Results would only pile up in the outbox and go stale.
+		rdeps.Disabled = "Reviews against the live API need --live. Try them on the mock: just mock-recorded, then just dev."
+	}
+	if warning != "" {
+		fmt.Fprintln(os.Stderr, "yadokari:", warning)
+	}
+	app := ui.NewApp(ui.Deps{Store: st, Syncer: syncer, Endpoint: endpoint}, rdeps)
+	_, err = tea.NewProgram(app).Run()
 	return err
+}
+
+// reviewDeps finds the font and graphics tier for the review screen. A
+// missing font is not fatal: glyphs fall back to the terminal's own font.
+func reviewDeps(client *wk.Client, st *store.Store) (ui.ReviewDeps, string) {
+	rd := ui.ReviewDeps{Uploader: &wksync.Uploader{Client: client, Store: st}}
+	cacheDir, err := os.UserCacheDir()
+	if err != nil {
+		cacheDir = os.TempDir()
+	}
+	rd.Images = glyph.ImageCache{Dir: filepath.Join(cacheDir, "yadokari", "images")}
+
+	tier := gfx.Detect(os.Getenv)
+	font, err := glyph.FindFont("")
+	warning := ""
+	if err != nil {
+		warning = err.Error() + "; showing kanji in the terminal's font"
+		tier = gfx.Plain
+	}
+	rd.Font = font
+	cw, ch := gfx.CellSize()
+	rd.Renderer = gfx.New(tier, cw, ch)
+	return rd, warning
 }
 
 // clientWithToken loads the stored token, or runs the first-run form, checks

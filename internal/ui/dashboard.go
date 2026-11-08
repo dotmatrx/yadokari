@@ -52,6 +52,7 @@ type Dashboard struct {
 	loaded   bool
 	lastSync time.Time
 
+	notice   string
 	syncing  bool
 	phase    string
 	event    wksync.Event
@@ -165,14 +166,17 @@ func (m *Dashboard) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.width, m.height = msg.Width, msg.Height
 	case tea.KeyPressMsg:
+		m.notice = ""
 		switch msg.String() {
 		case "q", "ctrl+c", "esc":
-			if m.cancel != nil {
-				m.cancel()
-			}
+			m.Stop()
 			return m, tea.Quit
-		case "r":
+		case "s":
 			return m, m.startSync()
+		case "r":
+			if m.loaded {
+				return m, func() tea.Msg { return StartReviewsMsg{User: m.user.Data} }
+			}
 		}
 	case loadedMsg:
 		if msg.err != nil {
@@ -201,6 +205,22 @@ func (m *Dashboard) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	return m, nil
 }
+
+// StartReviewsMsg asks the app to open the review screen.
+type StartReviewsMsg struct{ User wk.User }
+
+// Stop cancels a running sync.
+func (m *Dashboard) Stop() {
+	if m.cancel != nil {
+		m.cancel()
+	}
+}
+
+// Reload re-reads the counts from the store (e.g. after a review session).
+func (m *Dashboard) Reload() tea.Cmd { return m.load() }
+
+// Notice shows a one-line message until the next key press.
+func (m *Dashboard) Notice(s string) { m.notice = s }
 
 func (m *Dashboard) View() tea.View {
 	v := tea.NewView(m.render())
@@ -237,6 +257,9 @@ func (m *Dashboard) render() string {
 		b.WriteString(" " + line + "\n")
 	}
 	b.WriteString("\n " + m.levelLine(width) + "\n\n")
+	if m.notice != "" {
+		b.WriteString(" " + warnSt.Render(m.notice) + "\n\n")
+	}
 	b.WriteString(" " + m.statusLine())
 	return b.String()
 }
@@ -288,7 +311,7 @@ func (m *Dashboard) statusLine() string {
 	case m.loaded:
 		s = mutedSt.Render("synced " + ago(m.deps.Now(), m.lastSync))
 	}
-	help := mutedSt.Render("r sync · q quit")
+	help := mutedSt.Render("r reviews · s sync · q quit")
 	gap := max(max(m.width, 40)-lipgloss.Width(s)-lipgloss.Width(help)-2, 1)
 	return s + strings.Repeat(" ", gap) + help
 }

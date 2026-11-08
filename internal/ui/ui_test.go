@@ -101,7 +101,7 @@ func TestDashboardRender(t *testing.T) {
 		"Lessons  2", "Reviews  4",
 		"Reviews in the next 24 hours: 1 · next 15:00",
 		"Level 1", "1 / 2 kanji passed · 1 more to level up",
-		"synced 5 min ago", "r sync · q quit",
+		"synced 5 min ago", "r reviews · s sync · q quit",
 	} {
 		if !strings.Contains(out, want) {
 			t.Errorf("missing %q in:\n%s", want, out)
