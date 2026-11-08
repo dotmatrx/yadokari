@@ -39,6 +39,14 @@ probe-mock *args:
 probe-live:
     go run ./cmd/wkprobe --record=testdata/recordings/$(date +%Y%m%d-%H%M%S)
 
+# Serve the newest local recording through the mock (for `just dev`)
+mock-recorded:
+    go run ./cmd/wkmock --fixtures="$(ls -d testdata/recordings/*/ | tail -1)"
+
+# Run the app against the local mock with a scratch database in .dev/
+dev *args:
+    mkdir -p .dev && WANIKANI_API_TOKEN=mock go run ./cmd/yadokari --base=http://127.0.0.1:8642/v2/ --db=.dev/yadokari.db {{args}}
+
 # Run a throwaway spike, e.g. `just spike placeholders`
 spike name *args:
     go run ./spikes/{{name}} {{args}}

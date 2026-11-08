@@ -15,6 +15,9 @@ Use `just` (no Makefile):
   against the newest local recording in `testdata/recordings/` and skip without one.
 - `just check` — gofmt check + `go vet`
 - `just spike <name>` — run `spikes/<name>`
+- `just mock-recorded` + `just dev [flags]` — serve the newest recording through the
+  mock, then run the app against it with a scratch database in `.dev/` (gitignored).
+  `just dev --sync` syncs and prints a summary without the TUI.
 - `just mock [--fixtures=DIR] [--per-page=N]` — fake API on `http://127.0.0.1:8642/v2/`
 - `just probe-mock` — read-only full sync against the running mock
 - `just probe-live` — read-only full sync against the live API; records fixtures to
@@ -31,7 +34,8 @@ anything with `--live` yourself. Tokens used during development are read-only.
 
 ## Layout
 
-- `cmd/yadokari` — entry point
+- `cmd/yadokari` — entry point. Flags: `--base`, `--db`, `--sync` (no TUI), `--logout`,
+  `--live` (writes; never use it yourself).
 - `internal/wk` — typed API client: auth, pagination via `next_url` (same-host only),
   ETags, client-side rate limit + `RateLimit-*` handling, 429 retry; GETs retry on 5xx,
   writes never auto-retry; non-GET to the live host fails with `ErrLiveWritesDisabled`
@@ -49,9 +53,11 @@ anything with `--live` yourself. Tokens used during development are read-only.
   `~/.local/share/yadokari/yadokari.db`), settings, and the token store: env
   `WANIKANI_API_TOKEN` → OS keyring → `0600` file fallback. Tests use a fake keyring;
   don't touch the real keyring from tests or tooling without asking the user.
+- `internal/ui` — Bubble Tea screens: dashboard (from the store, sync in the
+  background via a channel) and the first-run token form (Huh).
 - `docs/wanikani-api.md` — API notes and known doc ambiguities.
 - `internal/` — real packages (still planned: `session`, `answer`, `glyph`, `gfx`,
-  `audio`, `ui`). Keep `session`, `answer` and `ime`
+  `audio`). Keep `session`, `answer` and `ime`
   free of I/O and UI code, and table-test them heavily.
 - `spikes/` — throwaway Phase 0 experiments; see `spikes/README.md`
 
