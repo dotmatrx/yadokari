@@ -1,0 +1,119 @@
+package wksync
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"net/http"
+
+	"github.com/jtharris/yadokari/internal/store"
+	"github.com/jtharris/yadokari/internal/wk"
+)
+
+// Uploader posts queued reviews from the store's outbox, oldest first.
+//
+// WaniKani has no idempotency keys, but its own rule gives the same safety:
+// a review is only accepted while the assignment is due, and accepting it
+// reschedules the assignment, so a second identical POST is refused (422).
+// An outbox row is deleted only after a 2xx; a write whose outcome is
+// unknown (network error, 5xx) is never retried automatically by the client,
+// and is retried here on the next flush, where a 422 then means it was
+// recorded the first time.
+type Uploader struct {
+	Client *wk.Client
+	Store  *store.Store
+}
+
+// UploadResult summarizes a flush.
+type UploadResult struct {
+	Sent     int  // accepted by the API
+	Rejected int  // definitively refused; kept and shown, never retried
+	Held     int  // not attempted: live writes are disabled (dry-run)
+	Live     bool // the client points at the live API
+}
+
+// ErrHeld is returned when reviews are being held because writes to the
+// live API are disabled.
+var ErrHeld = errors.New("reviews held: writes to the live WaniKani API are disabled (run with --live)")
+
+// Flush posts every pending review. It stops at the first transient failure
+// (network, rate limit, server error) so reviews go out in order; the
+// returned error describes it and the rest stay queued.
+func (u *Uploader) Flush(ctx context.Context) (UploadResult, error) {
+	res := UploadResult{Live: u.Client.IsLive()}
+	items, err := u.Store.Outbox(ctx, false)
+	if err != nil {
+		return res, err
+	}
+	for i, it := range items {
+		out, err := u.Client.CreateReview(ctx, it.Review)
+		var apiErr *wk.APIError
+		switch {
+		case err == nil:
+			updated, err := resourcesUpdated(out)
+			if err != nil {
+				return res, err
+			}
+			if err := u.Store.OutboxDone(ctx, it.ID, updated); err != nil {
+				return res, err
+			}
+			res.Sent++
+
+		case errors.Is(err, wk.ErrLiveWritesDisabled):
+			res.Held = len(items) - i
+			return res, ErrHeld
+
+		case errors.As(err, &apiErr) && definitive(apiErr.Status):
+			reason := fmt.Sprintf("HTTP %d: %s", apiErr.Status, apiErr.Message)
+			if apiErr.Status == http.StatusUnprocessableEntity && it.Attempts > 0 {
+				reason += " (probably recorded by an earlier attempt whose reply was lost)"
+			}
+			if err := u.Store.OutboxFailed(ctx, it.ID, reason); err != nil {
+				return res, err
+			}
+			res.Rejected++
+
+		default:
+			_ = u.Store.OutboxAttempted(ctx, it.ID)
+			return res, fmt.Errorf("uploading review for assignment %d: %w", it.Review.AssignmentID, err)
+		}
+	}
+	return res, nil
+}
+
+// definitive reports whether an HTTP status means "this review will never be
+// accepted" rather than "try again later". Auth failures are not: the token
+// may be fixed, and the review is still valid.
+func definitive(status int) bool {
+	switch status {
+	case http.StatusNotFound, http.StatusConflict, http.StatusUnprocessableEntity:
+		return true
+	}
+	return false
+}
+
+func resourcesUpdated(out *wk.ReviewCreated) (map[string][]store.RawResource, error) {
+	a, rs := out.ResourcesUpdated.Assignment, out.ResourcesUpdated.ReviewStatistic
+	aRaw, err := rawOf(a)
+	if err != nil {
+		return nil, err
+	}
+	updated := map[string][]store.RawResource{store.Assignments: {aRaw}}
+	if rs.ID != 0 {
+		rsRaw, err := rawOf(rs)
+		if err != nil {
+			return nil, err
+		}
+		updated[store.ReviewStatistics] = []store.RawResource{rsRaw}
+	}
+	return updated, nil
+}
+
+func rawOf[T any](r wk.Resource[T]) (store.RawResource, error) {
+	data, err := json.Marshal(r.Data)
+	if err != nil {
+		return store.RawResource{}, err
+	}
+	return store.RawResource{ID: r.ID, Object: r.Object, URL: r.URL, DataUpdatedAt: r.DataUpdatedAt, Data: data}, nil
+}

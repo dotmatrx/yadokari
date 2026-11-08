@@ -40,6 +40,7 @@ func (s *Store) Queue(ctx context.Context, now time.Time, maxLevel int) (Queue, 
 		SELECT a.available_at FROM assignments a JOIN subjects s ON s.id = a.subject_id
 		WHERE a.available_at IS NOT NULL AND a.started_at IS NOT NULL
 		  AND a.hidden = 0 AND s.level <= ?
+		  AND a.id NOT IN (SELECT assignment_id FROM outbox WHERE failed = '')
 		ORDER BY a.available_at`, maxLevel)
 	if err != nil {
 		return q, err
