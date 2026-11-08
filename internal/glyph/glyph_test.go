@@ -49,7 +49,7 @@ func TestFindFontPicksJapanese(t *testing.T) {
 
 func TestTextMask(t *testing.T) {
 	f := loadTestFont(t)
-	m, err := f.Text("鬱", 200, 200, 1)
+	m, err := f.Text("鬱", 200, 200)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -63,24 +63,13 @@ func TestTextMask(t *testing.T) {
 	}
 
 	// Two characters fit side by side in a wide box.
-	m, _ = f.Text("勉強", 200, 100, 1)
+	m, _ = f.Text("勉強", 200, 100)
 	_, x0, x1, _, _ = ink(m)
 	if x1-x0 < 120 || x0 < 2 || x1 > 197 {
 		t.Errorf("two-character word spans x %d..%d", x0, x1)
 	}
 
-	// Supersampled small masks keep partial coverage (anti-aliasing).
-	m, _ = f.Text("一", 20, 20, 4)
-	partial := 0
-	for _, a := range m.Pix {
-		if a > 0 && a < 255 {
-			partial++
-		}
-	}
-	if partial == 0 {
-		t.Error("supersampled mask has no intermediate alpha")
-	}
-	if _, err := f.Text("x", 0, 10, 1); err == nil {
+	if _, err := f.Text("x", 0, 10); err == nil {
 		t.Error("zero size should fail")
 	}
 }

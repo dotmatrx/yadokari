@@ -11,7 +11,7 @@ Each spike lives in its own directory as a `package main` and runs with
 |---|---|---|---|
 | 1. kitty Unicode placeholders in Bubble Tea v2 | `placeholders/` | 漢 in a 20×10 grid survives resize/re-render in kitty (toolbox, dnf); no flicker, no stray glyphs. Later: WezTerm/Rio flatpaks as a compatibility check | **Pass** (2026-11-07, kitty in toolbox) |
 | 2. OSC 66 text sizing in Bubble Tea v2 | `textsize/` | Renders at s=4 without corrupting surrounding rows | — |
-| 5. Tier comparison | `tiers/` | Eyeball kitty / half-block / plain side by side in kitty and Ptyxis | — |
+| 5. Tier comparison | `tiers/` | Eyeball the tiers side by side in kitty and Ptyxis | Half-block **dropped** (blurry); found the lost-first-upload bug (2026-11-07) |
 | 3. IME feel | `imefeel/` | kyouiku, gakkou, kon'nichiha, shinbun (incl. backspace) feel like WaniKani's site | **Pass** (2026-11-07) |
 
 Spike 4 (API read path + mock) is not here: it graduates directly into `internal/wk`
@@ -56,3 +56,16 @@ recorded account); only the input-line wrapper in `imefeel/` is throwaway.
   `konnnichiha`. **Future setting:** a "relaxed n" mode where `konnichiha` →
   こんにちは. Not needed now (user decision, 2026-11-07).
 - Added Hepburn `tch` → っ (matcha, itchi), found by tests.
+
+## Tier comparison findings
+
+- Half-block (▀, two pixels per cell) is unreadable for anything but the simplest
+  kanji, even at 24×12 cells; sextants/octants would only double that. Dropped:
+  non-kitty terminals get the plain tier.
+- The blank first image in kitty was a renderer API bug, reproducible: `Draw`
+  marked an image uploaded when it returned the upload sequence, and the demo's
+  View discarded that sequence before the first frame. Uploads are now queued in
+  the renderer and sent with `Flush()` from Update. (Possibly also the Spike 1
+  anomaly, though that code path differed.)
+- Plain glyphs were blank in kitty because the toolbox had no CJK font visible to
+  fontconfig; fixed by installing `google-noto-sans-cjk-fonts` in the toolbox.

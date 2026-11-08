@@ -116,52 +116,26 @@ func LoadFont(path string) (*Font, error) {
 // Name is a short description, e.g. "NotoSansCJK-Regular.ttc [Noto Sans CJK JP]".
 func (f *Font) Name() string { return fmt.Sprintf("%s [%s]", filepath.Base(f.Path), f.Family) }
 
-// Text draws text centred and as large as fits in a w×h mask. Supersample
-// draws at ss× resolution and averages down, which smooths very small masks
-// such as half-block rendering (ss ≤ 1 draws directly).
-func (f *Font) Text(text string, w, h, ss int) (*image.Alpha, error) {
+// Text draws text centred and as large as fits in a w×h mask.
+func (f *Font) Text(text string, w, h int) (*image.Alpha, error) {
 	if w <= 0 || h <= 0 {
 		return nil, fmt.Errorf("glyph: bad size %dx%d", w, h)
 	}
-	ss = max(ss, 1)
-	W, H := w*ss, h*ss
 	n := max(len([]rune(text)), 1)
-	size := min(float64(H)*0.85, float64(W)*0.9/float64(n))
+	size := min(float64(h)*0.85, float64(w)*0.9/float64(n))
 	face, err := opentype.NewFace(f.sfnt, &opentype.FaceOptions{Size: size, DPI: 72, Hinting: font.HintingNone})
 	if err != nil {
 		return nil, err
 	}
 	defer face.Close()
 
-	big := image.NewAlpha(image.Rect(0, 0, W, H))
-	d := &font.Drawer{Dst: big, Src: image.Opaque, Face: face}
+	m := image.NewAlpha(image.Rect(0, 0, w, h))
+	d := &font.Drawer{Dst: m, Src: image.Opaque, Face: face}
 	b, _ := d.BoundString(text)
 	gw, gh := (b.Max.X - b.Min.X).Ceil(), (b.Max.Y - b.Min.Y).Ceil()
-	d.Dot = fixed.P((W-gw)/2-b.Min.X.Floor(), (H-gh)/2-b.Min.Y.Floor())
+	d.Dot = fixed.P((w-gw)/2-b.Min.X.Floor(), (h-gh)/2-b.Min.Y.Floor())
 	d.DrawString(text)
-	if ss == 1 {
-		return big, nil
-	}
-	return downsample(big, w, h, ss), nil
-}
-
-// downsample box-filters an ss× mask to w×h.
-func downsample(big *image.Alpha, w, h, ss int) *image.Alpha {
-	out := image.NewAlpha(image.Rect(0, 0, w, h))
-	n := ss * ss
-	for y := range h {
-		for x := range w {
-			sum := 0
-			for dy := range ss {
-				row := big.Pix[(y*ss+dy)*big.Stride:]
-				for dx := range ss {
-					sum += int(row[x*ss+dx])
-				}
-			}
-			out.Pix[y*out.Stride+x] = uint8(sum / n)
-		}
-	}
-	return out
+	return m, nil
 }
 
 // Mask fits an image's alpha channel (radical PNGs are black on

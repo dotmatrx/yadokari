@@ -1,13 +1,19 @@
 // Package gfx draws a large glyph into a block of terminal cells using the
 // best tier the terminal supports:
 //
-//	Kitty      kitty graphics, Unicode placeholders (kitty, Ghostty)
-//	HalfBlock  ▀ cells with truecolor, two pixels per cell (most terminals)
-//	Plain      the characters, centred in a coloured box (everything)
+//	Kitty  kitty graphics via Unicode placeholders (kitty, Ghostty): the
+//	       glyph rasterized at full size
+//	Plain  the characters in the terminal's own font, centred in a coloured
+//	       box (every other terminal)
+//
+// A half-block tier (▀ with truecolor) was tried and dropped: at two pixels
+// per cell, dense kanji are an unreadable blur.
 //
 // Every tier returns ordinary cell content for a Bubble Tea View. The kitty
-// tier also returns a one-time escape sequence (send it with tea.Raw) that
-// uploads the image; the cells then refer to it.
+// tier also queues an upload the first time it draws an image; the caller
+// must send Flush() to the terminal (tea.Raw, from Update) for the cells to
+// show. Because uploads wait in the queue until flushed, calling Draw from
+// View can never lose one.
 package gfx
 
 import (
@@ -24,9 +30,8 @@ import (
 type Tier string
 
 const (
-	Kitty     Tier = "kitty"
-	HalfBlock Tier = "halfblock"
-	Plain     Tier = "plain"
+	Kitty Tier = "kitty"
+	Plain Tier = "plain"
 )
 
 // ParseTier parses a config value; "" or "auto" returns ok=false.
@@ -34,28 +39,22 @@ func ParseTier(s string) (Tier, bool, error) {
 	switch Tier(strings.ToLower(s)) {
 	case "", "auto":
 		return "", false, nil
-	case Kitty, HalfBlock, Plain:
+	case Kitty, Plain:
 		return Tier(strings.ToLower(s)), true, nil
 	}
-	return "", false, fmt.Errorf("gfx: unknown graphics tier %q (auto, kitty, halfblock, plain)", s)
+	return "", false, fmt.Errorf("gfx: unknown graphics tier %q (auto, kitty, plain)", s)
 }
 
-// Detect picks a tier from the environment. It is a heuristic: kitty and
-// Ghostty identify themselves; truecolor support is announced via COLORTERM.
-// NO_COLOR forces Plain. Inside tmux, kitty graphics need passthrough, so
-// tmux gets HalfBlock.
+// Detect picks a tier from the environment: kitty and Ghostty identify
+// themselves; everything else, tmux included (kitty graphics would need
+// passthrough), gets Plain.
 func Detect(getenv func(string) string) Tier {
-	switch {
-	case getenv("NO_COLOR") != "":
+	if getenv("TMUX") != "" {
 		return Plain
-	case getenv("TMUX") != "":
-		// fall through to the colour checks
-	case getenv("KITTY_WINDOW_ID") != "" || getenv("TERM") == "xterm-kitty" ||
-		getenv("TERM_PROGRAM") == "ghostty" || getenv("TERM") == "xterm-ghostty":
-		return Kitty
 	}
-	if ct := getenv("COLORTERM"); ct == "truecolor" || ct == "24bit" {
-		return HalfBlock
+	if getenv("KITTY_WINDOW_ID") != "" || getenv("TERM") == "xterm-kitty" ||
+		getenv("TERM_PROGRAM") == "ghostty" || getenv("TERM") == "xterm-ghostty" {
+		return Kitty
 	}
 	return Plain
 }
@@ -66,37 +65,29 @@ type Source struct {
 	Key string
 	// Text is drawn by the Plain tier ("" for image-only radicals).
 	Text string
-	// Mask returns a coverage mask of exactly w×h. ss is a hint that
-	// supersampling would help (tiny masks); sources may ignore it.
-	Mask func(w, h, ss int) (*image.Alpha, error)
-}
-
-// Frame is a drawn glyph.
-type Frame struct {
-	// Setup must be written to the terminal (tea.Raw) before Cells are shown;
-	// empty when nothing needs sending.
-	Setup string
-	// Cells is rows lines of exactly cols cells each, joined by "\n".
-	Cells string
+	// Mask returns a coverage mask of exactly w×h.
+	Mask func(w, h int) (*image.Alpha, error)
 }
 
 // Renderer draws sources into cols×rows cells on a solid background.
 type Renderer interface {
 	Tier() Tier
-	Draw(src Source, cols, rows int, fg, bg color.Color) (Frame, error)
-	// Reset forgets anything sent to the terminal (after a screen change)
-	// and returns the sequence that frees it there.
+	// Draw returns rows lines of exactly cols cells, joined by "\n".
+	Draw(src Source, cols, rows int, fg, bg color.Color) (string, error)
+	// Flush returns (and clears) escape sequences that Draw queued for the
+	// terminal; "" when there are none.
+	Flush() string
+	// Reset forgets everything sent to the terminal (e.g. after a screen
+	// change), drops queued uploads, and returns the sequence that frees
+	// the uploaded images there.
 	Reset() string
 }
 
 // New returns the renderer for a tier. cellW and cellH are the cell size in
 // pixels (used by Kitty; see CellSize).
 func New(t Tier, cellW, cellH int) Renderer {
-	switch t {
-	case Kitty:
+	if t == Kitty {
 		return newKitty(cellW, cellH)
-	case HalfBlock:
-		return halfBlock{}
 	}
 	return plain{}
 }
@@ -114,13 +105,6 @@ func CellSize() (w, h int) {
 func rgb(c color.Color) (r, g, b uint8) {
 	cr, cg, cb, _ := c.RGBA()
 	return uint8(cr >> 8), uint8(cg >> 8), uint8(cb >> 8)
-}
-
-func blend(fg, bg color.Color, a uint8) (r, g, b uint8) {
-	fr, fgg, fb := rgb(fg)
-	br, bgg, bb := rgb(bg)
-	mix := func(f, b uint8) uint8 { return uint8((int(f)*int(a) + int(b)*(255-int(a)) + 127) / 255) }
-	return mix(fr, br), mix(fgg, bgg), mix(fb, bb)
 }
 
 func bgSGR(c color.Color) string {

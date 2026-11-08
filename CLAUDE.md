@@ -65,8 +65,10 @@ anything with `--live` yourself. Tokens used during development are read-only.
   returns a Latin font for `:lang=ja`), text → alpha masks (optional supersampling),
   radical SVGs (normalized for oksvg: inline CSS classes, resolve `var()`, drop clip
   paths, scale stroke widths), disk cache for downloads. Radical PNG URLs are dead (403).
-- `internal/gfx` — tiers `kitty` (placeholders; image IDs < 256, recycled) / `halfblock` /
-  `plain`, `Detect` from env, `CellSize`. A `Source.Mask` must return exactly w×h.
+- `internal/gfx` — tiers `kitty` (placeholders; image IDs < 256, recycled) and `plain`;
+  half-block was tried and dropped (unreadable). `Draw` queues kitty uploads; send
+  `Flush()` via `tea.Raw` from Update. `Detect` from env, `CellSize`. `Source.Mask` must
+  return exactly w×h.
 - `docs/wanikani-api.md` — API notes and known doc ambiguities.
 - `docs/backlog.md` — deferred ideas; add to it rather than leaving them in chat.
 - `internal/` — real packages (still planned: `audio`, review screen in `ui`). Keep `session`, `answer` and `ime`
@@ -79,7 +81,9 @@ anything with `--live` yourself. Tokens used during development are read-only.
   (including Noto Sans CJK JP) are under `/run/host/usr/share/fonts/`. Font discovery
   must fall back to that path.
 - The default terminal is Ptyxis (VTE 0.84). It supports neither the kitty graphics/text
-  sizing protocols nor sixel, so it gets the half-block tier (C).
+  sizing protocols nor sixel, so it gets the plain tier.
+- kitty inside the toolbox needs `google-noto-sans-cjk-fonts` installed there: the
+  toolbox's fontconfig can't see host fonts, so otherwise kitty can't draw kanji.
 - Graphics tiers A/B are developed in kitty installed *inside the toolbox* via dnf
   (avoids flatpak sandboxing). WezTerm, Rio and foot are installed as flatpaks for later
   compatibility checks.

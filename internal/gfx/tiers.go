@@ -18,52 +18,16 @@ import (
 type plain struct{}
 
 func (plain) Tier() Tier    { return Plain }
+func (plain) Flush() string { return "" }
 func (plain) Reset() string { return "" }
-func (plain) Draw(src Source, cols, rows int, fg, bg color.Color) (Frame, error) {
+func (plain) Draw(src Source, cols, rows int, fg, bg color.Color) (string, error) {
 	text := src.Text
 	if text == "" {
-		text = "（画像）" // "(image)": an image-only radical with no text form
+		text = "（画像）" // "(image)": an image-only radical, never its name
 	}
 	st := lipgloss.NewStyle().Bold(true).Foreground(fg).Background(bg)
-	box := lipgloss.Place(cols, rows, lipgloss.Center, lipgloss.Center, st.Render(text),
-		lipgloss.WithWhitespaceStyle(lipgloss.NewStyle().Background(bg)))
-	return Frame{Cells: box}, nil
-}
-
-// --- Half-block -------------------------------------------------------------
-
-type halfBlock struct{}
-
-func (halfBlock) Tier() Tier    { return HalfBlock }
-func (halfBlock) Reset() string { return "" }
-
-// Draw maps two vertical pixels to each cell: ▀ in the top pixel's colour
-// over a background of the bottom pixel's colour. The mask is supersampled
-// 4× so diagonal strokes stay smooth at this low resolution.
-func (halfBlock) Draw(src Source, cols, rows int, fg, bg color.Color) (Frame, error) {
-	mask, err := maskOf(src, cols, rows*2, 4)
-	if err != nil {
-		return Frame{}, err
-	}
-	var b strings.Builder
-	for y := range rows {
-		prev := ""
-		for x := range cols {
-			tr, tg, tb := blend(fg, bg, mask.AlphaAt(x, 2*y).A)
-			br, bgr, bb := blend(fg, bg, mask.AlphaAt(x, 2*y+1).A)
-			sgr := fmt.Sprintf("\x1b[38;2;%d;%d;%d;48;2;%d;%d;%dm", tr, tg, tb, br, bgr, bb)
-			if sgr != prev {
-				b.WriteString(sgr)
-				prev = sgr
-			}
-			b.WriteString("▀")
-		}
-		b.WriteString("\x1b[m")
-		if y < rows-1 {
-			b.WriteByte('\n')
-		}
-	}
-	return Frame{Cells: b.String()}, nil
+	return lipgloss.Place(cols, rows, lipgloss.Center, lipgloss.Center, st.Render(text),
+		lipgloss.WithWhitespaceStyle(lipgloss.NewStyle().Background(bg))), nil
 }
 
 // --- Kitty ------------------------------------------------------------------
@@ -75,6 +39,7 @@ type kittyRenderer struct {
 	cellW, cellH int
 	ids          map[string]int // cache key → image ID
 	order        []string       // keys, oldest first, for reuse
+	pending      strings.Builder
 }
 
 const maxKittyImages = 200
@@ -85,34 +50,40 @@ func newKitty(cellW, cellH int) *kittyRenderer {
 
 func (k *kittyRenderer) Tier() Tier { return Kitty }
 
-// Reset frees every image this renderer uploaded.
+func (k *kittyRenderer) Flush() string {
+	s := k.pending.String()
+	k.pending.Reset()
+	return s
+}
+
 func (k *kittyRenderer) Reset() string {
 	var b strings.Builder
 	for _, id := range k.ids {
 		b.WriteString(ansi.KittyGraphics(nil, "a=d", "d=I", fmt.Sprintf("i=%d", id), "q=2"))
 	}
 	k.ids, k.order = map[string]int{}, nil
+	k.pending.Reset()
 	return b.String()
 }
 
-func (k *kittyRenderer) Draw(src Source, cols, rows int, fg, bg color.Color) (Frame, error) {
+func (k *kittyRenderer) Draw(src Source, cols, rows int, fg, bg color.Color) (string, error) {
 	fr, fgg, fb := rgb(fg)
 	key := fmt.Sprintf("%s@%dx%d@%dx%d#%02x%02x%02x", src.Key, cols, rows, k.cellW, k.cellH, fr, fgg, fb)
-	var setup string
 	id, ok := k.ids[key]
 	if !ok {
 		var err error
-		if id, setup, err = k.upload(key, src, cols, rows, fg); err != nil {
-			return Frame{}, err
+		if id, err = k.upload(key, src, cols, rows, fg); err != nil {
+			return "", err
 		}
 	}
-	return Frame{Setup: setup, Cells: placeholders(id, cols, rows, bg)}, nil
+	return placeholders(id, cols, rows, bg), nil
 }
 
-func (k *kittyRenderer) upload(key string, src Source, cols, rows int, fg color.Color) (int, string, error) {
-	mask, err := maskOf(src, cols*k.cellW, rows*k.cellH, 1)
+// upload rasterizes the source, assigns an image ID and queues the upload.
+func (k *kittyRenderer) upload(key string, src Source, cols, rows int, fg color.Color) (int, error) {
+	mask, err := maskOf(src, cols*k.cellW, rows*k.cellH)
 	if err != nil {
-		return 0, "", err
+		return 0, err
 	}
 	img := image.NewNRGBA(mask.Bounds())
 	r, g, b := rgb(fg)
@@ -121,7 +92,7 @@ func (k *kittyRenderer) upload(key string, src Source, cols, rows int, fg color.
 	}
 	var pngBuf bytes.Buffer
 	if err := png.Encode(&pngBuf, img); err != nil {
-		return 0, "", err
+		return 0, err
 	}
 
 	// Pick an ID: the next unused one, or recycle the oldest.
@@ -154,11 +125,12 @@ func (k *kittyRenderer) upload(key string, src Source, cols, rows int, fg color.
 		Chunk:            true,
 	})
 	if err != nil {
-		return 0, "", err
+		return 0, err
 	}
 	k.ids[key] = id
 	k.order = append(k.order, key)
-	return id, seq.String(), nil
+	k.pending.WriteString(seq.String())
+	return id, nil
 }
 
 func placeholders(id, cols, rows int, bg color.Color) string {
@@ -180,8 +152,8 @@ func placeholders(id, cols, rows int, bg color.Color) string {
 }
 
 // maskOf calls src.Mask and checks it honoured the requested size.
-func maskOf(src Source, w, h, ss int) (*image.Alpha, error) {
-	m, err := src.Mask(w, h, ss)
+func maskOf(src Source, w, h int) (*image.Alpha, error) {
+	m, err := src.Mask(w, h)
 	if err != nil {
 		return nil, err
 	}

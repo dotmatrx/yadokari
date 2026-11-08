@@ -1,4 +1,4 @@
-// Throwaway demo: the same glyph drawn by every gfx tier, side by side, to
+// Throwaway demo: the same glyph drawn by both gfx tiers, side by side, to
 // judge them by eye in different terminals. The kitty column only works in
 // kitty/Ghostty. Keys: n/p glyph · s size · q quit.
 package main
@@ -54,7 +54,7 @@ func main() {
 		os.Exit(1)
 	}
 	text := func(key, s string) gfx.Source {
-		return gfx.Source{Key: key, Text: s, Mask: func(w, h, ss int) (*image.Alpha, error) { return f.Text(s, w, h, ss) }}
+		return gfx.Source{Key: key, Text: s, Mask: func(w, h int) (*image.Alpha, error) { return f.Text(s, w, h) }}
 	}
 	items := []item{
 		{"kanji 鬱 (dense)", text("k:鬱", "鬱"), kanjiPink},
@@ -66,7 +66,7 @@ func main() {
 		items = append(items, it)
 	}
 	cw, ch := gfx.CellSize()
-	m := &model{items: items, renderers: []gfx.Renderer{gfx.New(gfx.Kitty, cw, ch), gfx.New(gfx.HalfBlock, 0, 0), gfx.New(gfx.Plain, 0, 0)}}
+	m := &model{items: items, renderers: []gfx.Renderer{gfx.New(gfx.Kitty, cw, ch), gfx.New(gfx.Plain, 0, 0)}}
 	fmt.Fprintf(os.Stderr, "font %s, cell %dx%d px, detected tier %s\n", f.Name(), cw, ch, gfx.Detect(os.Getenv))
 	if _, err := tea.NewProgram(m).Run(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -104,8 +104,8 @@ func imageRadical() (item, bool) {
 			fmt.Fprintln(os.Stderr, "radical image:", err)
 			return item{}, false
 		}
-		src := gfx.Source{Key: "img:" + s.Data.Slug, Mask: func(w, h, ss int) (*image.Alpha, error) {
-			return glyph.ImageMask(raw, ct, w, h) // already anti-aliased; ss not needed
+		src := gfx.Source{Key: "img:" + s.Data.Slug, Mask: func(w, h int) (*image.Alpha, error) {
+			return glyph.ImageMask(raw, ct, w, h)
 		}}
 		return item{"radical image: " + s.Data.Slug, src, radicalBlue}, true
 	}
@@ -135,18 +135,19 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, m.setup()
 }
 
-// setup uploads the current kitty image, once the alt screen is active.
+// setup draws the current glyph and sends any queued kitty upload, once the
+// alt screen is active.
 func (m *model) setup() tea.Cmd {
 	if !m.ready {
 		return nil
 	}
 	it := m.items[m.idx]
 	cols, rows := sizes[m.size][0], sizes[m.size][1]
-	f, err := m.renderers[0].Draw(it.src, cols, rows, white, it.bg)
-	if err != nil || f.Setup == "" {
-		return nil
+	m.renderers[0].Draw(it.src, cols, rows, white, it.bg)
+	if s := m.renderers[0].Flush(); s != "" {
+		return tea.Raw(s)
 	}
-	return tea.Raw(f.Setup)
+	return nil
 }
 
 func (m *model) View() tea.View {
@@ -154,8 +155,7 @@ func (m *model) View() tea.View {
 	cols, rows := sizes[m.size][0], sizes[m.size][1]
 	var cols3 []string
 	for _, r := range m.renderers {
-		f, err := r.Draw(it.src, cols, rows, white, it.bg)
-		body := f.Cells
+		body, err := r.Draw(it.src, cols, rows, white, it.bg)
 		if err != nil {
 			body = "error: " + err.Error()
 		}
@@ -164,7 +164,7 @@ func (m *model) View() tea.View {
 		}
 		cols3 = append(cols3, lipgloss.JoinVertical(lipgloss.Left, string(r.Tier()), body))
 	}
-	row := lipgloss.JoinHorizontal(lipgloss.Top, cols3[0], "   ", cols3[1], "   ", cols3[2])
+	row := lipgloss.JoinHorizontal(lipgloss.Top, cols3[0], "   ", cols3[1])
 	v := tea.NewView(fmt.Sprintf("%s  (%dx%d cells)\n\n%s\n\nn/p glyph · s size · q quit", it.label, cols, rows, row))
 	v.AltScreen = true
 	return v
