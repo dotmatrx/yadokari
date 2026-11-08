@@ -13,7 +13,7 @@ a milestone moves.
 | Phase 0: spikes and safety net | Done | API client + mock, kitty placeholders (pass), IME (pass); OSC 66 skipped; findings in the design doc |
 | M1: read-only dashboard | Done | Store, incremental sync, token (keyring works in the toolbox), dashboard; verified on the live account |
 | M2: reviews against the mock | Done | Session engine, answer checking, glyph/gfx (kitty + plain), outbox + uploader, review and summary screens |
-| M3: live reviews | In progress | Rejected reviews on the dashboard and SRS movement in the summary done; see below |
+| M3: live reviews | Dogfooding | All items done except the two weeks of daily use; see below |
 | M4: lessons | Not started | Item pages with mnemonic markup, lesson quiz, `PUT /assignments/:id/start`, audio |
 | M5: polish | Not started | Settings screen, add synonym, font roulette, themes, packaging |
 
@@ -49,9 +49,10 @@ a milestone moves.
    `--live` session, 11 reviews, all 201; findings in `docs/wanikani-api.md`. Still
    unseen: a 422 body. Every write is logged to `~/.local/share/yadokari/writes.log`.
 4. ~~Surface rejected (failed) outbox rows on the dashboard.~~ Done 2026-11-08.
-5. Offline handling: reviews completed offline stay queued and upload on the next run;
-   test with the network down. Today pending reviews only upload once the review
-   screen opens; the dashboard should flush them too.
+5. ~~Offline handling.~~ Done 2026-11-08: the dashboard sends queued reviews before
+   every sync (startup and `s`), `--sync` does too, and flushes are serialized so the
+   dashboard and review screen can't post a row twice. Tested offline → online
+   against the mock; a real network-down run is part of dogfooding.
 6. Dogfood daily for two weeks next to the website. ~~Summary SRS movement~~ done
    2026-11-08 (from the stored assignment that `resources_updated` returned).
 

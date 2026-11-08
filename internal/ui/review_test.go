@@ -350,3 +350,61 @@ func TestDashboardRejectedReviews(t *testing.T) {
 		t.Errorf("after dismiss:\n%s", out)
 	}
 }
+
+// drain runs a dashboard command chain to the end. Commands must not sleep
+// (tea.Tick blocks when called directly).
+func drain(d *Dashboard, cmd tea.Cmd) {
+	queue := []tea.Cmd{cmd}
+	for len(queue) > 0 {
+		c := queue[0]
+		queue = queue[1:]
+		if c == nil {
+			continue
+		}
+		switch msg := c().(type) {
+		case nil:
+		case tea.BatchMsg:
+			queue = append(queue, msg...)
+		default:
+			_, next := d.Update(msg)
+			queue = append(queue, next)
+		}
+	}
+}
+
+func TestOfflineReviewsUploadOnNextSync(t *testing.T) {
+	h := newHarness(t)
+	ctx := context.Background()
+	if err := h.st.QueueReview(ctx, 3, wk.ReviewInput{AssignmentID: 1001}); err != nil {
+		t.Fatal(err)
+	}
+	online := h.app.deps
+
+	// No network: nothing listens on port 1.
+	dead, err := wk.New("tok", wk.WithBaseURL("http://127.0.0.1:1/v2/"), wk.WithRateLimit(60000, 1000))
+	if err != nil {
+		t.Fatal(err)
+	}
+	offline := online
+	offline.Syncer = &wksync.Syncer{Client: dead, Store: h.st, Now: online.Now}
+	offline.Uploader = &wksync.Uploader{Client: dead, Store: h.st}
+	d := NewDashboard(offline)
+	d.Update(windowSize(120, 30))
+	drain(d, tea.Batch(d.load(), d.startSync())) // Init minus its 30 s timer
+	out := ansi.Strip(d.render())
+	if !strings.Contains(out, "1 to upload (upload failed") || len(h.mock.Writes()) != 0 {
+		t.Errorf("offline: the review should stay queued:\n%s", out)
+	}
+
+	// Back online: the dashboard's next sync sends it before syncing.
+	online.Uploader = &wksync.Uploader{Client: online.Syncer.Client, Store: h.st}
+	d = NewDashboard(online)
+	d.Update(windowSize(120, 30))
+	drain(d, tea.Batch(d.load(), d.startSync())) // Init minus its 30 s timer
+	if w := h.mock.Writes(); len(w) != 1 {
+		t.Fatalf("mock received %d reviews, want 1", len(w))
+	}
+	if out := ansi.Strip(d.render()); strings.Contains(out, "to upload") || !strings.Contains(out, "Reviews  3") {
+		t.Errorf("online: queue should be empty and 3 due:\n%s", out)
+	}
+}

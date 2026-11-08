@@ -99,7 +99,7 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return a, nil
 
 	// Background work keeps flowing to its owner whatever is on screen.
-	case loadedMsg, syncEventMsg, syncPhaseMsg, tickMsg:
+	case loadedMsg, syncEventMsg, syncPhaseMsg, tickMsg, uploadedMsg:
 		_, cmd := a.dash.Update(msg)
 		return a, cmd
 	case imageMsg, uploadMsg, reviewReadyMsg:

@@ -54,7 +54,9 @@ anything with `--live` yourself. Tokens used during development are read-only.
   microseconds, embedded migrations (`internal/store/migrations/NNN_*.sql`, tracked
   by `PRAGMA user_version`). Dashboard queries live here.
 - `internal/wksync` — full then incremental sync (`updated_after` bookmarks, user ETag);
-  `Foreground` collections first, `review_statistics` in `Background`. Read-only.
+  `Foreground` collections first, `review_statistics` in `Background`. Read-only;
+  `Uploader` (outbox → `POST /reviews`, serialized) is the one writer. The dashboard
+  and `--sync` flush the outbox before syncing.
 - `internal/config` — XDG paths (config `~/.config/yadokari/config.toml`, database
   `~/.local/share/yadokari/yadokari.db`), settings, and the token store: env
   `WANIKANI_API_TOKEN` → OS keyring → `0600` file fallback. Tests use a fake keyring;

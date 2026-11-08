@@ -106,7 +106,7 @@ func run() error {
 		endpoint = "mock " + u.Host
 	}
 	if *syncOnly {
-		return syncAndReport(ctx, syncer, st)
+		return syncAndReport(ctx, syncer, &wksync.Uploader{Client: client, Store: st})
 	}
 
 	rdeps, warning, err := reviewDeps(client, st, *gfxFlag)
@@ -120,7 +120,7 @@ func run() error {
 	if warning != "" {
 		fmt.Fprintln(os.Stderr, "yadokari:", warning)
 	}
-	app := ui.NewApp(ui.Deps{Store: st, Syncer: syncer, Endpoint: endpoint}, rdeps)
+	app := ui.NewApp(ui.Deps{Store: st, Syncer: syncer, Uploader: rdeps.Uploader, Endpoint: endpoint}, rdeps)
 	_, err = tea.NewProgram(app).Run()
 	return err
 }
@@ -199,8 +199,17 @@ func clientWithToken(ctx context.Context, tokens config.TokenStore, baseURL stri
 	return client, nil
 }
 
-func syncAndReport(ctx context.Context, syncer *wksync.Syncer, st *store.Store) error {
-	start := time.Now()
+func syncAndReport(ctx context.Context, syncer *wksync.Syncer, up *wksync.Uploader) error {
+	start, st := time.Now(), up.Store
+	res, err := up.Flush(ctx)
+	switch {
+	case errors.Is(err, wksync.ErrHeld):
+		fmt.Fprintf(os.Stderr, "%d queued reviews held: %v\n", res.Held, err)
+	case err != nil:
+		fmt.Fprintf(os.Stderr, "uploading queued reviews: %v\n", err)
+	case res.Sent+res.Rejected > 0:
+		fmt.Fprintf(os.Stderr, "uploaded %d queued reviews, %d rejected\n", res.Sent, res.Rejected)
+	}
 	syncer.Progress = func(e wksync.Event) {
 		if e.Done {
 			fmt.Fprintf(os.Stderr, "  %-26s %6d\n", e.Collection, e.Fetched)

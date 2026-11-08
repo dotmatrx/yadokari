@@ -3,6 +3,7 @@ package wksync
 import (
 	"context"
 	"errors"
+	"sync"
 	"testing"
 	"time"
 
@@ -115,5 +116,29 @@ func TestUploadHeldForLiveAPI(t *testing.T) {
 	}
 	if p, _, _ := st.OutboxCounts(ctx); p != 2 {
 		t.Errorf("held reviews must stay queued: %d", p)
+	}
+}
+
+func TestConcurrentFlushesPostOnce(t *testing.T) {
+	clock := now
+	e := setup(t, wkmock.SampleData(now), &clock)
+	ctx := context.Background()
+	e.syncer.Run(ctx, all())
+	at := clock.Add(-time.Minute)
+	e.store.QueueReview(ctx, 3, wk.ReviewInput{AssignmentID: 1001, CreatedAt: &at})
+	e.store.QueueReview(ctx, 101, wk.ReviewInput{AssignmentID: 1002, CreatedAt: &at})
+
+	up := &Uploader{Client: e.client, Store: e.store}
+	var wg sync.WaitGroup
+	for range 4 {
+		wg.Add(1)
+		go func() { defer wg.Done(); up.Flush(ctx) }()
+	}
+	wg.Wait()
+	if w := e.mock.Writes(); len(w) != 2 {
+		t.Errorf("mock received %d reviews, want 2", len(w))
+	}
+	if p, f, _ := e.store.OutboxCounts(ctx); p != 0 || f != 0 {
+		t.Errorf("outbox: %d pending, %d failed", p, f)
 	}
 }

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"sync"
 
 	"github.com/jtharris/yadokari/internal/store"
 	"github.com/jtharris/yadokari/internal/wk"
@@ -20,9 +21,14 @@ import (
 // unknown (network error, 5xx) is never retried automatically by the client,
 // and is retried here on the next flush, where a 422 then means it was
 // recorded the first time.
+//
+// Flushes are serialized: the dashboard and the review screen both flush,
+// and two concurrent flushes would post the same row twice.
 type Uploader struct {
 	Client *wk.Client
 	Store  *store.Store
+
+	mu sync.Mutex
 }
 
 // UploadResult summarizes a flush.
@@ -41,6 +47,8 @@ var ErrHeld = errors.New("reviews held: writes to the live WaniKani API are disa
 // (network, rate limit, server error) so reviews go out in order; the
 // returned error describes it and the rest stay queued.
 func (u *Uploader) Flush(ctx context.Context) (UploadResult, error) {
+	u.mu.Lock()
+	defer u.mu.Unlock()
 	res := UploadResult{Live: u.Client.IsLive()}
 	items, err := u.Store.Outbox(ctx, false)
 	if err != nil {

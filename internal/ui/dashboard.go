@@ -3,6 +3,7 @@ package ui
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -35,6 +36,7 @@ var (
 type Deps struct {
 	Store    *store.Store
 	Syncer   *wksync.Syncer
+	Uploader *wksync.Uploader // nil: queued reviews are not sent from here
 	Now      func() time.Time
 	Location *time.Location
 	Endpoint string // shown in the header, e.g. "live API" or "mock"
@@ -60,6 +62,7 @@ type Dashboard struct {
 	phase    string
 	event    wksync.Event
 	syncErr  error
+	upErr    error // the last upload attempt's failure (not "held")
 	events   chan tea.Msg
 	cancel   context.CancelFunc
 	tickedAt time.Time
@@ -93,6 +96,11 @@ type (
 		done  bool
 	}
 	tickMsg time.Time
+	// uploadedMsg reports the dashboard's flush of queued reviews.
+	uploadedMsg struct {
+		res wksync.UploadResult
+		err error
+	}
 )
 
 func (m *Dashboard) Init() tea.Cmd {
@@ -128,8 +136,10 @@ func (m *Dashboard) load() tea.Cmd {
 	}
 }
 
-// startSync runs a foreground then background sync in a goroutine, feeding
-// progress back through a channel the update loop listens on.
+// startSync sends queued reviews, then runs a foreground then background
+// sync, in a goroutine feeding progress back through a channel the update
+// loop listens on. Uploading first means the sync sees their effect, and
+// reviews done offline go out as soon as the app starts with a network.
 func (m *Dashboard) startSync() tea.Cmd {
 	if m.syncing {
 		return nil
@@ -139,7 +149,7 @@ func (m *Dashboard) startSync() tea.Cmd {
 	m.cancel = cancel
 	ch := make(chan tea.Msg, 64)
 	m.events = ch
-	syncer := *m.deps.Syncer
+	syncer, up := *m.deps.Syncer, m.deps.Uploader
 	syncer.Progress = func(e wksync.Event) {
 		select {
 		case ch <- syncEventMsg(e):
@@ -148,6 +158,10 @@ func (m *Dashboard) startSync() tea.Cmd {
 	}
 	go func() {
 		defer close(ch)
+		if up != nil {
+			res, err := up.Flush(ctx)
+			ch <- uploadedMsg{res: res, err: err}
+		}
 		if _, err := syncer.Run(ctx, wksync.Foreground); err != nil {
 			ch <- syncPhaseMsg{phase: "foreground", err: err, done: true}
 			return
@@ -203,6 +217,12 @@ func (m *Dashboard) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.event = wksync.Event(msg)
 		m.phase = msg.Collection
 		return m, listen(m.events)
+	case uploadedMsg:
+		m.upErr = nil
+		if msg.err != nil && !errors.Is(msg.err, wksync.ErrHeld) {
+			m.upErr = msg.err
+		}
+		return m, tea.Batch(m.load(), listen(m.events))
 	case syncPhaseMsg:
 		if msg.err != nil {
 			m.syncErr = msg.err
@@ -329,6 +349,9 @@ func (m *Dashboard) statusLine() string {
 	}
 	if m.pending > 0 {
 		s += mutedSt.Render(fmt.Sprintf(" · %d to upload", m.pending))
+		if m.upErr != nil {
+			s += errSt.Render(" (upload failed: " + shortErr(m.upErr) + ")")
+		}
 	}
 	keys := "r reviews · s sync · q quit"
 	if len(m.rejected) > 0 {
