@@ -38,6 +38,7 @@ anything with `--live` yourself. Tokens used during development are read-only.
 ## Layout
 
 - `cmd/yadokari` — entry point. Flags: `--base`, `--db`, `--sync` (no TUI), `--logout`,
+  `--gfx auto|kitty|plain`,
   `--live` (writes; never use it yourself).
 - `internal/wk` — typed API client: auth, pagination via `next_url` (same-host only),
   ETags, client-side rate limit + `RateLimit-*` handling, 429 retry; GETs retry on 5xx,
@@ -75,7 +76,9 @@ anything with `--live` yourself. Tokens used during development are read-only.
   paths, scale stroke widths), disk cache for downloads. Radical PNG URLs are dead (403).
 - `internal/gfx` — tiers `kitty` (placeholders; image IDs < 256, recycled) and `plain`;
   half-block was tried and dropped (unreadable). `Draw` queues kitty uploads; send
-  `Flush()` via `tea.Raw` from Update. `Detect` from env, `CellSize`. `Source.Mask` must
+  `Flush()` via `tea.Raw` from Update. `Choose` picks the tier: `--gfx` override, then
+  env (`Detect`), then `Probe` (kitty graphics query + DA1 on `/dev/tty`, before Bubble
+  Tea starts). `CellSize`. `Source.Mask` must
   return exactly w×h.
 - `docs/roadmap.md` — milestone status and next steps.
 - `docs/wanikani-api.md` — API notes and known doc ambiguities.
@@ -90,11 +93,11 @@ anything with `--live` yourself. Tokens used during development are read-only.
   see host fonts (they're under `/run/host/usr/share/fonts/`), so font discovery also
   checks that path. `google-noto-sans-cjk-fonts` is now installed in the toolbox.
 - The daily-driver terminal is **Ghostty**, installed on the host (rpm-ostree). Run the
-  app from the toolbox inside Ghostty; it gets the kitty tier (detected from
-  `TERM=xterm-ghostty`, which toolbox passes through). Verified 2026-11-08: spikes and
-  the review screen look right. The toolbox has no `xterm-ghostty` terminfo of its
-  own (it's under `/run/host/usr/share/terminfo/`); the app doesn't need it, but shell
-  tools may, so copy it to `~/.terminfo/x/` if they complain.
+  app from the toolbox inside Ghostty; it gets the kitty tier. Inside the toolbox
+  `TERM` is `xterm-256color` and no Ghostty variables are set (toolbox seems to
+  replace a `TERM` whose terminfo the container lacks; `xterm-ghostty`'s is only under
+  `/run/host/usr/share/terminfo/`), so the tier comes from a terminal probe, not the
+  environment. Ghostty passed Spike 1 and the tier spike on 2026-11-08.
 - Ptyxis (VTE 0.84) supports neither the kitty graphics/text sizing protocols nor
   sixel, so it gets the plain tier; it's now only a plain-tier check.
 - kitty is installed *inside the toolbox* via dnf and stays a secondary check for the

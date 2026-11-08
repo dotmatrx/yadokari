@@ -67,7 +67,8 @@ func main() {
 	}
 	cw, ch := gfx.CellSize()
 	m := &model{items: items, renderers: []gfx.Renderer{gfx.New(gfx.Kitty, cw, ch), gfx.New(gfx.Plain, 0, 0)}}
-	fmt.Fprintf(os.Stderr, "font %s, cell %dx%d px, detected tier %s\n", f.Name(), cw, ch, gfx.Detect(os.Getenv))
+	probed, perr := gfx.Probe(time.Second)
+	fmt.Fprintf(os.Stderr, "font %s, cell %dx%d px, env tier %s, probe kitty=%v (err %v)\n", f.Name(), cw, ch, gfx.Detect(os.Getenv), probed, perr)
 	if _, err := tea.NewProgram(m).Run(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)

@@ -1,6 +1,7 @@
 package gfx
 
 import (
+	"errors"
 	"image"
 	"image/color"
 	"strings"
@@ -159,5 +160,62 @@ func TestWrongMaskSizeIsAnError(t *testing.T) {
 	bad.Mask = func(w, h int) (*image.Alpha, error) { return inner(w*2, h*2) }
 	if _, err := New(Kitty, 4, 8).Draw(bad, 10, 5, white, pink); err == nil {
 		t.Error("oversized mask should be rejected")
+	}
+}
+
+func TestParseProbe(t *testing.T) {
+	da1 := "\x1b[?62;22c"
+	for _, tt := range []struct {
+		reply       string
+		kitty, done bool
+	}{
+		{"", false, false},
+		{"\x1b_Gi=31;OK\x1b\\", true, false},
+		{"\x1b_Gi=31;OK\x1b\\" + da1, true, true},
+		{da1, false, true},                                 // Ptyxis: DA1 only
+		{"\x1b_Gi=31;EINVAL:bad\x1b\\" + da1, false, true}, // graphics refused
+		{"\x1b[?62;22", false, false},                      // DA1 not complete yet
+	} {
+		kitty, done := parseProbe([]byte(tt.reply))
+		if kitty != tt.kitty || done != tt.done {
+			t.Errorf("parseProbe(%q) = %v, %v; want %v, %v", tt.reply, kitty, done, tt.kitty, tt.done)
+		}
+	}
+}
+
+func TestChoose(t *testing.T) {
+	env := func(kv ...string) func(string) string {
+		m := map[string]string{}
+		for i := 0; i < len(kv); i += 2 {
+			m[kv[i]] = kv[i+1]
+		}
+		return func(k string) string { return m[k] }
+	}
+	yes := func() (bool, error) { return true, nil }
+	no := func() (bool, error) { return false, nil }
+	fails := func() (bool, error) { return false, errors.New("no tty") }
+	mustNot := func() (bool, error) { t.Error("probe should not run"); return false, nil }
+	for _, tt := range []struct {
+		name     string
+		override string
+		getenv   func(string) string
+		probe    func() (bool, error)
+		want     Tier
+	}{
+		{"override plain", "plain", env("TERM", "xterm-kitty"), mustNot, Plain},
+		{"override kitty", "kitty", env("TMUX", "1"), mustNot, Kitty},
+		{"tmux", "auto", env("TMUX", "1", "TERM", "xterm-ghostty"), mustNot, Plain},
+		{"env ghostty", "", env("TERM", "xterm-ghostty"), mustNot, Kitty},
+		{"toolbox hides ghostty; probe says yes", "auto", env("TERM", "xterm-256color"), yes, Kitty},
+		{"ptyxis", "auto", env("TERM", "xterm-256color"), no, Plain},
+		{"no tty", "auto", env(), fails, Plain},
+	} {
+		got, err := Choose(tt.override, tt.getenv, tt.probe)
+		if err != nil || got != tt.want {
+			t.Errorf("%s: got %s, %v; want %s", tt.name, got, err, tt.want)
+		}
+	}
+	if _, err := Choose("sixel", env(), mustNot); err == nil {
+		t.Error("unknown override should fail")
 	}
 }

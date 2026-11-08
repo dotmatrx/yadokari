@@ -59,6 +59,25 @@ func Detect(getenv func(string) string) Tier {
 	return Plain
 }
 
+// Choose picks the tier: an explicit override ("kitty", "plain"), else
+// the environment, else the terminal's answer to probe. tmux always gets
+// Plain (kitty graphics would need passthrough). A probe error means Plain.
+func Choose(override string, getenv func(string) string, probe func() (bool, error)) (Tier, error) {
+	if t, ok, err := ParseTier(override); err != nil || ok {
+		return t, err
+	}
+	if getenv("TMUX") != "" {
+		return Plain, nil
+	}
+	if Detect(getenv) == Kitty {
+		return Kitty, nil
+	}
+	if ok, err := probe(); err == nil && ok {
+		return Kitty, nil
+	}
+	return Plain, nil
+}
+
 // Source is something to draw: a mask producer plus a text fallback.
 type Source struct {
 	// Key identifies the content (e.g. "kanji:440"); it keys image caches.

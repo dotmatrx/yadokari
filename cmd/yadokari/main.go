@@ -42,6 +42,7 @@ func run() error {
 	dbPath := flag.String("db", "", "database path (default: ~/.local/share/yadokari/yadokari.db)")
 	syncOnly := flag.Bool("sync", false, "sync, print a summary and exit (no TUI)")
 	logout := flag.Bool("logout", false, "remove the stored API token and exit")
+	gfxFlag := flag.String("gfx", "auto", "graphics tier: auto, kitty or plain")
 	flag.Parse()
 
 	if *showVersion {
@@ -108,7 +109,10 @@ func run() error {
 		return syncAndReport(ctx, syncer, st)
 	}
 
-	rdeps, warning := reviewDeps(client, st)
+	rdeps, warning, err := reviewDeps(client, st, *gfxFlag)
+	if err != nil {
+		return err
+	}
 	if client.IsLive() && !*live {
 		// Results would only pile up in the outbox and go stale.
 		rdeps.Disabled = "Reviews against the live API need --live. Try them on the mock: just mock-recorded, then just dev."
@@ -123,7 +127,7 @@ func run() error {
 
 // reviewDeps finds the font and graphics tier for the review screen. A
 // missing font is not fatal: glyphs fall back to the terminal's own font.
-func reviewDeps(client *wk.Client, st *store.Store) (ui.ReviewDeps, string) {
+func reviewDeps(client *wk.Client, st *store.Store, gfxTier string) (ui.ReviewDeps, string, error) {
 	rd := ui.ReviewDeps{Uploader: &wksync.Uploader{Client: client, Store: st}}
 	cacheDir, err := os.UserCacheDir()
 	if err != nil {
@@ -131,7 +135,10 @@ func reviewDeps(client *wk.Client, st *store.Store) (ui.ReviewDeps, string) {
 	}
 	rd.Images = glyph.ImageCache{Dir: filepath.Join(cacheDir, "yadokari", "images")}
 
-	tier := gfx.Detect(os.Getenv)
+	tier, err := gfx.Choose(gfxTier, os.Getenv, func() (bool, error) { return gfx.Probe(time.Second) })
+	if err != nil {
+		return rd, "", err
+	}
 	font, err := glyph.FindFont("")
 	warning := ""
 	if err != nil {
@@ -141,7 +148,7 @@ func reviewDeps(client *wk.Client, st *store.Store) (ui.ReviewDeps, string) {
 	rd.Font = font
 	cw, ch := gfx.CellSize()
 	rd.Renderer = gfx.New(tier, cw, ch)
-	return rd, warning
+	return rd, warning, nil
 }
 
 // clientWithToken loads the stored token, or runs the first-run form, checks
