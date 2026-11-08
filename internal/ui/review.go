@@ -579,12 +579,17 @@ func (r *Review) inputText(q session.Question) (text string, empty bool) {
 	return string(r.plain), len(r.plain) == 0
 }
 
-// inputMode says what the box expects, for the right of its top border.
+// badgeSt draws the input mode's letter as a small badge in the theme's
+// grey (the borders' colour): the one tiny painted block besides the glyph.
+var badgeSt = lipgloss.NewStyle().Background(lipgloss.Color("8")).Foreground(lipgloss.Color("15")).Bold(true).Padding(0, 1)
+
+// inputMode says what the box expects, for the right of its top border: a
+// badge with the mode's letter, then its name.
 func inputMode(q session.Question) string {
 	if q.Kind == session.Reading {
-		return "あ kana"
+		return badgeSt.Render("あ") + mutedSt.Render(" Kana")
 	}
-	return "A english"
+	return badgeSt.Render("A") + mutedSt.Render(" English")
 }
 
 // placeholder fills an empty answer box, as on WaniKani's site.
@@ -612,7 +617,7 @@ func (r *Review) answerPanel(q session.Question, it store.ReviewItem, width int)
 		}
 		line = spread(line, mark, width-4)
 	}
-	return panelWith(border, title, mutedSt.Render(inputMode(q)), line, width, 0)
+	return panelWith(border, title, inputMode(q), line, width, 0)
 }
 
 func (r *Review) drawGlyph(it store.ReviewItem, cols, rows int, bg color.Color) (string, error) {

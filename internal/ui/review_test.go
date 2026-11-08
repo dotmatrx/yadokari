@@ -452,16 +452,16 @@ func TestAnswerBoxModeAndPlaceholder(t *testing.T) {
 	q, _, _ := h.app.review.current()
 	box := func() string {
 		for _, l := range strings.Split(h.screen(), "\n") {
-			if strings.Contains(l, "╭─ ") && (strings.Contains(l, "kana") || strings.Contains(l, "english")) {
+			if strings.Contains(l, "╭─ ") && (strings.Contains(l, "Kana") || strings.Contains(l, "English")) {
 				return l
 			}
 		}
 		t.Fatalf("no answer box:\n%s", h.screen())
 		return ""
 	}
-	wantMode, wantPlaceholder := "A english", "Your answer"
+	wantMode, wantPlaceholder := " A  English", "Your answer"
 	if q.Kind == session.Reading {
-		wantMode, wantPlaceholder = "あ kana", "答え"
+		wantMode, wantPlaceholder = " あ  Kana", "答え"
 	}
 	if !strings.Contains(box(), wantMode) || !strings.Contains(h.screen(), "│ "+wantPlaceholder) {
 		t.Errorf("empty box should show %q in the border and %q inside:\n%s", wantMode, wantPlaceholder, h.screen())

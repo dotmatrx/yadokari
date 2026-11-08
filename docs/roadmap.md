@@ -61,7 +61,11 @@ space, thin borders), **colour only where it means something** (type marks, bars
   answer panel below matches its width. Summary: panels of items in aligned columns
   with SRS movement right-aligned. Every screen is tested to fill the terminal exactly
   at 120×36, 80×24 and 60×20.
-- Next: the user's feedback on round 2, in Ghostty (`just preview`, `just mock --demo`
+- Round 3 (2026-11-08): the input mode moved out of the answer box (a stray-looking
+  "A"/"あ") into the right of its top border as a small grey badge plus a label
+  (`[A] English`, `[あ] Kana`); an empty box shows a placeholder (答え / "Your
+  answer"), as on WaniKani's site.
+- Next: the user's feedback, in Ghostty (`just preview`, `just mock --demo`
   + `just dev`).
 
 ## M3 plan: live reviews (agreed 2026-11-08)
