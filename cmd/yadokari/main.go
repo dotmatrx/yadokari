@@ -22,6 +22,7 @@ import (
 	"github.com/jtharris/yadokari/internal/wksync"
 )
 
+// version is set at build time from `git describe` (see the justfile).
 var version = "dev"
 
 func main() {
@@ -89,7 +90,7 @@ func run() error {
 	defer writeLog.Close()
 
 	ctx := context.Background()
-	client, err := clientWithToken(ctx, tokens, baseURL, wk.WithLiveWrites(*live), wk.WithWriteLog(writeLog))
+	client, err := clientWithToken(ctx, tokens, baseURL, wk.WithLiveWrites(*live), wk.WithWriteLog(writeLog), wk.WithVersion(version))
 	if err != nil {
 		return err
 	}
@@ -120,7 +121,7 @@ func run() error {
 	if warning != "" {
 		fmt.Fprintln(os.Stderr, "yadokari:", warning)
 	}
-	app := ui.NewApp(ui.Deps{Store: st, Syncer: syncer, Uploader: rdeps.Uploader, Endpoint: endpoint}, rdeps)
+	app := ui.NewApp(ui.Deps{Store: st, Syncer: syncer, Uploader: rdeps.Uploader, Endpoint: endpoint, Version: version}, rdeps)
 	_, err = tea.NewProgram(app).Run()
 	return err
 }

@@ -4,7 +4,7 @@ Where the project stands and what comes next. The design rationale lives in the 
 doc (link in CLAUDE.md); deferred ideas live in `docs/backlog.md`. Update this file when
 a milestone moves.
 
-**Last updated:** 2026-11-08 (day 2).
+**Last updated:** 2026-11-10.
 
 ## Milestones
 
@@ -17,6 +17,17 @@ a milestone moves.
 | UI pass | In progress | Calmer, grid-like, full-width frame; see below |
 | M4: lessons | Not started | Item pages with mnemonic markup, lesson quiz, `PUT /assignments/:id/start`, audio |
 | M5: polish | Not started | Settings screen, add synonym, font roulette, themes, packaging |
+
+## Versions
+
+Semver tags (`vMAJOR.MINOR.PATCH`, annotated) on `main`, starting at v0.3.0 on
+2026-11-10. While on 0.x, the minor version follows the milestone (0.3 = M3, 0.4 = M4
+lessons, 0.5 = M5 polish); patches are fixes found while dogfooding. Tag when installing
+a build you'll use for a while, not every commit. v1.0.0 when it's ready to hand to
+someone else (after M4 and M5's packaging). `just build`/`just install` stamp
+`git describe` (e.g. `v0.3.0-2-gabc1234-dirty` between tags) into the binary: shown by
+`--version`, in the dashboard header and in each `writes.log` entry. `go run` builds
+(`just run`, `just dev`) say `dev`.
 
 ## Where things were left (2026-11-08)
 

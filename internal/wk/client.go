@@ -92,6 +92,7 @@ type Client struct {
 
 	writeLog   io.Writer
 	writeLogMu sync.Mutex
+	version    string
 }
 
 // Option configures a Client.
@@ -139,6 +140,11 @@ func WithWriteLog(w io.Writer) Option {
 	return func(c *Client) error { c.writeLog = w; return nil }
 }
 
+// WithVersion records the app version in each write-log entry.
+func WithVersion(v string) Option {
+	return func(c *Client) error { c.version = v; return nil }
+}
+
 // logWrite records one write attempt; failures to log are ignored.
 func (c *Client) logWrite(method string, u *url.URL, payload []byte, status int, body []byte, err error) {
 	if c.writeLog == nil || method == http.MethodGet {
@@ -146,13 +152,14 @@ func (c *Client) logWrite(method string, u *url.URL, payload []byte, status int,
 	}
 	entry := struct {
 		Time     time.Time       `json:"time"`
+		Version  string          `json:"version,omitempty"`
 		Method   string          `json:"method"`
 		URL      string          `json:"url"`
 		Request  json.RawMessage `json:"request,omitempty"`
 		Status   int             `json:"status,omitempty"`
 		Response string          `json:"response,omitempty"`
 		Error    string          `json:"error,omitempty"`
-	}{Time: c.now().UTC(), Method: method, URL: u.String(), Status: status, Response: string(body)}
+	}{Time: c.now().UTC(), Version: c.version, Method: method, URL: u.String(), Status: status, Response: string(body)}
 	if json.Valid(payload) {
 		entry.Request = payload
 	}

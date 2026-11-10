@@ -229,7 +229,7 @@ func TestWriteLog(t *testing.T) {
 	}))
 	defer srv.Close()
 	var log bytes.Buffer
-	c, err := wk.New("secret-token", wk.WithBaseURL(srv.URL+"/v2/"), wk.WithWriteLog(&log), wk.WithRateLimit(6000, 100))
+	c, err := wk.New("secret-token", wk.WithBaseURL(srv.URL+"/v2/"), wk.WithWriteLog(&log), wk.WithVersion("v1.2.3"), wk.WithRateLimit(6000, 100))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -247,14 +247,14 @@ func TestWriteLog(t *testing.T) {
 		t.Fatalf("want one line, got %q", log.String())
 	}
 	var e struct {
-		Method, URL, Response string
-		Status                int
-		Request               map[string]map[string]any
+		Method, URL, Response, Version string
+		Status                         int
+		Request                        map[string]map[string]any
 	}
 	if err := json.Unmarshal([]byte(lines[0]), &e); err != nil {
 		t.Fatal(err)
 	}
-	if e.Method != "POST" || !strings.HasSuffix(e.URL, "/v2/reviews") || e.Status != 422 ||
+	if e.Method != "POST" || !strings.HasSuffix(e.URL, "/v2/reviews") || e.Status != 422 || e.Version != "v1.2.3" ||
 		e.Response != `{"error":"not due","code":422}` || e.Request["review"]["assignment_id"] != float64(7) {
 		t.Errorf("log entry %+v", e)
 	}

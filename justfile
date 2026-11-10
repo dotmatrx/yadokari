@@ -3,17 +3,18 @@
 set dotenv-load := true
 
 bin := "bin/yadokari"
+version := `git describe --always --dirty --tags`
 
 default:
     @just --list
 
 # Build the binary into bin/
 build:
-    go build -o {{bin}} ./cmd/yadokari
+    go build -ldflags "-X main.version={{version}}" -o {{bin}} ./cmd/yadokari
 
 # Install a static binary to ~/.local/bin (shared by the host and the toolbox)
 install:
-    CGO_ENABLED=0 go build -trimpath -ldflags "-s -w -X main.version=$(git describe --always --dirty --tags)" -o ~/.local/bin/yadokari ./cmd/yadokari
+    CGO_ENABLED=0 go build -trimpath -ldflags "-s -w -X main.version={{version}}" -o ~/.local/bin/yadokari ./cmd/yadokari
     @echo "installed ~/.local/bin/yadokari $(~/.local/bin/yadokari --version)"
 
 # Run the app (dry-run by default); pass extra flags after the recipe name

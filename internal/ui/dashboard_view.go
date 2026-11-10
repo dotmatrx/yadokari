@@ -13,6 +13,9 @@ import (
 
 func (m *Dashboard) headerParts() (left, right string) {
 	left = boldSt.Render("yadokari")
+	if m.deps.Version != "" {
+		left += " " + mutedSt.Render(m.deps.Version)
+	}
 	if m.user != nil {
 		right = mutedSt.Render(fmt.Sprintf("%s · level %d · ", m.user.Data.Username, m.user.Data.Level))
 	}

@@ -80,7 +80,7 @@ func TestDashboardRender(t *testing.T) {
 	st.PutSingleton(ctx, "user", store.Singleton{Raw: userRaw, FetchedAt: now})
 	st.SetSyncState(ctx, store.Assignments, store.SyncState{SyncedAt: now.Add(-5 * time.Minute)})
 
-	m := NewDashboard(Deps{Store: st, Now: func() time.Time { return now }, Location: time.UTC, Endpoint: "mock"})
+	m := NewDashboard(Deps{Store: st, Now: func() time.Time { return now }, Location: time.UTC, Endpoint: "mock", Version: "v0.3.0"})
 	m.Update(windowSize(100, 30))
 
 	before := ansi.Strip(m.render())
@@ -91,7 +91,7 @@ func TestDashboardRender(t *testing.T) {
 	m.Update(m.load()())
 	out := ansi.Strip(m.render())
 	for _, want := range []string{
-		"yadokari", "mock_learner · level 1 · mock",
+		"yadokari v0.3.0", "mock_learner · level 1 · mock",
 		"Lessons      2", "Reviews      4",
 		"Next 24 hours · 1 reviews · next 15:00",
 		"Level 1", "1 / 2 kanji passed · 1 more to level up",

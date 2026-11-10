@@ -39,6 +39,7 @@ type Deps struct {
 	Now      func() time.Time
 	Location *time.Location
 	Endpoint string // shown in the header, e.g. "live API" or "mock"
+	Version  string // shown after the name in the header, e.g. "v0.3.0"
 }
 
 // Dashboard is the home screen: counts, forecast and level progress, drawn
