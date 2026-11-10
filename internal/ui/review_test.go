@@ -3,6 +3,8 @@ package ui
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"image/color"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -473,5 +475,58 @@ func TestAnswerBoxModeAndPlaceholder(t *testing.T) {
 	}
 	if c := h.app.review.Cursor(); c == nil || c.X != (100-64)/2+2+ansi.StringWidth(first) {
 		t.Errorf("cursor %+v should follow the typed text", c)
+	}
+}
+
+// fakeKitty stands in for the kitty tier: every new size of a source queues
+// an "upload" that only Flush hands out, once.
+type fakeKitty struct {
+	seen    map[string]bool
+	pending string
+}
+
+func (f *fakeKitty) Tier() gfx.Tier { return gfx.Kitty }
+func (f *fakeKitty) Draw(src gfx.Source, cols, rows int, _, _ color.Color) (string, error) {
+	key := fmt.Sprintf("%s@%dx%d", src.Key, cols, rows)
+	if !f.seen[key] {
+		f.seen[key] = true
+		f.pending += "UPLOAD " + key + ";"
+	}
+	return strings.TrimSuffix(strings.Repeat(strings.Repeat("x", cols)+"\n", rows), "\n"), nil
+}
+func (f *fakeKitty) Flush() string { s := f.pending; f.pending = ""; return s }
+func (f *fakeKitty) Reset() string { f.seen, f.pending = map[string]bool{}, ""; return "" }
+
+// TestResizeSendsGlyphUpload: a resize redraws the glyph at a new size; its
+// upload must reach the terminal, or the glyph stays blank at that size for
+// the rest of the session.
+func TestResizeSendsGlyphUpload(t *testing.T) {
+	h := newHarness(t)
+	h.key("r")
+	if h.app.screen != reviewScreen {
+		t.Fatalf("r should open reviews:\n%s", h.screen())
+	}
+	fake := &fakeKitty{seen: map[string]bool{}}
+	h.app.review.rdeps.Renderer = fake
+
+	_, cmd := h.app.Update(tea.WindowSizeMsg{Width: 120, Height: 40})
+	var raw strings.Builder
+	var collect func(tea.Cmd)
+	collect = func(c tea.Cmd) {
+		if c == nil {
+			return
+		}
+		switch msg := c().(type) {
+		case tea.RawMsg:
+			fmt.Fprint(&raw, msg.Msg)
+		case tea.BatchMsg:
+			for _, c := range msg {
+				collect(c)
+			}
+		}
+	}
+	collect(cmd)
+	if !strings.Contains(raw.String(), "@120x19") {
+		t.Errorf("resize: the new-size upload was not sent; got %q", raw.String())
 	}
 }

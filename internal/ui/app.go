@@ -61,7 +61,10 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		a.width, a.height = msg.Width, msg.Height
 		a.dash.Update(msg)
 		if a.review != nil {
-			a.review.Update(msg)
+			// The review's command carries the kitty upload for the glyph at
+			// its new size; the renderer already counts it as sent.
+			_, cmd := a.review.Update(msg)
+			return a, cmd
 		}
 		return a, nil
 
