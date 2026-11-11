@@ -159,17 +159,20 @@ func SampleData(now time.Time) Data {
 			MeaningMnemonic:     "Same as the kanji.",
 			ReadingMnemonic:     "Uses the on'yomi.",
 			ContextSentences:    []wk.ContextSentence{{Ja: "一から十まで。", En: "From one to ten."}},
+			PronunciationAudios: recordings(201, "いち"),
 		}),
 		subj(wk.ObjectVocabulary, 202, str("一つ"), 1, 1, []string{"One Thing"}, []wk.Reading{vr("ひとつ")}, wk.Subject{
 			ComponentSubjectIDs: []int{101},
 			PartsOfSpeech:       []string{"numeral"},
 			MeaningMnemonic:     "One of a thing.",
 			ReadingMnemonic:     "Uses the kun'yomi.",
+			PronunciationAudios: recordings(202, "ひとつ"),
 		}),
 		subj(wk.ObjectKanaVocabulary, 301, str("いいえ"), 1, 2, []string{"No"}, nil, wk.Subject{
-			Slug:            "iie",
-			PartsOfSpeech:   []string{"expression"},
-			MeaningMnemonic: "A polite no.",
+			Slug:                "iie",
+			PartsOfSpeech:       []string{"expression"},
+			MeaningMnemonic:     "A polite no.",
+			PronunciationAudios: recordings(301, "いいえ"),
 		}),
 	}
 
@@ -237,6 +240,8 @@ func SampleData(now time.Time) Data {
 					LessonsPresentationOrder: "ascending_level_then_subject",
 					ReviewsPresentationOrder: "shuffled",
 					DefaultVoiceActorID:      1,
+					LessonsAutoplayAudio:     true,
+					ReviewsAutoplayAudio:     true,
 				},
 			},
 		},
@@ -255,4 +260,20 @@ func SampleData(now time.Time) Data {
 			},
 		}},
 	}
+}
+
+// recordings are fake pronunciation audio entries shaped like WaniKani's:
+// mpeg and webm for each of two voices. The URLs don't resolve.
+func recordings(subject int, reading string) []wk.PronunciationAudio {
+	var out []wk.PronunciationAudio
+	for _, voice := range []int{2, 1} {
+		for _, f := range []struct{ typ, ext string }{{"audio/webm", "webm"}, {"audio/mpeg", "mp3"}} {
+			out = append(out, wk.PronunciationAudio{
+				URL:         fmt.Sprintf("https://files.example.invalid/audio/%d-%d.%s", subject, voice, f.ext),
+				ContentType: f.typ,
+				Metadata:    wk.AudioMetadata{Pronunciation: reading, VoiceActorID: voice},
+			})
+		}
+	}
+	return out
 }

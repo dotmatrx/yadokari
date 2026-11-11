@@ -61,6 +61,12 @@ type ReviewDeps struct {
 	// dashboard instead of opening the review screen).
 	Disabled string
 
+	// Audio plays pronunciations from files Sounds downloads; nil Audio
+	// means no player was found (AudioErr says why).
+	Audio    AudioPlayer
+	Sounds   Downloads
+	AudioErr error
+
 	// ready points at the App's flag: the alt screen is up, so kitty
 	// uploads can be sent. Until then glyphs draw as a blank block.
 	ready *bool
@@ -83,7 +89,8 @@ const (
 
 // Review is the review session screen.
 type Review struct {
-	name   string // the persisted session's name: reviews, or a lesson quiz
+	name   string         // the persisted session's name: reviews, or a lesson quiz
+	prefs  wk.Preferences // autoplay
 	deps   Deps
 	rdeps  ReviewDeps
 	sess   *session.Session
@@ -147,6 +154,7 @@ func LoadReview(ctx context.Context, deps Deps, rdeps ReviewDeps, user wk.User) 
 	}
 	rng := rand.New(rand.NewPCG(uint64(time.Now().UnixNano()), 0x9e3779b97f4a7c15))
 	r := newReview(deps, rdeps, sessionName)
+	r.prefs = user.Preferences
 
 	var snap session.Snapshot
 	if ok, err := deps.Store.LoadSession(ctx, sessionName, &snap); err == nil && ok {
@@ -339,6 +347,11 @@ func (r *Review) key(msg tea.KeyPressMsg) tea.Cmd {
 			r.openItem()
 			return nil
 		}
+	case "p":
+		if r.state == graded && r.audible() {
+			r.warn = ""
+			return playAudio(r.answeredIt.Subject)
+		}
 	case "enter":
 		return r.enter()
 	case "backspace":
@@ -436,7 +449,29 @@ func (r *Review) enter() tea.Cmd {
 		cmd = r.upload()
 	}
 	r.save()
+	if correct && q.Kind == session.Reading && r.autoplay() {
+		cmd = tea.Batch(cmd, playAudio(it.Subject))
+	}
 	return cmd
+}
+
+// autoplay follows the user's WaniKani setting for this kind of session.
+func (r *Review) autoplay() bool {
+	if r.lessons() {
+		return r.prefs.LessonsAutoplayAudio
+	}
+	return r.prefs.ReviewsAutoplayAudio
+}
+
+// audible reports whether the answered item has a recording that may be
+// played now: its reading is no secret (asked already, or kana vocabulary).
+func (r *Review) audible() bool {
+	it := r.answeredIt.Subject
+	if !hasAudio(it) {
+		return false
+	}
+	_, reading := r.revealed(r.answered)
+	return reading || it.Object == wk.ObjectKanaVocabulary
 }
 
 func (r *Review) save() {
@@ -529,6 +564,9 @@ func (r *Review) View() string {
 	help := "Enter submit · Esc dashboard · ctrl+w wrap-up"
 	if r.state == graded {
 		help = "Enter next · Tab answer · i item · Esc dashboard · ctrl+w wrap-up"
+		if r.audible() {
+			help = "Enter next · Tab answer · i item · p audio · Esc dashboard · ctrl+w wrap-up"
+		}
 	}
 	if r.item != nil {
 		return r.item.View()

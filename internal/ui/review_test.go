@@ -30,6 +30,7 @@ type harness struct {
 	st   *store.Store
 	raw  strings.Builder // raw output (kitty uploads) the app sent
 	fake *fakeKitty      // the renderer: every glyph's upload is tracked
+	snd  *fakeAudio      // the audio player: what was played
 }
 
 func newHarness(t *testing.T) *harness {
@@ -54,11 +55,12 @@ func newHarness(t *testing.T) *harness {
 		t.Fatal(err)
 	}
 	fake := &fakeKitty{seen: map[string]bool{}}
+	snd := &fakeAudio{}
 	app := NewApp(
 		Deps{Store: st, Syncer: syncer, Now: func() time.Time { return clock }, Location: time.UTC, Endpoint: "mock"},
-		ReviewDeps{Renderer: fake, Uploader: &wksync.Uploader{Client: client, Store: st}},
+		ReviewDeps{Renderer: fake, Uploader: &wksync.Uploader{Client: client, Store: st}, Audio: snd, Sounds: snd},
 	)
-	h := &harness{t: t, app: app, mock: m, st: st, fake: fake}
+	h := &harness{t: t, app: app, mock: m, st: st, fake: fake, snd: snd}
 	h.send(tea.WindowSizeMsg{Width: 100, Height: 30})
 	h.send(graphicsReadyMsg{}) // as App.Init's timer would
 	h.send(h.app.dash.load()())

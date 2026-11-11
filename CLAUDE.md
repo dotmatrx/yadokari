@@ -60,6 +60,12 @@ anything with `--live` yourself. Tokens used during development are read-only.
 - `internal/markup` — WaniKani mnemonic/hint markup (`<radical>`, `<kanji>`, `<reading>`,
   `<ja>`, `<a href>`…) → paragraphs of typed spans. Tolerant of malformed input (a close
   tag closes the innermost open tag). Pure; `ui.renderMarkup` styles and wraps it.
+- `internal/audio` — picks a pronunciation recording (default voice, primary reading,
+  a format the player handles) and plays it with the first external player found
+  (`pw-play`, `paplay`, `ffplay`, `mpv`; the static binary can't open a sound device),
+  detached from the terminal. In the UI only `App` plays (`playAudioMsg`); files come
+  from the download cache (`~/.cache/yadokari/audio`). The toolbox has no player unless
+  `pipewire-utils` is installed in it; the host has `pw-play`.
 - `internal/ime` — incremental romaji→kana converter (WanaKana IME-mode behaviour) and
   kana helpers. Pure.
 - `internal/store` — SQLite cache: raw API JSON + indexed columns, timestamps as Unix
@@ -109,7 +115,7 @@ anything with `--live` yourself. Tokens used during development are read-only.
 - `docs/roadmap.md` — milestone status and next steps.
 - `docs/wanikani-api.md` — API notes and known doc ambiguities.
 - `docs/backlog.md` — deferred ideas; add to it rather than leaving them in chat.
-- `internal/` — real packages (still planned: `audio`, lessons). Keep `session`, `answer`, `markup` and `ime`
+- `internal/` — real packages Keep `session`, `answer`, `markup` and `ime`
   free of I/O and UI code, and table-test them heavily.
 - `spikes/` — throwaway experiments and their findings; see `spikes/README.md`
 

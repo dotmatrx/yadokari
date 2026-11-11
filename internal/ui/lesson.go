@@ -47,6 +47,7 @@ type Lesson struct {
 	idx   int
 	page  *ItemPage
 	rng   *rand.Rand
+	prefs wk.Preferences // autoplay
 
 	images map[int][]byte // subject ID → SVG, for image-only radicals
 
@@ -69,7 +70,7 @@ func LoadLessons(ctx context.Context, deps Deps, rdeps ReviewDeps, user wk.User)
 	if ok, err := deps.Store.LoadSession(ctx, lessonSessionName, &snap); err == nil && ok {
 		if sess, ordered, ok := resumable(snap, byAssignment, rng); ok {
 			q := newReview(deps, rdeps, lessonSessionName)
-			q.sess, q.items, q.resume = sess, ordered, true
+			q.sess, q.items, q.resume, q.prefs = sess, ordered, true, user.Preferences
 			return nil, q, nil
 		}
 		_ = deps.Store.ClearSession(ctx, lessonSessionName)
@@ -77,7 +78,7 @@ func LoadLessons(ctx context.Context, deps Deps, rdeps ReviewDeps, user wk.User)
 	if len(items) == 0 {
 		return nil, nil, errors.New("no lessons are available")
 	}
-	l := &Lesson{deps: deps, rdeps: rdeps, rng: rng, images: map[int][]byte{},
+	l := &Lesson{deps: deps, rdeps: rdeps, rng: rng, images: map[int][]byte{}, prefs: user.Preferences,
 		items: pickLessons(items, user.Preferences, rng)}
 	if err := l.open(0, 0); err != nil {
 		return nil, nil, err
@@ -122,6 +123,9 @@ func (l *Lesson) open(i, tab int) error {
 	p.Strip = l.strip(i)
 	p.Progress = fmt.Sprintf("%d / %d", i+1, len(l.items))
 	p.Help = "←/→ next · ↑/↓ scroll · Esc dashboard"
+	if p.audible() {
+		p.Help = "←/→ next · ↑/↓ scroll · p audio · Esc dashboard"
+	}
 	if tab < 0 {
 		tab = len(p.tabs) - 1
 	}
@@ -180,10 +184,19 @@ func (l *Lesson) Update(msg tea.Msg) (*Lesson, tea.Cmd) {
 			}
 		}
 	case tea.KeyPressMsg:
+		was := l.onTab()
 		cmd = l.key(msg)
+		// Arriving on a Reading tab plays the word, as WaniKani does.
+		if now := l.onTab(); now != was && l.page.tabs[l.page.tab] == tabReading &&
+			l.prefs.LessonsAutoplayAudio && l.page.audible() {
+			cmd = tea.Batch(cmd, playAudio(l.page.data.Subject))
+		}
 	}
 	return l, cmd
 }
+
+// onTab identifies the page and tab on screen.
+func (l *Lesson) onTab() [2]int { return [2]int{l.idx, l.page.tab} }
 
 // DrawGlyph draws the current page's glyph; see Review.DrawGlyph.
 func (l *Lesson) DrawGlyph() { l.page.DrawGlyph() }
@@ -235,6 +248,7 @@ func (l *Lesson) quiz() tea.Cmd {
 		}
 	}
 	q := newReview(l.deps, l.rdeps, lessonSessionName)
+	q.prefs = l.prefs
 	q.sess = session.New(sItems, session.Options{ActiveSize: len(sItems)}, l.rng)
 	q.items = l.items
 	for id, raw := range l.images {

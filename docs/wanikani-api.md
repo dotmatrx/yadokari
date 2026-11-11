@@ -115,6 +115,16 @@ From `writes.log` (the app logs every write attempt and reply next to its databa
   7→5 with 1 miss, 8→6 with 2, 2→1 with 3, 1→1 with 1), covering both the Apprentice
   and the doubled Guru-and-up penalty.
 
+## Observed on live lesson starts (first `--live` batch, 2026-11-11)
+
+From `writes.log`: 5 starts, all accepted.
+
+- `PUT /v2/assignments/<id>/start` returns **200 OK** (not 201) with the updated
+  `assignment` resource itself (no `resources_updated` wrapper).
+- `started_at` is honoured as sent (nanoseconds truncated to microseconds).
+- Result: `srs_stage` 1, `started_at` as sent, `available_at` = `started_at` + 4 h
+  truncated down to the hour (11:14 → 15:00), matching the mock.
+
 ## Not documented — still to verify
 
 - Token permission names required for each write (the user's token has full write).

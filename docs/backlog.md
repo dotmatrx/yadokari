@@ -5,6 +5,7 @@ up; delete it when done or dropped.
 
 | Added | Item | Notes |
 |---|---|---|
+| 2026-11-11 | Audio settings: player override (config key), voice choice, autoplay toggles independent of WaniKani's | Today: first player found on PATH, the WK default voice and WK autoplay preferences. M5 settings |
 | 2026-11-08 | Packaging beyond `just install`: tagged releases (goreleaser), then maybe COPR / AUR / Homebrew | Design doc open question; M5. The binary is static, so release artefacts are simple |
 | 2026-11-08 | A config setting to make `--live` the default | Needs the user to relax the safety rule in CLAUDE.md (writes only with `--live`); a shell alias does the job meanwhile |
 | 2026-11-07 | Expose settings that exist in code but have no way to set them: answer strictness (`answer.Strictness`), session order / back-to-back / reading-first / active-set size / item limit (`session.Options`), retype-after-typo (`AllowUndo`, a key like ctrl+z), graphics tier override (`--gfx` flag exists; config key missing), font path (`glyph.FindFont`) | Config file first, settings screen in M5 |

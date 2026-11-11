@@ -38,9 +38,11 @@ someone else (after M4 and M5's packaging). `just build`/`just install` stamp
   `assignments:start` for lessons.
 - **UI pass done:** the user approved round 3 on 2026-11-11.
 - **Design doc:** the half-block suggestions (five edits) are accepted; none pending.
-- **M4:** markup renderer, item page and lesson flow done against the mock; next is the
-  user trying lessons on the mock, then a first live batch, then audio. The user liked
-  the item page in Ghostty; its empty space is left as is until lessons have been used.
+- **M4:** markup renderer, item page, lessons (first live batch of 5 on 2026-11-11, all
+  accepted, outbox empty) and audio done. Glyph uploads now go through one place
+  (`App.Update`), enforced by the test harness. Left: the user hearing audio for real
+  (toolbox needs `pipewire-utils`), an optional resize check, then tag v0.4.0. The item
+  page's empty space is left as is until lessons have been used more.
 - Daily driver: Ghostty on the host, app from the `yadokari` toolbox (kitty tier via
   `gfx.Probe`); `just install` puts a static binary in `~/.local/bin`.
 - `.dev/yadokari.db` (gitignored) may hold a saved review session; `r` resumes it.
@@ -118,7 +120,11 @@ live API without `--live`, as reviews are.
    finished → summary ("Learned"). Quiz saved after each answer and resumed by `l`.
    Next: the user tries it on the mock (`just mock --demo` + `just dev`), then a first
    live lesson batch (irreversible; the user runs it).
-4. Audio, last.
+4. ~~Audio~~ Done 2026-11-11: `internal/audio` + `p` on item pages, lesson pages and
+   after a graded answer (not while the reading is hidden); autoplay per the user's
+   WaniKani settings (correct reading in reviews/lesson quiz; arriving on a lesson's
+   Reading tab). Waits on the user hearing it on the real system.
+5. Then: tag v0.4.0 (M4 done).
 
 ## Open questions
 

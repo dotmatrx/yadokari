@@ -102,6 +102,14 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		a.ready = true
 		return a, nil
 
+	case playAudioMsg:
+		return a, a.play(msg.subject)
+	case audioDoneMsg:
+		if msg.err != nil {
+			a.audioProblem(msg.err)
+		}
+		return a, nil
+
 	case tea.WindowSizeMsg:
 		a.width, a.height = msg.Width, msg.Height
 		a.dash.Update(msg)

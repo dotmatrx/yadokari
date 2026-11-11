@@ -8,11 +8,13 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"time"
 
 	tea "charm.land/bubbletea/v2"
 
+	"github.com/jtharris/yadokari/internal/audio"
 	"github.com/jtharris/yadokari/internal/config"
 	"github.com/jtharris/yadokari/internal/gfx"
 	"github.com/jtharris/yadokari/internal/glyph"
@@ -135,6 +137,12 @@ func reviewDeps(client *wk.Client, st *store.Store, gfxTier string) (ui.ReviewDe
 		cacheDir = os.TempDir()
 	}
 	rd.Images = glyph.ImageCache{Dir: filepath.Join(cacheDir, "yadokari", "images")}
+	rd.Sounds = glyph.ImageCache{Dir: filepath.Join(cacheDir, "yadokari", "audio")}
+	if player, err := audio.Find(exec.LookPath); err == nil {
+		rd.Audio = player
+	} else {
+		rd.AudioErr = err // shown when p is pressed; not worth a startup warning
+	}
 
 	// Ask the terminal at most once, and only if needed.
 	var probed *gfx.Probed

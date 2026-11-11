@@ -56,7 +56,8 @@ func ImageMask(raw []byte, contentType string, w, h int) (*image.Alpha, error) {
 	return Mask(img, w, h), nil
 }
 
-// ImageCache downloads radical images once and keeps them on disk.
+// ImageCache downloads files once and keeps them on disk: radical images,
+// and (in its own directory) pronunciation audio.
 type ImageCache struct {
 	Dir    string
 	Client *http.Client
@@ -64,15 +65,25 @@ type ImageCache struct {
 
 // Get returns the bytes at url, from disk if cached.
 func (c ImageCache) Get(ctx context.Context, url string) ([]byte, error) {
+	path, err := c.File(ctx, url)
+	if err != nil {
+		return nil, err
+	}
+	return os.ReadFile(path)
+}
+
+// File returns the path of the cached file for url, downloading it first
+// if needed.
+func (c ImageCache) File(ctx context.Context, url string) (string, error) {
 	sum := sha256.Sum256([]byte(url))
 	path := filepath.Join(c.Dir, hex.EncodeToString(sum[:12]))
-	if raw, err := os.ReadFile(path); err == nil && len(raw) > 0 {
-		return raw, nil
+	if st, err := os.Stat(path); err == nil && st.Size() > 0 {
+		return path, nil
 	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	client := c.Client
 	if client == nil {
@@ -80,21 +91,22 @@ func (c ImageCache) Get(ctx context.Context, url string) ([]byte, error) {
 	}
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("glyph: %s: HTTP %d", url, resp.StatusCode)
+		return "", fmt.Errorf("glyph: %s: HTTP %d", url, resp.StatusCode)
 	}
 	raw, err := io.ReadAll(io.LimitReader(resp.Body, 8<<20))
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-	if err := os.MkdirAll(c.Dir, 0o700); err == nil {
-		tmp := path + ".tmp"
-		if os.WriteFile(tmp, raw, 0o600) == nil {
-			_ = os.Rename(tmp, path)
-		}
+	if err := os.MkdirAll(c.Dir, 0o700); err != nil {
+		return "", err
 	}
-	return raw, nil
+	tmp := path + ".tmp"
+	if err := os.WriteFile(tmp, raw, 0o600); err != nil {
+		return "", err
+	}
+	return path, os.Rename(tmp, path)
 }

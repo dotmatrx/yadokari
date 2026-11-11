@@ -121,6 +121,9 @@ type ItemPage struct {
 	// (e.g. a lesson batch) goes in the header's right when it fits, else
 	// Progress. Help replaces the footer's key hints.
 	Section, Strip, Progress, Help string
+	// Status is a one-off message for the footer (e.g. an audio problem),
+	// cleared by the next key.
+	Status string
 
 	width, height int
 }
@@ -147,7 +150,12 @@ func (p *ItemPage) SetSize(w, h int) { p.width, p.height = w, h }
 
 // Key handles a key press: tabs, scrolling, and closing.
 func (p *ItemPage) Key(msg tea.KeyPressMsg) tea.Cmd {
+	p.Status = ""
 	switch msg.String() {
+	case "p":
+		if p.audible() {
+			return playAudio(p.data.Subject)
+		}
 	case "esc", "q", "i", "enter":
 		return func() tea.Msg { return ItemClosedMsg{} }
 	case "right", "l", "tab":
@@ -166,6 +174,12 @@ func (p *ItemPage) Key(msg tea.KeyPressMsg) tea.Cmd {
 		p.top = 0
 	}
 	return nil
+}
+
+// audible reports whether p plays the item's pronunciation: it has one,
+// and its reading isn't hidden.
+func (p *ItemPage) audible() bool {
+	return hasAudio(p.data.Subject) && (!p.HideReading || p.data.Subject.Object == wk.ObjectKanaVocabulary)
 }
 
 func (p *ItemPage) setTab(i int) {
@@ -231,6 +245,9 @@ func (p *ItemPage) View() string {
 	}
 	if help == "" {
 		help = "←/→ tabs · ↑/↓ scroll · Esc back"
+		if p.audible() {
+			help = "←/→ tabs · ↑/↓ scroll · p audio · Esc back"
+		}
 	}
 	left := " " + boldSt.Render("yadokari") + mutedSt.Render(" · "+section)
 	right := mutedSt.Render(fmt.Sprintf("%s · level %d", typeName[subj.Object], subj.Data.Level))
@@ -241,6 +258,12 @@ func (p *ItemPage) View() string {
 	}
 	header := spread(left, right+" ", w)
 	footer := padRight(" "+mutedSt.Render(help), w)
+	if p.Status != "" {
+		footer = spread(" "+mutedSt.Render(help), warnSt.Render(p.Status)+" ", w)
+		if lipgloss.Width(footer) > w {
+			footer = padRight(" "+warnSt.Render(p.Status), w)
+		}
+	}
 
 	cols, rows := p.glyphSize()
 	bg := typeColour[subj.Object]
