@@ -85,10 +85,21 @@ func New(types []string, argv ...string) *Player {
 	return &Player{Name: argv[0], Types: types, argv: argv}
 }
 
-// Play plays the file and waits until it ends, stopping whatever this
-// player was playing first. The player gets no terminal: no input or
-// output, and its own process group, so it can't disturb the TUI.
+// Play plays the file and waits until it ends; see Start.
 func (p *Player) Play(ctx context.Context, path string) error {
+	wait, err := p.Start(ctx, path)
+	if err != nil {
+		return err
+	}
+	return wait()
+}
+
+// Start starts playing the file, stopping whatever this player was playing,
+// and returns once the player is running; wait blocks until it ends. The
+// player gets no terminal: no input or output, and its own process group,
+// so it can't disturb the TUI. A play stopped by a newer one, or by ctx,
+// reports no error.
+func (p *Player) Start(ctx context.Context, path string) (wait func() error, err error) {
 	cmd := exec.CommandContext(ctx, p.argv[0], append(slices.Clone(p.argv[1:]), path)...)
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
@@ -100,19 +111,22 @@ func (p *Player) Play(ctx context.Context, path string) error {
 	}
 	if err := cmd.Start(); err != nil {
 		p.mu.Unlock()
-		return fmt.Errorf("audio: %s: %w", p.Name, err)
+		return nil, fmt.Errorf("audio: %s: %w", p.Name, err)
 	}
 	p.cur = cmd
 	p.mu.Unlock()
 
-	err := cmd.Wait()
-	p.mu.Lock()
-	stopped := p.cur != cmd // a newer Play replaced this one
-	if !stopped {
-		p.cur = nil
-	}
-	p.mu.Unlock()
-	if err != nil && !stopped && ctx.Err() == nil {
+	return func() error {
+		err := cmd.Wait()
+		p.mu.Lock()
+		stopped := p.cur != cmd // a newer Start replaced this one
+		if !stopped {
+			p.cur = nil
+		}
+		p.mu.Unlock()
+		if err == nil || stopped || ctx.Err() != nil {
+			return nil
+		}
 		msg := strings.TrimSpace(stderr.String())
 		if i := strings.LastIndexByte(msg, '\n'); i >= 0 {
 			msg = msg[i+1:]
@@ -121,8 +135,7 @@ func (p *Player) Play(ctx context.Context, path string) error {
 			return fmt.Errorf("audio: %s: %s", p.Name, msg)
 		}
 		return fmt.Errorf("audio: %s: %w", p.Name, err)
-	}
-	return nil
+	}, nil
 }
 
 // Formats returns the content types the player plays, preferred first.

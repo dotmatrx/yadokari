@@ -104,10 +104,10 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case playAudioMsg:
 		return a, a.play(msg.subject)
+	case audioStartedMsg:
+		return a, a.audioStarted(msg)
 	case audioDoneMsg:
-		if msg.err != nil {
-			a.audioProblem(msg.err)
-		}
+		a.audioDone(msg)
 		return a, nil
 
 	case tea.WindowSizeMsg:

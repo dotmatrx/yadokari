@@ -123,7 +123,9 @@ live API without `--live`, as reviews are.
 4. ~~Audio~~ Done 2026-11-11: `internal/audio` + `p` on item pages, lesson pages and
    after a graded answer (not while the reading is hidden); autoplay per the user's
    WaniKani settings (correct reading in reviews/lesson quiz; arriving on a lesson's
-   Reading tab). Waits on the user hearing it on the real system.
+   Reading tab). Heard on the real system 2026-11-11 (toolbox needed `pipewire-utils`).
+   Header badge `♪ loading…` / `🔊 playing` (2026-11-11), after moving every screen's
+   header onto one `headerLine` helper.
 5. Then: tag v0.4.0 (M4 done).
 
 ## Open questions

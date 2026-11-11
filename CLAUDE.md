@@ -63,7 +63,8 @@ anything with `--live` yourself. Tokens used during development are read-only.
 - `internal/audio` — picks a pronunciation recording (default voice, primary reading,
   a format the player handles) and plays it with the first external player found
   (`pw-play`, `paplay`, `ffplay`, `mpv`; the static binary can't open a sound device),
-  detached from the terminal. In the UI only `App` plays (`playAudioMsg`); files come
+  detached from the terminal. In the UI only `App` plays (`playAudioMsg`), showing
+  `♪ loading…` / `🔊 playing` in the header (play numbers ignore stale ends); files come
   from the download cache (`~/.cache/yadokari/audio`). The toolbox has no player unless
   `pipewire-utils` is installed in it; the host has `pw-play`.
 - `internal/ime` — incremental romaji→kana converter (WanaKana IME-mode behaviour) and
@@ -81,7 +82,8 @@ anything with `--live` yourself. Tokens used during development are read-only.
   `WANIKANI_API_TOKEN` → OS keyring → `0600` file fallback. Tests use a fake keyring;
   don't touch the real keyring from tests or tooling without asking the user.
 - `internal/ui` — Bubble Tea screens under a root `App`, all in one frame (`layout.go`:
-  header on the top row, key/status bar on the bottom, rounded `panel`s in ANSI 8
+  header on the top row via `headerLine` (ranked segments, fits any width; the audio
+  badge comes from App's `shared` state), key/status bar on the bottom, rounded `panel`s in ANSI 8
   grey, no painted backgrounds except the review glyph field): dashboard (from the store, sync in
   the background via a channel), review (session + IME + answer + gfx; snapshot saved
   after every answer; completions → outbox → `wksync.Uploader`), summary, and the

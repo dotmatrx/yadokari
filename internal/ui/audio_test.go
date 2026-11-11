@@ -15,13 +15,27 @@ import (
 )
 
 // fakeAudio is both the download cache (a URL is its own path) and the
-// player (it records what it played).
-type fakeAudio struct{ played []string }
+// player (it records what it played). onFile and onWait run while a
+// recording downloads and while it plays, to look at the screen then.
+type fakeAudio struct {
+	played         []string
+	onFile, onWait func()
+}
 
-func (f *fakeAudio) File(_ context.Context, url string) (string, error) { return url, nil }
-func (f *fakeAudio) Play(_ context.Context, path string) error {
+func (f *fakeAudio) File(_ context.Context, url string) (string, error) {
+	if f.onFile != nil {
+		f.onFile()
+	}
+	return url, nil
+}
+func (f *fakeAudio) Start(_ context.Context, path string) (func() error, error) {
 	f.played = append(f.played, path)
-	return nil
+	return func() error {
+		if f.onWait != nil {
+			f.onWait()
+		}
+		return nil
+	}, nil
 }
 func (f *fakeAudio) Formats() []string { return []string{audio.MPEG} }
 
@@ -131,5 +145,48 @@ func TestAudioProblemsAreShown(t *testing.T) {
 	h.key("down")
 	if strings.Contains(h.screen(), "no audio player found") {
 		t.Errorf("the next key clears it:\n%s", h.screen())
+	}
+}
+
+func TestAudioBadge(t *testing.T) {
+	h := newHarness(t)
+	h.key("l")
+	for h.app.lesson.page.data.Subject.Object != wk.ObjectVocabulary {
+		h.key("enter")
+	}
+	header := func() string { return strings.SplitN(h.screen(), "\n", 2)[0] }
+	var loading, playing string
+	h.snd.onFile = func() { loading = header() }
+	h.snd.onWait = func() { playing = header() }
+	h.key("p")
+	if !strings.Contains(loading, "♪ loading…") {
+		t.Errorf("while downloading: %q", loading)
+	}
+	if !strings.Contains(playing, "🔊 playing") {
+		t.Errorf("while playing: %q", playing)
+	}
+	if strings.Contains(header(), "playing") || strings.Contains(header(), "loading") {
+		t.Errorf("after: %q", header())
+	}
+}
+
+// TestAudioBadgeIgnoresStaleDone: p pressed again stops the first clip;
+// the first clip's end must not clear the second one's badge.
+func TestAudioBadgeIgnoresStaleDone(t *testing.T) {
+	h := newHarness(t)
+	a := h.app
+	subj := wk.Resource[wk.Subject]{ID: 201, Object: wk.ObjectVocabulary, Data: wk.Subject{
+		PronunciationAudios: []wk.PronunciationAudio{{URL: "u", ContentType: audio.MPEG}}}}
+	first := a.play(subj)().(audioStartedMsg)
+	second := a.play(subj)().(audioStartedMsg)
+	a.Update(first)
+	a.Update(second)
+	a.Update(audioDoneMsg{gen: first.gen})
+	if a.shared.audio != audioPlaying {
+		t.Fatalf("a stale done ended the newer play: state %d", a.shared.audio)
+	}
+	a.Update(audioDoneMsg{gen: second.gen})
+	if a.shared.audio != audioIdle {
+		t.Errorf("state %d after the newer play ended", a.shared.audio)
 	}
 }

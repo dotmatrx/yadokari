@@ -5,6 +5,7 @@ up; delete it when done or dropped.
 
 | Added | Item | Notes |
 |---|---|---|
+| 2026-11-11 | Audio progress bar (or spinner) next to the 🔊 badge | Players report no position: it would be wall-clock time over the clip length (needs mp3 parsing), off by the player's ~0.1–0.2 s start-up, and needs a redraw ticker, for 1–2 s clips. Revisit if the badge feels too static |
 | 2026-11-11 | Audio settings: player override (config key), voice choice, autoplay toggles independent of WaniKani's | Today: first player found on PATH, the WK default voice and WK autoplay preferences. M5 settings |
 | 2026-11-08 | Packaging beyond `just install`: tagged releases (goreleaser), then maybe COPR / AUR / Homebrew | Design doc open question; M5. The binary is static, so release artefacts are simple |
 | 2026-11-08 | A config setting to make `--live` the default | Needs the user to relax the safety rule in CLAUDE.md (writes only with `--live`); a shell alias does the job meanwhile |
