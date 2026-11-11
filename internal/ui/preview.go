@@ -24,8 +24,7 @@ func Preview(ctx context.Context, d Deps, rd ReviewDeps, screen string, w, h int
 	size := tea.WindowSizeMsg{Width: w, Height: h}
 	// Ready from the start: screens only draw in View here, and the caller
 	// sends what that queued (Flush).
-	ready := true
-	rd.ready = &ready
+	rd.shared = &shared{graphicsReady: true}
 	switch screen {
 	case "dashboard":
 		m := NewDashboard(d)
@@ -137,7 +136,7 @@ func previewItem(ctx context.Context, d Deps, rd ReviewDeps, vocab bool) (*ItemP
 	if err != nil {
 		return nil, err
 	}
-	p := NewItemPage(data, rd.glyphs(), nil)
+	p := NewItemPage(data, rd.page(), nil)
 	if !vocab && len(p.tabs) > 1 {
 		p.setTab(1)
 	}

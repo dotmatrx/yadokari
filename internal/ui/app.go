@@ -32,7 +32,7 @@ type App struct {
 	summary Summary
 	width   int
 	height  int
-	ready   bool // the alt screen is up: kitty uploads can be sent
+	shared  shared // graphics ready, audio state; screens read it via rdeps
 }
 
 // NewApp builds the app, starting on the dashboard.
@@ -44,7 +44,7 @@ func NewApp(d Deps, rd ReviewDeps) *App {
 		d.Location = time.Local
 	}
 	a := &App{deps: d, rdeps: rd, dash: NewDashboard(d)}
-	a.rdeps.ready = &a.ready
+	a.rdeps.shared = &a.shared
 	return a
 }
 
@@ -81,7 +81,7 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 // once the alt screen is up, sends the queue.
 func (a *App) graphics() tea.Cmd {
 	rd := a.rdeps.Renderer
-	if !a.ready || rd == nil {
+	if !a.shared.graphicsReady || rd == nil {
 		return nil
 	}
 	switch {
@@ -99,7 +99,7 @@ func (a *App) graphics() tea.Cmd {
 func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case graphicsReadyMsg:
-		a.ready = true
+		a.shared.graphicsReady = true
 		return a, nil
 
 	case playAudioMsg:

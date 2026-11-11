@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"slices"
 	"strings"
 
 	"charm.land/lipgloss/v2"
@@ -151,3 +152,72 @@ func progressBar(p progressLike, barW int) string {
 }
 
 type progressLike struct{ passed, needed, kanji int }
+
+// segment is one part of the header's right side (already styled). When
+// the row is too narrow, the lowest rank goes first: replaced by its alt
+// (a shorter form, which also drops sep) if it has one, else dropped. sep
+// goes after it, before the next segment; the default is a muted " · ".
+type segment struct {
+	text string
+	rank int
+	alt  string
+	sep  string
+}
+
+// Header ranks: what survives a narrow terminal longest.
+const (
+	rankExtra  = 1 // nice to have
+	rankInfo   = 2
+	rankKey    = 3 // the screen's main status
+	rankUrgent = 4 // problems and live state (audio)
+)
+
+func appTitle(section string) string {
+	return boldSt.Render("yadokari") + mutedSt.Render(" · "+section)
+}
+
+// headerLine is the top row of every screen, exactly w cells: left (the
+// app and section) and the segments on the right. With sh set, the shared
+// state's badges (audio) come first on the right.
+func headerLine(left string, segs []segment, w int, sh *shared) string {
+	if sh != nil {
+		if b := sh.audioBadge(); b != "" {
+			segs = append([]segment{{text: b, rank: rankUrgent}}, segs...)
+		}
+	}
+	segs = slices.DeleteFunc(slices.Clone(segs), func(s segment) bool { return s.text == "" })
+	left = " " + left
+	join := func() string {
+		var b strings.Builder
+		for i, s := range segs {
+			if i > 0 {
+				sep := segs[i-1].sep
+				if sep == "" {
+					sep = mutedSt.Render(" · ")
+				}
+				b.WriteString(sep)
+			}
+			b.WriteString(s.text)
+		}
+		return b.String()
+	}
+	right := join()
+	for len(segs) > 0 && lipgloss.Width(left)+lipgloss.Width(right)+2 > w {
+		low := 0
+		for i, s := range segs {
+			if s.rank < segs[low].rank || (s.rank == segs[low].rank && i > low) {
+				low = i
+			}
+		}
+		if segs[low].alt != "" {
+			segs[low].text, segs[low].alt, segs[low].sep = segs[low].alt, "", ""
+		} else {
+			segs = slices.Delete(segs, low, low+1)
+		}
+		right = join()
+	}
+	if right == "" {
+		return padRight(left, w)
+	}
+	return padRight(spread(left, right+" ", w), w)
+}

@@ -96,14 +96,14 @@ func TestItemPageTabsAndScroll(t *testing.T) {
 		wk.ObjectVocabulary:     "Kanji · Meaning · Reading · Context",
 		wk.ObjectKanaVocabulary: "Meaning · Context",
 	} {
-		p := NewItemPage(itemFixture(obj), GlyphDeps{}, nil)
+		p := NewItemPage(itemFixture(obj), PageDeps{}, nil)
 		p.SetSize(80, 24)
 		if out := ansi.Strip(p.View()); !strings.Contains(out, want) {
 			t.Errorf("%s: tabs %q missing:\n%s", obj, want, out)
 		}
 	}
 
-	p := NewItemPage(itemFixture(wk.ObjectVocabulary), GlyphDeps{}, nil)
+	p := NewItemPage(itemFixture(wk.ObjectVocabulary), PageDeps{}, nil)
 	p.SetSize(60, 20)
 	p.Key(tea.KeyPressMsg{Code: tea.KeyRight}) // Meaning
 	out := ansi.Strip(p.View())
@@ -129,7 +129,7 @@ func TestItemPageTabsAndScroll(t *testing.T) {
 }
 
 func TestItemPageHidesMeaning(t *testing.T) {
-	p := NewItemPage(itemFixture(wk.ObjectVocabulary), GlyphDeps{}, nil)
+	p := NewItemPage(itemFixture(wk.ObjectVocabulary), PageDeps{}, nil)
 	p.HideMeaning = true
 	p.SetSize(80, 24)
 	for _, tab := range []int{1, 3} { // Meaning, Context

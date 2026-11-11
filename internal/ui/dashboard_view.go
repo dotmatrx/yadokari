@@ -11,16 +11,17 @@ import (
 // terminal, the header pinned to the top row and the status/key bar to the
 // bottom row (chosen 2026-11-08 over a borderless "rules" design).
 
-func (m *Dashboard) headerParts() (left, right string) {
-	left = boldSt.Render("yadokari")
+func (m *Dashboard) header(w int) string {
+	left := boldSt.Render("yadokari")
 	if m.deps.Version != "" {
 		left += " " + mutedSt.Render(m.deps.Version)
 	}
+	var segs []segment
 	if m.user != nil {
-		right = mutedSt.Render(fmt.Sprintf("%s · level %d · ", m.user.Data.Username, m.user.Data.Level))
+		segs = append(segs, segment{text: mutedSt.Render(fmt.Sprintf("%s · level %d", m.user.Data.Username, m.user.Data.Level)), rank: rankInfo})
 	}
-	right += mutedSt.Render(m.deps.Endpoint)
-	return left, right
+	segs = append(segs, segment{text: mutedSt.Render(m.deps.Endpoint), rank: rankKey})
+	return headerLine(left, segs, w, nil)
 }
 
 func (m *Dashboard) footerLine(w int) string {
@@ -88,8 +89,7 @@ func markOf(objType string) string {
 
 func (m *Dashboard) render() string {
 	w, h := max(m.width, 60), max(m.height, 20)
-	l, r := m.headerParts()
-	header := spread(" "+l, r+" ", w)
+	header := m.header(w)
 	footer := m.footerLine(w)
 	if !m.loaded {
 		return frame(header, "\n "+m.firstSyncLine(), footer, h)

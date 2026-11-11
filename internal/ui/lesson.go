@@ -118,7 +118,7 @@ func (l *Lesson) open(i, tab int) error {
 	if err != nil {
 		return err
 	}
-	p := NewItemPage(d, l.rdeps.glyphs(), l.images[it.Subject.ID])
+	p := NewItemPage(d, l.rdeps.page(), l.images[it.Subject.ID])
 	p.Section = "lessons"
 	p.Strip = l.strip(i)
 	p.Progress = fmt.Sprintf("%d / %d", i+1, len(l.items))

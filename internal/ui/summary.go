@@ -98,7 +98,7 @@ func (s Summary) View(w, h int) string {
 	case total > 0:
 		right = fmt.Sprintf("%d reviewed · %d%% correct", total, len(s.Correct)*100/total)
 	}
-	header := spread(" "+boldSt.Render("yadokari")+mutedSt.Render(" · summary"), mutedSt.Render(right)+" ", w)
+	header := headerLine(appTitle("summary"), []segment{{text: mutedSt.Render(right), rank: rankKey}}, w, nil)
 
 	var status string
 	switch {

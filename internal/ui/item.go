@@ -109,7 +109,7 @@ func (t itemTab) title(object string) string {
 // opens it after an answer; lessons will step through it.
 type ItemPage struct {
 	data ItemData
-	gfx  GlyphDeps
+	gfx  PageDeps
 	svg  []byte // the radical image, when the subject has no characters
 	tabs []itemTab
 	tab  int
@@ -128,17 +128,18 @@ type ItemPage struct {
 	width, height int
 }
 
-// GlyphDeps draw the item's glyph; a nil Renderer draws plain text.
-type GlyphDeps struct {
+// PageDeps draw the item's glyph (a nil Renderer draws plain text) and
+// reach the App's shared state (graphics ready, the audio badge).
+type PageDeps struct {
 	Renderer gfx.Renderer
 	Font     *glyph.Font
-	ready    *bool // the App's flag: kitty uploads can be sent
+	shared   *shared
 }
 
-func (g GlyphDeps) graphicsReady() bool { return g.ready != nil && *g.ready }
+func (g PageDeps) graphicsReady() bool { return g.shared != nil && g.shared.graphicsReady }
 
 // NewItemPage opens on the first tab.
-func NewItemPage(d ItemData, g GlyphDeps, svg []byte) *ItemPage {
+func NewItemPage(d ItemData, g PageDeps, svg []byte) *ItemPage {
 	return &ItemPage{data: d, gfx: g, svg: svg, tabs: tabs(d.Subject.Object)}
 }
 
@@ -249,14 +250,15 @@ func (p *ItemPage) View() string {
 			help = "←/→ tabs · ↑/↓ scroll · p audio · Esc back"
 		}
 	}
-	left := " " + boldSt.Render("yadokari") + mutedSt.Render(" · "+section)
-	right := mutedSt.Render(fmt.Sprintf("%s · level %d", typeName[subj.Object], subj.Data.Level))
-	if p.Strip != "" && lipgloss.Width(left)+lipgloss.Width(p.Strip)+lipgloss.Width(right)+6 <= w {
-		right = p.Strip + mutedSt.Render("   ") + right
-	} else if p.Progress != "" {
-		right = mutedSt.Render(p.Progress+" · ") + right
+	// The batch strip shrinks to "2 / 5" before the subject's type goes.
+	segs := []segment{
+		{text: p.Strip, alt: mutedSt.Render(p.Progress), rank: rankInfo, sep: "   "},
+		{text: mutedSt.Render(fmt.Sprintf("%s · level %d", typeName[subj.Object], subj.Data.Level)), rank: rankKey},
 	}
-	header := spread(left, right+" ", w)
+	if p.Strip == "" {
+		segs[0] = segment{text: segs[0].alt, rank: rankInfo}
+	}
+	header := headerLine(appTitle(section), segs, w, p.gfx.shared)
 	footer := padRight(" "+mutedSt.Render(help), w)
 	if p.Status != "" {
 		footer = spread(" "+mutedSt.Render(help), warnSt.Render(p.Status)+" ", w)

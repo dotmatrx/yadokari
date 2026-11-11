@@ -104,7 +104,7 @@ func TestReviewAudioRespectsHiddenReading(t *testing.T) {
 	}
 
 	// An item page with its reading hidden won't play.
-	p := NewItemPage(itemFixture(wk.ObjectVocabulary), GlyphDeps{}, nil)
+	p := NewItemPage(itemFixture(wk.ObjectVocabulary), PageDeps{}, nil)
 	p.data.Subject.Data.PronunciationAudios = []wk.PronunciationAudio{{URL: "x", ContentType: audio.MPEG}}
 	p.HideReading = true
 	if cmd := p.Key(tea.KeyPressMsg{Code: 'p', Text: "p"}); cmd != nil {

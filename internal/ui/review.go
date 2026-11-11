@@ -67,17 +67,17 @@ type ReviewDeps struct {
 	Sounds   Downloads
 	AudioErr error
 
-	// ready points at the App's flag: the alt screen is up, so kitty
-	// uploads can be sent. Until then glyphs draw as a blank block.
-	ready *bool
+	// shared is the App's state (graphics ready, audio): set by NewApp.
+	shared *shared
 }
 
-// graphicsReady reports whether glyphs can be drawn as kitty images yet.
-func (rd ReviewDeps) graphicsReady() bool { return rd.ready != nil && *rd.ready }
+// graphicsReady reports whether glyphs can be drawn as kitty images yet;
+// until then they draw as a blank block.
+func (rd ReviewDeps) graphicsReady() bool { return rd.shared != nil && rd.shared.graphicsReady }
 
-// glyphs is what an item page needs to draw its glyph.
-func (rd ReviewDeps) glyphs() GlyphDeps {
-	return GlyphDeps{Renderer: rd.Renderer, Font: rd.Font, ready: rd.ready}
+// page is what an item page needs: its glyph's renderer and the shared state.
+func (rd ReviewDeps) page() PageDeps {
+	return PageDeps{Renderer: rd.Renderer, Font: rd.Font, shared: rd.shared}
 }
 
 type reviewState int
@@ -610,18 +610,21 @@ func (r *Review) View() string {
 // header: the app name left; progress, accuracy and uploads right.
 func (r *Review) header(w int) string {
 	st := r.sess.Stats()
-	right := fmt.Sprintf("%d / %d", st.Done, st.Total)
+	segs := []segment{{text: mutedSt.Render(fmt.Sprintf("%d / %d", st.Done, st.Total)), rank: rankKey}}
 	if total := r.correct + r.wrong; total > 0 {
-		right += fmt.Sprintf(" · %d%% correct", r.correct*100/total)
+		segs = append(segs, segment{text: mutedSt.Render(fmt.Sprintf("%d%% correct", r.correct*100/total)), rank: rankExtra})
 	}
-	right = mutedSt.Render(right)
 	if r.sess.WrappingUp() {
-		right += mutedSt.Render(" · ") + warnSt.Render("wrapping up")
+		segs = append(segs, segment{text: warnSt.Render("wrapping up"), rank: rankInfo})
 	}
 	if u := r.uploadStatus(); u != "" {
-		right += mutedSt.Render(" · " + u)
+		rank := rankInfo
+		if r.upErr != "" {
+			rank = rankUrgent
+		}
+		segs = append(segs, segment{text: mutedSt.Render(u), rank: rank})
 	}
-	return spread(" "+boldSt.Render("yadokari")+mutedSt.Render(" · "+r.name), right+" ", w)
+	return headerLine(appTitle(r.name), segs, w, r.rdeps.shared)
 }
 
 // answerBox is where the answer box sits: its left column and width.
@@ -740,7 +743,7 @@ func (r *Review) openItem() {
 	}
 	d.Synonyms = it.Synonyms
 	showMeaning, showReading := r.revealed(q)
-	p := NewItemPage(d, r.rdeps.glyphs(), r.images[it.Subject.ID])
+	p := NewItemPage(d, r.rdeps.page(), r.images[it.Subject.ID])
 	p.HideMeaning, p.HideReading = !showMeaning, !showReading
 	p.SetSize(r.width, r.height)
 	r.item = p
