@@ -24,7 +24,7 @@ func (s *Store) ReviewItems(ctx context.Context, now time.Time, maxLevel int) ([
 	if maxLevel <= 0 {
 		maxLevel = 1 << 30
 	}
-	rows, err := s.db.QueryContext(ctx, `
+	return s.items(ctx, `
 		SELECT a.raw, s.raw, sm.raw
 		FROM assignments a
 		JOIN subjects s ON s.id = a.subject_id
@@ -33,6 +33,11 @@ func (s *Store) ReviewItems(ctx context.Context, now time.Time, maxLevel int) ([
 		  AND a.hidden = 0 AND s.hidden = 0 AND s.level <= ?
 		  AND a.id NOT IN (SELECT assignment_id FROM outbox WHERE failed = '')
 		ORDER BY a.id`, micros(now), maxLevel)
+}
+
+// items runs a query returning (assignment, subject, study material) raws.
+func (s *Store) items(ctx context.Context, query string, args ...any) ([]ReviewItem, error) {
+	rows, err := s.db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -62,17 +67,58 @@ func (s *Store) ReviewItems(ctx context.Context, now time.Time, maxLevel int) ([
 	return out, rows.Err()
 }
 
+// LessonItems returns the lessons available now (unlocked, not started, not
+// already queued to start), in WaniKani's lesson order: level, then lesson
+// position. Same rules as Queue's lesson count.
+func (s *Store) LessonItems(ctx context.Context, maxLevel int) ([]ReviewItem, error) {
+	if maxLevel <= 0 {
+		maxLevel = 1 << 30
+	}
+	return s.items(ctx, `
+		SELECT a.raw, s.raw, sm.raw
+		FROM assignments a
+		JOIN subjects s ON s.id = a.subject_id
+		LEFT JOIN study_materials sm ON sm.subject_id = a.subject_id
+		WHERE a.unlocked_at IS NOT NULL AND a.started_at IS NULL AND a.hidden = 0 AND s.hidden = 0 AND s.level <= ?
+		  AND a.id NOT IN (SELECT assignment_id FROM outbox WHERE failed = '')
+		ORDER BY s.level, json_extract(s.raw, '$.data.lesson_position'), s.id`, maxLevel)
+}
+
 // ErrAlreadyQueued means a review for that assignment is already waiting.
 var ErrAlreadyQueued = errors.New("store: a review for this assignment is already queued")
 
-// OutboxItem is a queued review.
+// Outbox row kinds.
+const (
+	KindReview = "review" // POST /reviews
+	KindStart  = "start"  // PUT /assignments/:id/start (a finished lesson)
+)
+
+// OutboxItem is a queued write: a review, or a lesson start.
 type OutboxItem struct {
-	ID        int64
-	SubjectID int
-	Review    wk.ReviewInput
-	Created   time.Time
-	Attempts  int
-	Failed    string
+	ID           int64
+	Kind         string
+	AssignmentID int
+	SubjectID    int
+	Review       wk.ReviewInput // KindReview
+	StartedAt    time.Time      // KindStart
+	Created      time.Time
+	Attempts     int
+	Failed       string
+}
+
+type startPayload struct {
+	StartedAt time.Time `json:"started_at"`
+}
+
+// QueueStart adds a finished lesson to the outbox, to be started at
+// startedAt. Like QueueReview, a pending row for the assignment is never
+// replaced; a rejected one is.
+func (s *Store) QueueStart(ctx context.Context, assignmentID, subjectID int, startedAt time.Time) error {
+	payload, err := json.Marshal(startPayload{StartedAt: startedAt.UTC()})
+	if err != nil {
+		return err
+	}
+	return s.queue(ctx, KindStart, assignmentID, subjectID, string(payload), startedAt)
 }
 
 // QueueReview adds a completed review to the outbox.
@@ -85,14 +131,18 @@ func (s *Store) QueueReview(ctx context.Context, subjectID int, r wk.ReviewInput
 	if r.CreatedAt != nil {
 		created = *r.CreatedAt
 	}
-	// A previously rejected review for the same assignment is replaced; a
+	return s.queue(ctx, KindReview, r.AssignmentID, subjectID, string(payload), created)
+}
+
+func (s *Store) queue(ctx context.Context, kind string, assignmentID, subjectID int, payload string, created time.Time) error {
+	// A previously rejected write for the same assignment is replaced; a
 	// pending one is not (that would be a double submit).
-	res, err := s.db.ExecContext(ctx, `INSERT INTO outbox (assignment_id, subject_id, payload, created_at)
-		VALUES (?, ?, ?, ?)
+	res, err := s.db.ExecContext(ctx, `INSERT INTO outbox (kind, assignment_id, subject_id, payload, created_at)
+		VALUES (?, ?, ?, ?, ?)
 		ON CONFLICT (assignment_id) DO UPDATE SET
-			subject_id = excluded.subject_id, payload = excluded.payload,
+			kind = excluded.kind, subject_id = excluded.subject_id, payload = excluded.payload,
 			created_at = excluded.created_at, attempts = 0, failed = ''
-		WHERE outbox.failed != ''`, r.AssignmentID, subjectID, string(payload), micros(created))
+		WHERE outbox.failed != ''`, kind, assignmentID, subjectID, payload, micros(created))
 	if err != nil {
 		return err
 	}
@@ -105,7 +155,7 @@ func (s *Store) QueueReview(ctx context.Context, subjectID int, r wk.ReviewInput
 // Outbox returns queued reviews, oldest first. Failed ones are included only
 // if withFailed is set.
 func (s *Store) Outbox(ctx context.Context, withFailed bool) ([]OutboxItem, error) {
-	q := `SELECT id, subject_id, payload, created_at, attempts, failed FROM outbox`
+	q := `SELECT id, kind, assignment_id, subject_id, payload, created_at, attempts, failed FROM outbox`
 	if !withFailed {
 		q += ` WHERE failed = ''`
 	}
@@ -119,10 +169,18 @@ func (s *Store) Outbox(ctx context.Context, withFailed bool) ([]OutboxItem, erro
 		var it OutboxItem
 		var payload string
 		var created int64
-		if err := rows.Scan(&it.ID, &it.SubjectID, &payload, &created, &it.Attempts, &it.Failed); err != nil {
+		if err := rows.Scan(&it.ID, &it.Kind, &it.AssignmentID, &it.SubjectID, &payload, &created, &it.Attempts, &it.Failed); err != nil {
 			return nil, err
 		}
-		if err := json.Unmarshal([]byte(payload), &it.Review); err != nil {
+		var err error
+		if it.Kind == KindStart {
+			var p startPayload
+			err = json.Unmarshal([]byte(payload), &p)
+			it.StartedAt = p.StartedAt
+		} else {
+			err = json.Unmarshal([]byte(payload), &it.Review)
+		}
+		if err != nil {
 			return nil, fmt.Errorf("store: outbox %d: %w", it.ID, err)
 		}
 		it.Created = time.UnixMicro(created).UTC()

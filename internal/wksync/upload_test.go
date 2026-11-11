@@ -3,6 +3,7 @@ package wksync
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync"
 	"testing"
 	"time"
@@ -140,5 +141,53 @@ func TestConcurrentFlushesPostOnce(t *testing.T) {
 	}
 	if p, f, _ := e.store.OutboxCounts(ctx); p != 0 || f != 0 {
 		t.Errorf("outbox: %d pending, %d failed", p, f)
+	}
+}
+
+func TestUploadLessonStarts(t *testing.T) {
+	clock := now
+	e := setup(t, wkmock.SampleData(now), &clock)
+	ctx := context.Background()
+	if _, err := e.syncer.Run(ctx, all()); err != nil {
+		t.Fatal(err)
+	}
+	lessons, err := e.store.LessonItems(ctx, 3)
+	if err != nil || len(lessons) != 2 {
+		t.Fatalf("%d lessons, want 2: %v", len(lessons), err)
+	}
+	a := lessons[0].Assignment
+	if err := e.store.QueueStart(ctx, a.ID, a.Data.SubjectID, clock); err != nil {
+		t.Fatal(err)
+	}
+	if err := e.store.QueueStart(ctx, a.ID, a.Data.SubjectID, clock); !errors.Is(err, store.ErrAlreadyQueued) {
+		t.Fatalf("double queue: %v", err)
+	}
+	// A queued start is no longer a lesson, even before upload.
+	if q, _ := e.store.Queue(ctx, clock, 3); q.Lessons != 1 {
+		t.Errorf("lessons while queued: %d, want 1", q.Lessons)
+	}
+	if l, _ := e.store.LessonItems(ctx, 3); len(l) != 1 {
+		t.Errorf("lesson items while queued: %d, want 1", len(l))
+	}
+	box, _ := e.store.Outbox(ctx, false)
+	if len(box) != 1 || box[0].Kind != store.KindStart || box[0].AssignmentID != a.ID || !box[0].StartedAt.Equal(clock) {
+		t.Fatalf("outbox %+v", box)
+	}
+
+	res, err := (&Uploader{Client: e.client, Store: e.store}).Flush(ctx)
+	if err != nil || res.Sent != 1 {
+		t.Fatalf("flush: %+v %v", res, err)
+	}
+	w := e.mock.Writes()
+	if len(w) != 1 || w[0].Method != "PUT" || w[0].Path != fmt.Sprintf("/v2/assignments/%d/start", a.ID) {
+		t.Fatalf("mock saw %+v", w)
+	}
+	// The store took the started assignment: Apprentice 1, no longer a lesson.
+	out, _ := e.store.ReviewOutcomes(ctx, []int{a.ID})
+	if out[a.ID].SRSStage != 1 || out[a.ID].Queued {
+		t.Errorf("outcome %+v", out[a.ID])
+	}
+	if q, _ := e.store.Queue(ctx, clock, 3); q.Lessons != 1 {
+		t.Errorf("lessons after upload: %d, want 1", q.Lessons)
 	}
 }

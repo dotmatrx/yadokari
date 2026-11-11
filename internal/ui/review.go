@@ -71,6 +71,7 @@ const (
 
 // Review is the review session screen.
 type Review struct {
+	name   string // the persisted session's name: reviews, or a lesson quiz
 	deps   Deps
 	rdeps  ReviewDeps
 	sess   *session.Session
@@ -135,7 +136,7 @@ func LoadReview(ctx context.Context, deps Deps, rdeps ReviewDeps, user wk.User) 
 		byAssignment[it.Assignment.ID] = it
 	}
 	rng := rand.New(rand.NewPCG(uint64(time.Now().UnixNano()), 0x9e3779b97f4a7c15))
-	r := &Review{deps: deps, rdeps: rdeps, images: map[int][]byte{}, loading: map[int]bool{}, imgErr: map[int]error{}}
+	r := newReview(deps, rdeps, sessionName)
 
 	var snap session.Snapshot
 	if ok, err := deps.Store.LoadSession(ctx, sessionName, &snap); err == nil && ok {
@@ -163,6 +164,14 @@ func LoadReview(ctx context.Context, deps Deps, rdeps ReviewDeps, user wk.User) 
 	r.sess, r.items = session.New(sItems, opts, rng), items
 	return r, nil
 }
+
+func newReview(deps Deps, rdeps ReviewDeps, name string) *Review {
+	return &Review{name: name, deps: deps, rdeps: rdeps, images: map[int][]byte{}, loading: map[int]bool{}, imgErr: map[int]error{}}
+}
+
+// lessons reports whether this is a lesson quiz: a finished item is started
+// on WaniKani rather than reviewed, and misses cost nothing.
+func (r *Review) lessons() bool { return r.name == lessonSessionName }
 
 // resumable restores a snapshot when every item still in play is still due.
 func resumable(snap session.Snapshot, due map[int]store.ReviewItem, rng *rand.Rand) (*session.Session, []store.ReviewItem, bool) {
@@ -411,7 +420,12 @@ func (r *Review) enter() tea.Cmd {
 		return nil
 	}
 	var cmd tea.Cmd
-	if done != nil {
+	if done != nil && r.lessons() {
+		if err := r.deps.Store.QueueStart(context.Background(), done.AssignmentID, done.SubjectID, done.CompletedAt.UTC()); err != nil {
+			r.upErr = err.Error()
+		}
+		cmd = r.upload()
+	} else if done != nil {
 		created := done.CompletedAt.UTC()
 		err := r.deps.Store.QueueReview(context.Background(), done.SubjectID, wk.ReviewInput{
 			AssignmentID:            done.AssignmentID,
@@ -431,16 +445,16 @@ func (r *Review) enter() tea.Cmd {
 func (r *Review) save() {
 	ctx := context.Background()
 	if r.sess.Done() {
-		_ = r.deps.Store.ClearSession(ctx, sessionName)
+		_ = r.deps.Store.ClearSession(ctx, r.name)
 		return
 	}
-	_ = r.deps.Store.SaveSession(ctx, sessionName, r.sess.Snapshot())
+	_ = r.deps.Store.SaveSession(ctx, r.name, r.sess.Snapshot())
 }
 
 func (r *Review) finish() tea.Cmd {
 	ctx := context.Background()
-	_ = r.deps.Store.ClearSession(ctx, sessionName)
-	sum := Summary{Pending: r.pending, Held: r.held}
+	_ = r.deps.Store.ClearSession(ctx, r.name)
+	sum := Summary{Pending: r.pending, Held: r.held, Lessons: r.lessons()}
 	// Completed items may predate a resume, so look subjects up in the store.
 	for _, it := range r.sess.Completed() {
 		subj, err := r.deps.Store.Subject(ctx, it.SubjectID)
@@ -449,7 +463,7 @@ func (r *Review) finish() tea.Cmd {
 		}
 		line := SummaryItem{Characters: characters(*subj), Meaning: primaryMeaning(subj.Data), Type: subj.Object,
 			AssignmentID: it.AssignmentID, From: it.SRSStage}
-		if it.MeaningMisses == 0 && it.ReadingMisses == 0 {
+		if r.lessons() || (it.MeaningMisses == 0 && it.ReadingMisses == 0) {
 			sum.Correct = append(sum.Correct, line)
 		} else {
 			sum.Incorrect = append(sum.Incorrect, line)
@@ -572,7 +586,7 @@ func (r *Review) header(w int) string {
 	if u := r.uploadStatus(); u != "" {
 		right += mutedSt.Render(" · " + u)
 	}
-	return spread(" "+boldSt.Render("yadokari")+mutedSt.Render(" · reviews"), right+" ", w)
+	return spread(" "+boldSt.Render("yadokari")+mutedSt.Render(" · "+r.name), right+" ", w)
 }
 
 // answerBox is where the answer box sits: its left column and width.

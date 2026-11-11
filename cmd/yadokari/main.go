@@ -116,7 +116,7 @@ func run() error {
 	}
 	if client.IsLive() && !*live {
 		// Results would only pile up in the outbox and go stale.
-		rdeps.Disabled = "Reviews against the live API need --live. Try them on the mock: just mock-recorded, then just dev."
+		rdeps.Disabled = "Reviews and lessons against the live API need --live. Try them on the mock: just mock-recorded, then just dev."
 	}
 	if warning != "" {
 		fmt.Fprintln(os.Stderr, "yadokari:", warning)
@@ -205,7 +205,7 @@ func syncAndReport(ctx context.Context, syncer *wksync.Syncer, up *wksync.Upload
 	res, err := up.Flush(ctx)
 	switch {
 	case errors.Is(err, wksync.ErrHeld):
-		fmt.Fprintf(os.Stderr, "%d queued reviews held: %v\n", res.Held, err)
+		fmt.Fprintf(os.Stderr, "%d queued uploads held: %v\n", res.Held, err)
 	case err != nil:
 		fmt.Fprintf(os.Stderr, "uploading queued reviews: %v\n", err)
 	case res.Sent+res.Rejected > 0:

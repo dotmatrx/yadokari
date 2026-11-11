@@ -56,6 +56,7 @@ type Summary struct {
 	Incorrect []SummaryItem
 	Pending   int  // reviews still waiting to upload
 	Held      bool // waiting because live writes are disabled
+	Lessons   bool // a lesson quiz: items were started, not reviewed
 }
 
 // Refresh fills in SRS movement for reviews that have been uploaded since,
@@ -90,8 +91,11 @@ func (s *Summary) Refresh(ctx context.Context, st *store.Store) error {
 func (s Summary) View(w, h int) string {
 	w, h = max(w, 40), max(h, 10)
 	total := len(s.Correct) + len(s.Incorrect)
-	right := "no items completed"
-	if total > 0 {
+	right, noun, done := "no items completed", "reviews", "All reviews uploaded."
+	switch {
+	case s.Lessons:
+		right, noun, done = fmt.Sprintf("%d learned", total), "uploads", "All lessons started."
+	case total > 0:
 		right = fmt.Sprintf("%d reviewed · %d%% correct", total, len(s.Correct)*100/total)
 	}
 	header := spread(" "+boldSt.Render("yadokari")+mutedSt.Render(" · summary"), mutedSt.Render(right)+" ", w)
@@ -99,11 +103,11 @@ func (s Summary) View(w, h int) string {
 	var status string
 	switch {
 	case s.Held && s.Pending > 0:
-		status = warnSt.Render(fmt.Sprintf("%d reviews held, not sent: writes to the live API need --live", s.Pending))
+		status = warnSt.Render(fmt.Sprintf("%d %s held, not sent: writes to the live API need --live", s.Pending, noun))
 	case s.Pending > 0:
-		status = mutedSt.Render(fmt.Sprintf("%d reviews still uploading", s.Pending))
+		status = mutedSt.Render(fmt.Sprintf("%d %s still uploading", s.Pending, noun))
 	default:
-		status = mutedSt.Render("All reviews uploaded.")
+		status = mutedSt.Render(done)
 	}
 	footer := spread(" "+status, mutedSt.Render("Enter dashboard")+" ", w)
 
@@ -112,7 +116,11 @@ func (s Summary) View(w, h int) string {
 		body = append(body, panel(titleSt.Render(fmt.Sprintf("Answered incorrectly (%d)", len(s.Incorrect))), itemGrid(s.Incorrect, w-4), w, 0))
 	}
 	if len(s.Correct) > 0 {
-		body = append(body, panel(titleSt.Render(fmt.Sprintf("Answered correctly (%d)", len(s.Correct))), itemGrid(s.Correct, w-4), w, 0))
+		title := fmt.Sprintf("Answered correctly (%d)", len(s.Correct))
+		if s.Lessons {
+			title = fmt.Sprintf("Learned (%d)", len(s.Correct))
+		}
+		body = append(body, panel(titleSt.Render(title), itemGrid(s.Correct, w-4), w, 0))
 	}
 	return frame(header, strings.Join(body, "\n"), footer, h)
 }

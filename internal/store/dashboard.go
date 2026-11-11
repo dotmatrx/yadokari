@@ -30,7 +30,8 @@ func (s *Store) Queue(ctx context.Context, now time.Time, maxLevel int) (Queue, 
 
 	err := s.db.QueryRowContext(ctx, `
 		SELECT count(*) FROM assignments a JOIN subjects s ON s.id = a.subject_id
-		WHERE a.unlocked_at IS NOT NULL AND a.started_at IS NULL AND a.hidden = 0 AND s.level <= ?`,
+		WHERE a.unlocked_at IS NOT NULL AND a.started_at IS NULL AND a.hidden = 0 AND s.hidden = 0 AND s.level <= ?
+		  AND a.id NOT IN (SELECT assignment_id FROM outbox WHERE failed = '')`,
 		maxLevel).Scan(&q.Lessons)
 	if err != nil {
 		return q, err

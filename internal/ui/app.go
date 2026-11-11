@@ -13,6 +13,7 @@ const (
 	dashScreen screen = iota
 	reviewScreen
 	summaryScreen
+	lessonScreen
 )
 
 type reviewLoadedMsg struct {
@@ -27,6 +28,7 @@ type App struct {
 	screen  screen
 	dash    *Dashboard
 	review  *Review
+	lesson  *Lesson
 	summary Summary
 	width   int
 	height  int
@@ -60,6 +62,9 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		a.width, a.height = msg.Width, msg.Height
 		a.dash.Update(msg)
+		if a.lesson != nil {
+			a.lesson.Update(msg)
+		}
 		if a.review != nil {
 			// The review's command carries the kitty upload for the glyph at
 			// its new size; the renderer already counts it as sent.
@@ -84,17 +89,51 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return reviewLoadedMsg{review: r, err: err}
 		}
 
+	case StartLessonsMsg:
+		if a.rdeps.Disabled != "" {
+			a.dash.Notice(a.rdeps.Disabled)
+			return a, nil
+		}
+		deps, rdeps, user := a.deps, a.rdeps, msg.User
+		return a, func() tea.Msg {
+			l, q, err := LoadLessons(context.Background(), deps, rdeps, user)
+			return lessonLoadedMsg{lesson: l, quiz: q, err: err}
+		}
+
+	case lessonLoadedMsg:
+		switch {
+		case msg.err != nil:
+			a.dash.Notice(msg.err.Error())
+			a.screen, a.lesson = dashScreen, nil
+			return a, a.dash.Reload()
+		case msg.quiz != nil: // resuming a quiz
+			return a, a.startReview(msg.quiz)
+		}
+		a.lesson, a.screen = msg.lesson, lessonScreen
+		a.lesson.Update(tea.WindowSizeMsg{Width: a.width, Height: a.height})
+		return a, a.lesson.Init()
+
+	case lessonQuizMsg:
+		a.lesson = nil
+		msg.quiz.ready = true // the alt screen is already up
+		return a, a.startReview(msg.quiz)
+
+	case lessonReadyMsg, lessonImageMsg:
+		var cmd tea.Cmd
+		if a.lesson != nil {
+			_, cmd = a.lesson.Update(msg)
+		}
+		return a, cmd
+
 	case reviewLoadedMsg:
 		if msg.err != nil {
 			a.dash.Notice(msg.err.Error())
 			return a, nil
 		}
-		a.review, a.screen = msg.review, reviewScreen
-		a.review.Update(tea.WindowSizeMsg{Width: a.width, Height: a.height})
-		return a, a.review.Init()
+		return a, a.startReview(msg.review)
 
 	case BackMsg:
-		a.screen = dashScreen
+		a.screen, a.lesson = dashScreen, nil
 		return a, a.dash.Reload()
 
 	case ReviewDoneMsg:
@@ -119,6 +158,9 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	switch a.screen {
+	case lessonScreen:
+		_, cmd := a.lesson.Update(msg)
+		return a, cmd
 	case reviewScreen:
 		_, cmd := a.review.Update(msg)
 		return a, cmd
@@ -133,9 +175,18 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return a, cmd
 }
 
+// startReview shows a review session (or lesson quiz) at the current size.
+func (a *App) startReview(r *Review) tea.Cmd {
+	a.review, a.screen = r, reviewScreen
+	a.review.Update(tea.WindowSizeMsg{Width: a.width, Height: a.height})
+	return a.review.Init()
+}
+
 func (a *App) View() tea.View {
 	var v tea.View
 	switch a.screen {
+	case lessonScreen:
+		v = tea.NewView(a.lesson.View())
 	case reviewScreen:
 		v = tea.NewView(a.review.View())
 		v.Cursor = a.review.Cursor()

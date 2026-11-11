@@ -12,7 +12,8 @@ import (
 	"github.com/jtharris/yadokari/internal/wk"
 )
 
-// Uploader posts queued reviews from the store's outbox, oldest first.
+// Uploader sends queued writes from the store's outbox, oldest first: reviews
+// (POST /reviews) and lesson starts (PUT /assignments/:id/start).
 //
 // WaniKani has no idempotency keys, but its own rule gives the same safety:
 // a review is only accepted while the assignment is due, and accepting it
@@ -41,7 +42,7 @@ type UploadResult struct {
 
 // ErrHeld is returned when reviews are being held because writes to the
 // live API are disabled.
-var ErrHeld = errors.New("reviews held: writes to the live WaniKani API are disabled (run with --live)")
+var ErrHeld = errors.New("uploads held: writes to the live WaniKani API are disabled (run with --live)")
 
 // Flush posts every pending review. It stops at the first transient failure
 // (network, rate limit, server error) so reviews go out in order; the
@@ -55,14 +56,10 @@ func (u *Uploader) Flush(ctx context.Context) (UploadResult, error) {
 		return res, err
 	}
 	for i, it := range items {
-		out, err := u.Client.CreateReview(ctx, it.Review)
+		updated, err := u.send(ctx, it)
 		var apiErr *wk.APIError
 		switch {
 		case err == nil:
-			updated, err := resourcesUpdated(out)
-			if err != nil {
-				return res, err
-			}
 			if err := u.Store.OutboxDone(ctx, it.ID, updated); err != nil {
 				return res, err
 			}
@@ -84,10 +81,39 @@ func (u *Uploader) Flush(ctx context.Context) (UploadResult, error) {
 
 		default:
 			_ = u.Store.OutboxAttempted(ctx, it.ID)
-			return res, fmt.Errorf("uploading review for assignment %d: %w", it.Review.AssignmentID, err)
+			return res, fmt.Errorf("uploading %s for assignment %d: %w", what(it.Kind), it.AssignmentID, err)
 		}
 	}
 	return res, nil
+}
+
+// send performs one outbox row's write and returns the resources the API
+// sent back, for the store.
+func (u *Uploader) send(ctx context.Context, it store.OutboxItem) (map[string][]store.RawResource, error) {
+	if it.Kind == store.KindStart {
+		at := it.StartedAt
+		a, err := u.Client.StartAssignment(ctx, it.AssignmentID, &at)
+		if err != nil {
+			return nil, err
+		}
+		raw, err := rawOf(*a)
+		if err != nil {
+			return nil, err
+		}
+		return map[string][]store.RawResource{store.Assignments: {raw}}, nil
+	}
+	out, err := u.Client.CreateReview(ctx, it.Review)
+	if err != nil {
+		return nil, err
+	}
+	return resourcesUpdated(out)
+}
+
+func what(kind string) string {
+	if kind == store.KindStart {
+		return "lesson start"
+	}
+	return "review"
 }
 
 // definitive reports whether an HTTP status means "this review will never be

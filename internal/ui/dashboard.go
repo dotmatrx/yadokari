@@ -208,6 +208,10 @@ func (m *Dashboard) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.loaded {
 				return m, func() tea.Msg { return StartReviewsMsg{User: m.user.Data} }
 			}
+		case "l":
+			if m.loaded {
+				return m, func() tea.Msg { return StartLessonsMsg{User: m.user.Data} }
+			}
 		}
 	case loadedMsg:
 		if msg.err != nil {
@@ -294,9 +298,9 @@ func (m *Dashboard) statusLine() string {
 			s += errSt.Render(" (upload failed: " + shortErr(m.upErr) + ")")
 		}
 	}
-	keys := "r reviews · s sync · q quit"
+	keys := "r reviews · l lessons · s sync · q quit"
 	if len(m.rejected) > 0 {
-		keys = "r reviews · s sync · x dismiss rejected · q quit"
+		keys = "r reviews · l lessons · s sync · x dismiss rejected · q quit"
 	}
 	help := mutedSt.Render(keys)
 	gap := max(max(m.width, 40)-lipgloss.Width(s)-lipgloss.Width(help)-2, 1)
@@ -353,7 +357,7 @@ func loadOutbox(ctx context.Context, st *store.Store) (int, []rejected, error) {
 	}
 	var out []rejected
 	for _, r := range rows {
-		line := SummaryItem{Characters: fmt.Sprintf("assignment %d", r.Review.AssignmentID)}
+		line := SummaryItem{Characters: fmt.Sprintf("assignment %d", r.AssignmentID)}
 		if subj, err := st.Subject(ctx, r.SubjectID); err == nil && subj != nil {
 			line = SummaryItem{Characters: characters(*subj), Meaning: primaryMeaning(subj.Data), Type: subj.Object}
 		}

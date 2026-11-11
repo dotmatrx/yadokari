@@ -117,6 +117,10 @@ type ItemPage struct {
 	// HideMeaning and HideReading keep a part not yet asked in a review
 	// from being given away.
 	HideMeaning, HideReading bool
+	// Section names the screen in the header ("item" when empty). Strip
+	// (e.g. a lesson batch) goes in the header's right when it fits, else
+	// Progress. Help replaces the footer's key hints.
+	Section, Strip, Progress, Help string
 
 	width, height int
 }
@@ -216,9 +220,22 @@ func (p *ItemPage) source() gfx.Source {
 func (p *ItemPage) View() string {
 	w, h := p.size()
 	subj := p.data.Subject
+	section, help := p.Section, p.Help
+	if section == "" {
+		section = "item"
+	}
+	if help == "" {
+		help = "←/→ tabs · ↑/↓ scroll · Esc back"
+	}
+	left := " " + boldSt.Render("yadokari") + mutedSt.Render(" · "+section)
 	right := mutedSt.Render(fmt.Sprintf("%s · level %d", typeName[subj.Object], subj.Data.Level))
-	header := spread(" "+boldSt.Render("yadokari")+mutedSt.Render(" · item"), right+" ", w)
-	footer := " " + mutedSt.Render("←/→ tabs · ↑/↓ scroll · Esc back")
+	if p.Strip != "" && lipgloss.Width(left)+lipgloss.Width(p.Strip)+lipgloss.Width(right)+6 <= w {
+		right = p.Strip + mutedSt.Render("   ") + right
+	} else if p.Progress != "" {
+		right = mutedSt.Render(p.Progress+" · ") + right
+	}
+	header := spread(left, right+" ", w)
+	footer := padRight(" "+mutedSt.Render(help), w)
 
 	cols, rows := p.glyphSize()
 	bg := typeColour[subj.Object]

@@ -13,7 +13,7 @@ import (
 )
 
 // PreviewScreens are the screens and states Preview can render.
-var PreviewScreens = []string{"dashboard", "review-empty", "review", "review-reading", "review-wrong", "summary", "item", "item-vocab"}
+var PreviewScreens = []string{"dashboard", "review-empty", "review", "review-reading", "review-wrong", "summary", "item", "item-vocab", "lesson"}
 
 // Preview renders one screen once at w×h from the store, without a running
 // program: for iterating on layout (cmd/preview) and golden tests. Review
@@ -88,6 +88,19 @@ func Preview(ctx context.Context, d Deps, rd ReviewDeps, screen string, w, h int
 		}
 		p.SetSize(w, h)
 		return fit(p.View(), h), nil
+
+	case "lesson":
+		u, err := d.Store.User(ctx)
+		if err != nil || u == nil {
+			return "", fmt.Errorf("preview: no user in the store: %v", err)
+		}
+		l, _, err := LoadLessons(ctx, d, rd, u.Data)
+		if err != nil {
+			return "", err
+		}
+		l.Update(size)
+		l.page.gfx.Ready = true // the caller sends the View's uploads (Flush)
+		return fit(l.View(), h), nil
 
 	case "summary":
 		s, err := previewSummary(ctx, d.Store, d)

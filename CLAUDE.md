@@ -28,7 +28,7 @@ Use `just` (no Makefile):
   (`--demo`: a believable level 8 account, `wkmock.DemoData`)
 - `just preview [screen...] [--size=WxH,...] [--html=FILE]` — render screens
   once from demo data (kitty glyphs in Ghostty); `--html` writes a gallery page. Screens:
-  `dashboard`, `review`, `review-reading`, `review-wrong`, `summary`, `item`, `item-vocab`. Use it to iterate on
+  `dashboard`, `review`, `review-reading`, `review-wrong`, `summary`, `item`, `item-vocab`, `lesson`. Use it to iterate on
   layout; `--fixtures=DIR` uses a recording (personal data: never publish that).
 - `just probe-mock` — read-only full sync against the running mock
 - `just probe-live` — read-only full sync against the live API; records fixtures to
@@ -67,7 +67,8 @@ anything with `--live` yourself. Tokens used during development are read-only.
   by `PRAGMA user_version`). Dashboard queries live here.
 - `internal/wksync` — full then incremental sync (`updated_after` bookmarks, user ETag);
   `Foreground` collections first, `review_statistics` in `Background`. Read-only;
-  `Uploader` (outbox → `POST /reviews`, serialized) is the one writer. The dashboard
+  `Uploader` (outbox → `POST /reviews` or `PUT /assignments/:id/start` by row `kind`,
+  serialized) is the one writer. The dashboard
   and `--sync` flush the outbox before syncing.
 - `internal/config` — XDG paths (config `~/.config/yadokari/config.toml`, database
   `~/.local/share/yadokari/yadokari.db`), settings, and the token store: env
@@ -81,7 +82,11 @@ anything with `--live` yourself. Tokens used during development are read-only.
   first-run token form (Huh), and the item page (`item.go`: glyph + summary, tabs by
   subject type, mnemonics via `renderMarkup`; `i` opens it after a review answer, hiding
   the part not yet asked; lessons will reuse it). Review sessions are refused against
-  the live API without `--live`.
+  the live API without `--live`. Lessons (`lesson.go`): `l` on the dashboard picks a
+  batch (the user's batch size and presentation order), steps through each item's page,
+  then a quiz that is the review screen in lesson mode (`Review.name == "lessons"`):
+  a finished item is queued as a start (`store.QueueStart`), misses cost nothing, and
+  the quiz is saved and resumed like reviews. Refused without `--live` too.
 - `internal/session` — review engine: backlog → active set (default 10) → random question; per-part
   misses; `Completion` = what `POST /reviews` needs; wrap-up, limit, ordering, back-to-back,
   undo of a wrong answer; JSON `Snapshot`/`Restore`. Pure.

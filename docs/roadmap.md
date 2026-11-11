@@ -38,8 +38,9 @@ someone else (after M4 and M5's packaging). `just build`/`just install` stamp
   `assignments:start` for lessons.
 - **UI pass done:** the user approved round 3 on 2026-11-11.
 - **Design doc:** the half-block suggestions (five edits) are accepted; none pending.
-- **M4:** markup renderer and item page done; next is the lesson flow (see the M4 plan
-  below). The item page awaits the user's look in Ghostty (`just preview item item-vocab`).
+- **M4:** markup renderer, item page and lesson flow done against the mock; next is the
+  user trying lessons on the mock, then a first live batch, then audio. The user liked
+  the item page in Ghostty; its empty space is left as is until lessons have been used.
 - Daily driver: Ghostty on the host, app from the `yadokari` toolbox (kitty tier via
   `gfx.Probe`); `just install` puts a static binary in `~/.local/bin`.
 - `.dev/yadokari.db` (gitignored) may hold a saved review session; `r` resumes it.
@@ -109,7 +110,14 @@ live API without `--live`, as reviews are.
    radical Name/Found in, kanji Radicals/Meaning/Reading/Found in, vocabulary
    Kanji/Meaning/Reading/Context; scrolls). Opened with `i` after a review answer; the
    part not yet asked stays hidden. Previews: `item`, `item-vocab`.
-3. Lesson quiz and `PUT /assignments/:id/start` (next).
+3. ~~Lesson flow~~ Done 2026-11-11 (against the mock): `l` → batch (WaniKani batch size
+   and presentation order) → item pages (←/→ walk tabs across items; Enter at the end
+   starts the quiz) → quiz (review screen in lesson mode; all items active; misses
+   free) → each finished item queued as a start in the outbox (migration 003 adds
+   `kind`), sent as `PUT /assignments/:id/start` with `started_at` = when it was
+   finished → summary ("Learned"). Quiz saved after each answer and resumed by `l`.
+   Next: the user tries it on the mock (`just mock --demo` + `just dev`), then a first
+   live lesson batch (irreversible; the user runs it).
 4. Audio, last.
 
 ## Open questions
