@@ -28,6 +28,7 @@ type harness struct {
 	app  *App
 	mock *wkmock.Server
 	st   *store.Store
+	raw  strings.Builder // raw output (kitty uploads) the app sent
 }
 
 func newHarness(t *testing.T) *harness {
@@ -75,7 +76,9 @@ func (h *harness) run(cmd tea.Cmd, depth int) {
 	}
 	msg := cmd()
 	switch msg := msg.(type) {
-	case nil, tea.RawMsg:
+	case nil:
+	case tea.RawMsg:
+		fmt.Fprint(&h.raw, msg.Msg)
 	case tea.BatchMsg:
 		for _, c := range msg {
 			h.run(c, depth+1)

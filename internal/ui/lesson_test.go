@@ -2,6 +2,7 @@ package ui
 
 import (
 	"context"
+	"fmt"
 	"math/rand/v2"
 	"strings"
 	"testing"
@@ -154,5 +155,39 @@ func TestPickLessons(t *testing.T) {
 	}
 	if items[0].Subject.ID != 1 {
 		t.Error("pickLessons must not reorder its input")
+	}
+}
+
+// TestLessonQuizSendsFirstGlyph: the quiz starts with graphics already
+// ready, so its first glyph's upload must reach the terminal.
+func TestLessonQuizSendsFirstGlyph(t *testing.T) {
+	h := newHarness(t)
+	fake := &fakeKitty{seen: map[string]bool{}}
+	h.app.rdeps.Renderer = fake
+	h.key("l")
+	h.learn()
+	_, it, ok := h.app.review.current()
+	if !ok {
+		t.Fatal("no first question")
+	}
+	cols, rows := h.app.review.glyphSize()
+	want := fmt.Sprintf("UPLOAD subject:%d@%dx%d;", it.Subject.ID, cols, rows)
+	if !strings.Contains(h.raw.String(), want) {
+		t.Errorf("first quiz glyph never sent: want %q in %q", want, h.raw.String())
+	}
+}
+
+// TestLessonResizeSendsGlyph: a resize on a lesson page redraws its glyph
+// at the new size; that upload must be sent too.
+func TestLessonResizeSendsGlyph(t *testing.T) {
+	h := newHarness(t)
+	fake := &fakeKitty{seen: map[string]bool{}}
+	h.app.rdeps.Renderer = fake
+	h.key("l")
+	h.send(tea.WindowSizeMsg{Width: 120, Height: 40})
+	cols, rows := h.app.lesson.page.glyphSize()
+	want := fmt.Sprintf("UPLOAD subject:%d@%dx%d;", h.app.lesson.page.data.Subject.ID, cols, rows)
+	if !strings.Contains(h.raw.String(), want) {
+		t.Errorf("resized lesson glyph never sent: want %q in %q", want, h.raw.String())
 	}
 }

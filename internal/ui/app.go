@@ -62,16 +62,19 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		a.width, a.height = msg.Width, msg.Height
 		a.dash.Update(msg)
+		var cmds []tea.Cmd
 		if a.lesson != nil {
-			a.lesson.Update(msg)
+			_, cmd := a.lesson.Update(msg)
+			cmds = append(cmds, cmd)
 		}
 		if a.review != nil {
 			// The review's command carries the kitty upload for the glyph at
-			// its new size; the renderer already counts it as sent.
+			// its new size; the renderer already counts it as sent. Same for
+			// the lesson page above.
 			_, cmd := a.review.Update(msg)
-			return a, cmd
+			cmds = append(cmds, cmd)
 		}
-		return a, nil
+		return a, tea.Batch(cmds...)
 
 	case tea.KeyPressMsg:
 		if msg.String() == "ctrl+c" || (a.screen == dashScreen && (msg.String() == "q" || msg.String() == "esc")) {
@@ -110,8 +113,8 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return a, a.startReview(msg.quiz)
 		}
 		a.lesson, a.screen = msg.lesson, lessonScreen
-		a.lesson.Update(tea.WindowSizeMsg{Width: a.width, Height: a.height})
-		return a, a.lesson.Init()
+		_, cmd := a.lesson.Update(tea.WindowSizeMsg{Width: a.width, Height: a.height})
+		return a, tea.Batch(cmd, a.lesson.Init())
 
 	case lessonQuizMsg:
 		a.lesson = nil
@@ -176,10 +179,13 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 // startReview shows a review session (or lesson quiz) at the current size.
+// Sizing it may already draw its glyph (a lesson quiz starts ready), so the
+// command carrying that kitty upload must be kept: dropped, the renderer
+// counts the image as sent and the glyph stays blank.
 func (a *App) startReview(r *Review) tea.Cmd {
 	a.review, a.screen = r, reviewScreen
-	a.review.Update(tea.WindowSizeMsg{Width: a.width, Height: a.height})
-	return a.review.Init()
+	_, cmd := a.review.Update(tea.WindowSizeMsg{Width: a.width, Height: a.height})
+	return tea.Batch(cmd, a.review.Init())
 }
 
 func (a *App) View() tea.View {
