@@ -38,7 +38,7 @@ someone else (after M4 and M5's packaging). `just build`/`just install` stamp
   `assignments:start` for lessons.
 - **UI pass done:** the user approved round 3 on 2026-11-11.
 - **Design doc:** the half-block suggestions (five edits) are accepted; none pending.
-- **Next: M4, starting with the WaniKani markup renderer** (see the M4 plan below).
+- **M4:** markup renderer done; next is the item page (see the M4 plan below).
 - Daily driver: Ghostty on the host, app from the `yadokari` toolbox (kitty tier via
   `gfx.Probe`); `just install` puts a static binary in `~/.local/bin`.
 - `.dev/yadokari.db` (gitignored) may hold a saved review session; `r` resumes it.
@@ -99,9 +99,11 @@ Groundwork exists: `wk.Client.StartAssignment` and the mock's
 `PUT /assignments/:id/start`. Build against the mock; lessons are refused against the
 live API without `--live`, as reviews are.
 
-1. **WaniKani markup renderer** (`<radical>`, `<kanji>`, `<vocabulary>`, `<reading>`,
-   `<ja>`, `<meaning>`…) to styled Lip Gloss text. Pure and table-tested. Also unlocks
-   mnemonics and hints in the review answer panel (backlog).
+1. ~~**WaniKani markup renderer**~~ Done 2026-11-11: `internal/markup` (parse, pure)
+   + `ui.renderMarkup` (type colours, bold readings/meanings, italic emphasis, OSC 8
+   links, wrapped). Parses all 22,525 recorded mnemonics and hints. Not shown anywhere
+   yet; first use is the item page, and it unlocks mnemonics in the review answer
+   panel (backlog).
 2. Item pages (meaning, reading, mnemonics, components/context), then the lesson quiz
    and `PUT /assignments/:id/start`.
 3. Audio, last.

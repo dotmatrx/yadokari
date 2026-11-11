@@ -57,6 +57,9 @@ anything with `--live` yourself. Tokens used during development are read-only.
   to `writes.log` next to the database (`~/.local/share/yadokari/`, or `.dev/`).
 - `internal/wkmock` — in-memory fake API (fixtures or `SampleData`), logs all writes,
   approximates SRS stage changes.
+- `internal/markup` — WaniKani mnemonic/hint markup (`<radical>`, `<kanji>`, `<reading>`,
+  `<ja>`, `<a href>`…) → paragraphs of typed spans. Tolerant of malformed input (a close
+  tag closes the innermost open tag). Pure; `ui.renderMarkup` styles and wraps it.
 - `internal/ime` — incremental romaji→kana converter (WanaKana IME-mode behaviour) and
   kana helpers. Pure.
 - `internal/store` — SQLite cache: raw API JSON + indexed columns, timestamps as Unix
@@ -97,7 +100,7 @@ anything with `--live` yourself. Tokens used during development are read-only.
 - `docs/roadmap.md` — milestone status and next steps.
 - `docs/wanikani-api.md` — API notes and known doc ambiguities.
 - `docs/backlog.md` — deferred ideas; add to it rather than leaving them in chat.
-- `internal/` — real packages (still planned: `audio`, lessons). Keep `session`, `answer` and `ime`
+- `internal/` — real packages (still planned: `audio`, lessons). Keep `session`, `answer`, `markup` and `ime`
   free of I/O and UI code, and table-test them heavily.
 - `spikes/` — throwaway experiments and their findings; see `spikes/README.md`
 
