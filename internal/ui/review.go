@@ -90,6 +90,7 @@ type Review struct {
 	result     answer.Result
 	warn       string
 	info       bool
+	item       *ItemPage // open over the review after an answer (i)
 	correct    int
 	wrong      int
 
@@ -255,6 +256,11 @@ func (r *Review) Update(msg tea.Msg) (*Review, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		r.width, r.height = msg.Width, msg.Height
+		if r.item != nil {
+			r.item.SetSize(msg.Width, msg.Height)
+		}
+	case ItemClosedMsg:
+		r.item = nil
 	case reviewReadyMsg:
 		r.ready = true
 	case imageMsg:
@@ -293,7 +299,10 @@ func (r *Review) flushGraphics() tea.Cmd {
 	if !r.ready || r.rdeps.Renderer == nil {
 		return nil
 	}
-	if _, it, ok := r.shown(); ok {
+	if r.item != nil {
+		r.item.gfx.Ready = true
+		r.item.Draw()
+	} else if _, it, ok := r.shown(); ok {
 		cols, rows := r.glyphSize()
 		_, _ = r.rdeps.Renderer.Draw(r.source(it), cols, rows, glyphFG, typeColour[it.Subject.Object])
 	}
@@ -304,6 +313,9 @@ func (r *Review) flushGraphics() tea.Cmd {
 }
 
 func (r *Review) key(msg tea.KeyPressMsg) tea.Cmd {
+	if r.item != nil {
+		return r.item.Key(msg)
+	}
 	switch msg.String() {
 	case "esc":
 		return func() tea.Msg { return BackMsg{} }
@@ -316,6 +328,11 @@ func (r *Review) key(msg tea.KeyPressMsg) tea.Cmd {
 			r.info = !r.info
 		}
 		return nil
+	case "i":
+		if r.state == graded {
+			r.openItem()
+			return nil
+		}
 	case "enter":
 		return r.enter()
 	case "backspace":
@@ -468,12 +485,16 @@ func (r *Review) glyphSize() (cols, rows int) {
 }
 
 func (r *Review) source(it store.ReviewItem) gfx.Source {
-	subj := it.Subject
+	return subjectSource(it.Subject, r.rdeps.Font, r.images[it.Subject.ID])
+}
+
+// subjectSource is what the renderer draws for a subject: its characters in
+// the font, or its radical image (svg, nil while it loads).
+func subjectSource(subj wk.Resource[wk.Subject], font *glyph.Font, svg []byte) gfx.Source {
 	src := gfx.Source{Key: fmt.Sprintf("subject:%d", subj.ID)}
 	if subj.Data.Characters != nil {
 		text := *subj.Data.Characters
 		src.Text = text
-		font := r.rdeps.Font
 		src.Mask = func(w, h int) (*image.Alpha, error) {
 			if font == nil {
 				return nil, glyph.ErrNoFont
@@ -482,13 +503,12 @@ func (r *Review) source(it store.ReviewItem) gfx.Source {
 		}
 		return src
 	}
-	raw := r.images[subj.ID]
 	src.Key += ":image"
 	src.Mask = func(w, h int) (*image.Alpha, error) {
-		if raw == nil {
+		if svg == nil {
 			return nil, errors.New("image not loaded")
 		}
-		return glyph.ImageMask(raw, "image/svg+xml", w, h)
+		return glyph.ImageMask(svg, "image/svg+xml", w, h)
 	}
 	return src
 }
@@ -497,9 +517,12 @@ func (r *Review) View() string {
 	w, h := max(r.width, 40), max(r.height, 12)
 	help := "Enter submit · Esc dashboard · ctrl+w wrap-up"
 	if r.state == graded {
-		help = "Enter next · Tab answer · Esc dashboard · ctrl+w wrap-up"
+		help = "Enter next · Tab answer · i item · Esc dashboard · ctrl+w wrap-up"
 	}
-	header, footer := r.header(w), " "+mutedSt.Render(help)
+	if r.item != nil {
+		return r.item.View()
+	}
+	header, footer := r.header(w), padRight(" "+mutedSt.Render(help), w)
 	q, it, ok := r.shown()
 	if !ok {
 		return frame(header, "\n "+"Session complete. Press Enter.", footer, h)
@@ -621,13 +644,21 @@ func (r *Review) answerPanel(q session.Question, it store.ReviewItem, width int)
 }
 
 func (r *Review) drawGlyph(it store.ReviewItem, cols, rows int, bg color.Color) (string, error) {
-	if r.rdeps.Renderer == nil || (r.rdeps.Renderer.Tier() == gfx.Kitty && !r.ready) {
+	missing := it.Subject.Data.Characters == nil && r.images[it.Subject.ID] == nil
+	return drawSubjectGlyph(r.rdeps.Renderer, r.ready, r.source(it), missing, cols, rows, bg)
+}
+
+// drawSubjectGlyph draws a glyph field: a blank coloured block until kitty
+// uploads can be sent, an error while a radical image is missing (the
+// caller falls back to plain text).
+func drawSubjectGlyph(rd gfx.Renderer, ready bool, src gfx.Source, missing bool, cols, rows int, bg color.Color) (string, error) {
+	if rd == nil || (rd.Tier() == gfx.Kitty && !ready) {
 		return strings.TrimSuffix(strings.Repeat(bgSGR(bg)+strings.Repeat(" ", cols)+"\x1b[m\n", rows), "\n"), nil
 	}
-	if it.Subject.Data.Characters == nil && r.images[it.Subject.ID] == nil {
+	if missing {
 		return "", errors.New("image not loaded")
 	}
-	return r.rdeps.Renderer.Draw(r.source(it), cols, rows, glyphFG, bg)
+	return rd.Draw(src, cols, rows, glyphFG, bg)
 }
 
 func bgSGR(c color.Color) string {
@@ -649,14 +680,38 @@ func (r *Review) uploadStatus() string {
 	return ""
 }
 
+// openItem opens the item page for the question just answered, hiding a
+// part not yet asked as the answer panel does.
+func (r *Review) openItem() {
+	q, it := r.answered, r.answeredIt
+	d, err := LoadItem(context.Background(), r.deps.Store, it.Subject.ID)
+	if err != nil {
+		r.warn = err.Error()
+		return
+	}
+	d.Synonyms = it.Synonyms
+	showMeaning, showReading := r.revealed(q)
+	p := NewItemPage(d, GlyphDeps{Renderer: r.rdeps.Renderer, Font: r.rdeps.Font, Ready: r.ready}, r.images[it.Subject.ID])
+	p.HideMeaning, p.HideReading = !showMeaning, !showReading
+	p.SetSize(r.width, r.height)
+	r.item = p
+}
+
+// revealed reports which parts of the question's item may be shown: the
+// part just asked, and any part already attempted.
+func (r *Review) revealed(q session.Question) (meaning, reading bool) {
+	state := r.sess.Item(q.Index)
+	meaning = q.Kind == session.Meaning || state.MeaningDone || state.MeaningMisses > 0
+	reading = q.Kind == session.Reading || state.ReadingDone || state.ReadingMisses > 0
+	return meaning, reading
+}
+
 // infoPanel shows the answer for the part just asked, plus any part already
 // attempted (answered or missed, so its answer is no secret). A part not yet
 // asked stays hidden so it can still be recalled when its question comes up.
 func (r *Review) infoPanel(q session.Question, it store.ReviewItem, width int) string {
 	d := it.Subject.Data
-	state := r.sess.Item(q.Index)
-	showMeaning := q.Kind == session.Meaning || state.MeaningDone || state.MeaningMisses > 0
-	showReading := q.Kind == session.Reading || state.ReadingDone || state.ReadingMisses > 0
+	showMeaning, showReading := r.revealed(q)
 	var lines []string
 	if showMeaning {
 		var meanings []string

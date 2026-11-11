@@ -13,7 +13,7 @@ import (
 )
 
 // PreviewScreens are the screens and states Preview can render.
-var PreviewScreens = []string{"dashboard", "review-empty", "review", "review-reading", "review-wrong", "summary"}
+var PreviewScreens = []string{"dashboard", "review-empty", "review", "review-reading", "review-wrong", "summary", "item", "item-vocab"}
 
 // Preview renders one screen once at w×h from the store, without a running
 // program: for iterating on layout (cmd/preview) and golden tests. Review
@@ -81,6 +81,14 @@ func Preview(ctx context.Context, d Deps, rd ReviewDeps, screen string, w, h int
 		r.ready = true // the caller sends the View's uploads (Flush)
 		return fit(r.View(), h), nil
 
+	case "item", "item-vocab":
+		p, err := previewItem(ctx, d, rd, screen == "item-vocab")
+		if err != nil {
+			return "", err
+		}
+		p.SetSize(w, h)
+		return fit(p.View(), h), nil
+
 	case "summary":
 		s, err := previewSummary(ctx, d.Store, d)
 		if err != nil {
@@ -89,6 +97,39 @@ func Preview(ctx context.Context, d Deps, rd ReviewDeps, screen string, w, h int
 		return fit(s.View(w, h), h), nil
 	}
 	return "", fmt.Errorf("preview: unknown screen %q (%s)", screen, strings.Join(PreviewScreens, ", "))
+}
+
+// previewItem opens the item page on the due kanji used in the most words
+// (its Meaning tab), or the due word written with the most kanji (its Kanji tab).
+func previewItem(ctx context.Context, d Deps, rd ReviewDeps, vocab bool) (*ItemPage, error) {
+	u, err := d.Store.User(ctx)
+	if err != nil || u == nil {
+		return nil, fmt.Errorf("preview: no user in the store: %v", err)
+	}
+	items, err := d.Store.ReviewItems(ctx, d.Now(), u.Data.Subscription.MaxLevelGranted)
+	if err != nil || len(items) == 0 {
+		return nil, fmt.Errorf("preview: no due items: %v", err)
+	}
+	pick, best := items[0], 0
+	for _, it := range items {
+		s := it.Subject
+		n := len(s.Data.AmalgamationSubjectIDs)
+		if vocab {
+			n = len(s.Data.ComponentSubjectIDs)
+		}
+		if want := map[bool]string{false: "kanji", true: "vocabulary"}[vocab]; s.Object == want && n > best {
+			pick, best = it, n
+		}
+	}
+	data, err := LoadItem(ctx, d.Store, pick.Subject.ID)
+	if err != nil {
+		return nil, err
+	}
+	p := NewItemPage(data, GlyphDeps{Renderer: rd.Renderer, Font: rd.Font, Ready: true}, nil)
+	if !vocab && len(p.tabs) > 1 {
+		p.setTab(1)
+	}
+	return p, nil
 }
 
 // previewSummary makes a plausible finished session from the due items:

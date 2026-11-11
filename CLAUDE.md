@@ -28,7 +28,7 @@ Use `just` (no Makefile):
   (`--demo`: a believable level 8 account, `wkmock.DemoData`)
 - `just preview [screen...] [--size=WxH,...] [--html=FILE]` — render screens
   once from demo data (kitty glyphs in Ghostty); `--html` writes a gallery page. Screens:
-  `dashboard`, `review`, `review-reading`, `review-wrong`, `summary`. Use it to iterate on
+  `dashboard`, `review`, `review-reading`, `review-wrong`, `summary`, `item`, `item-vocab`. Use it to iterate on
   layout; `--fixtures=DIR` uses a recording (personal data: never publish that).
 - `just probe-mock` — read-only full sync against the running mock
 - `just probe-live` — read-only full sync against the live API; records fixtures to
@@ -78,8 +78,10 @@ anything with `--live` yourself. Tokens used during development are read-only.
   grey, no painted backgrounds except the review glyph field): dashboard (from the store, sync in
   the background via a channel), review (session + IME + answer + gfx; snapshot saved
   after every answer; completions → outbox → `wksync.Uploader`), summary, and the
-  first-run token form (Huh). Review sessions are refused against the live API without
-  `--live`.
+  first-run token form (Huh), and the item page (`item.go`: glyph + summary, tabs by
+  subject type, mnemonics via `renderMarkup`; `i` opens it after a review answer, hiding
+  the part not yet asked; lessons will reuse it). Review sessions are refused against
+  the live API without `--live`.
 - `internal/session` — review engine: backlog → active set (default 10) → random question; per-part
   misses; `Completion` = what `POST /reviews` needs; wrap-up, limit, ordering, back-to-back,
   undo of a wrong answer; JSON `Snapshot`/`Restore`. Pure.

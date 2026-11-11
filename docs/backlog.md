@@ -9,7 +9,7 @@ up; delete it when done or dropped.
 | 2026-11-08 | A config setting to make `--live` the default | Needs the user to relax the safety rule in CLAUDE.md (writes only with `--live`); a shell alias does the job meanwhile |
 | 2026-11-07 | Expose settings that exist in code but have no way to set them: answer strictness (`answer.Strictness`), session order / back-to-back / reading-first / active-set size / item limit (`session.Options`), retype-after-typo (`AllowUndo`, a key like ctrl+z), graphics tier override (`--gfx` flag exists; config key missing), font path (`glyph.FindFont`) | Config file first, settings screen in M5 |
 | 2026-11-07 | Add the typed answer as a user synonym (ctrl+s after a wrong meaning) | Needs `POST/PUT /study_materials`; design doc puts it in M5 |
-| 2026-11-07 | Mnemonics and hints in the answer panel | Needs the WK markup renderer (`<kanji>`, `<reading>`, `<ja>`…), planned for lessons (M4) |
+| 2026-11-07 | Mnemonics and hints in the answer panel | `i` opens the full item page after an answer (2026-11-11); this would put the mnemonic inline too. Revisit after dogfooding `i` |
 | 2026-11-07 | Pre-upload the next 2–3 glyphs to kitty so Enter never waits | Design doc idea; not needed so far |
 | 2026-11-07 | Lightning mode (auto-advance after a correct answer) | Design doc option; not built |
 | 2026-11-07 | "Relaxed n" input setting: `konnichiha` → こんにちは | Default stays WaniKani's `nn` → ん (Spike 3) |

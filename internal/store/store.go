@@ -311,3 +311,40 @@ func (s *Store) Subject(ctx context.Context, id int) (*wk.Resource[wk.Subject], 
 	}
 	return &r, nil
 }
+
+// Subjects decodes the stored subjects with the given IDs, in the order
+// given; IDs not in the store are skipped.
+func (s *Store) Subjects(ctx context.Context, ids []int) ([]wk.Resource[wk.Subject], error) {
+	out := make([]wk.Resource[wk.Subject], 0, len(ids))
+	for _, id := range ids {
+		r, err := s.Subject(ctx, id)
+		if err != nil {
+			return nil, err
+		}
+		if r != nil {
+			out = append(out, *r)
+		}
+	}
+	return out, nil
+}
+
+// StudyMaterial returns the user's synonyms and notes for a subject, or nil
+// if there are none (or they are hidden).
+func (s *Store) StudyMaterial(ctx context.Context, subjectID int) (*wk.StudyMaterial, error) {
+	var raw string
+	err := s.db.QueryRowContext(ctx, `SELECT raw FROM study_materials WHERE subject_id = ?`, subjectID).Scan(&raw)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	var r wk.Resource[wk.StudyMaterial]
+	if err := json.Unmarshal([]byte(raw), &r); err != nil {
+		return nil, err
+	}
+	if r.Data.Hidden {
+		return nil, nil
+	}
+	return &r.Data, nil
+}

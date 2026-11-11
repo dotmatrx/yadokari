@@ -2,6 +2,7 @@ package wkmock
 
 import (
 	"math/rand/v2"
+	"strings"
 	"time"
 
 	"github.com/jtharris/yadokari/internal/wk"
@@ -69,7 +70,8 @@ func DemoData(now time.Time) Data {
 				Meanings:          []wk.Meaning{{Meaning: w[1], Primary: true, AcceptedAnswer: true}},
 				AuxiliaryMeanings: []wk.AuxiliaryMeaning{},
 				Readings:          []wk.Reading{reading},
-				MeaningMnemonic:   "A made-up mnemonic for " + w[1] + ".",
+				MeaningMnemonic:   demoMnemonic(object, w),
+				ReadingMnemonic:   "Imagine saying <reading>" + w[2] + "</reading> out loud while you picture the <" + object + ">" + w[1] + "</" + object + ">. Say it a few times; it sticks.",
 				DocumentURL:       "https://www.wanikani.com/" + object + "/" + chars,
 				CreatedAt:         created,
 			},
@@ -120,6 +122,44 @@ func DemoData(now time.Time) Data {
 	for i, w := range demoVocab {
 		add(wk.ObjectVocabulary, 3000+i, 1+i*8/len(demoVocab), w)
 	}
+	linkDemo(&d)
 	d.sort()
 	return d
+}
+
+// demoMnemonic is a made-up meaning mnemonic with WaniKani-style markup.
+func demoMnemonic(object string, w [3]string) string {
+	if object == wk.ObjectKanji {
+		return "A made-up mnemonic: picture the <kanji>" + w[1] + "</kanji> so vividly that you <em>can't</em> forget it.\n" +
+			"Look at its shape again. Does it remind you of a <kanji>" + strings.ToLower(w[1]) + "</kanji>? It should now."
+	}
+	return "Put the kanji together and you get <vocabulary>" + w[1] + "</vocabulary>. A made-up mnemonic, but it does the job."
+}
+
+// linkDemo connects demo words to the demo kanji they are written with,
+// both ways, and gives each word a context sentence.
+func linkDemo(d *Data) {
+	kanji := map[rune]int{} // character → index into d.Subjects
+	for i, s := range d.Subjects {
+		if s.Object == wk.ObjectKanji && s.ID >= 2000 && s.Data.Characters != nil {
+			kanji[[]rune(*s.Data.Characters)[0]] = i
+		}
+	}
+	for i := range d.Subjects {
+		v := &d.Subjects[i]
+		if v.Object != wk.ObjectVocabulary || v.ID < 3000 || v.Data.Characters == nil {
+			continue
+		}
+		for _, c := range *v.Data.Characters {
+			if k, ok := kanji[c]; ok {
+				v.Data.ComponentSubjectIDs = append(v.Data.ComponentSubjectIDs, d.Subjects[k].ID)
+				d.Subjects[k].Data.AmalgamationSubjectIDs = append(d.Subjects[k].Data.AmalgamationSubjectIDs, v.ID)
+			}
+		}
+		v.Data.PartsOfSpeech = []string{"noun"}
+		v.Data.ContextSentences = []wk.ContextSentence{{
+			Ja: "これは" + *v.Data.Characters + "です。",
+			En: "This is the " + strings.ToLower(v.Data.Meanings[0].Meaning) + ".",
+		}}
+	}
 }

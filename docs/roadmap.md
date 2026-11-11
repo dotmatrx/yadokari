@@ -38,7 +38,8 @@ someone else (after M4 and M5's packaging). `just build`/`just install` stamp
   `assignments:start` for lessons.
 - **UI pass done:** the user approved round 3 on 2026-11-11.
 - **Design doc:** the half-block suggestions (five edits) are accepted; none pending.
-- **M4:** markup renderer done; next is the item page (see the M4 plan below).
+- **M4:** markup renderer and item page done; next is the lesson flow (see the M4 plan
+  below). The item page awaits the user's look in Ghostty (`just preview item item-vocab`).
 - Daily driver: Ghostty on the host, app from the `yadokari` toolbox (kitty tier via
   `gfx.Probe`); `just install` puts a static binary in `~/.local/bin`.
 - `.dev/yadokari.db` (gitignored) may hold a saved review session; `r` resumes it.
@@ -104,9 +105,12 @@ live API without `--live`, as reviews are.
    links, wrapped). Parses all 22,525 recorded mnemonics and hints. Not shown anywhere
    yet; first use is the item page, and it unlocks mnemonics in the review answer
    panel (backlog).
-2. Item pages (meaning, reading, mnemonics, components/context), then the lesson quiz
-   and `PUT /assignments/:id/start`.
-3. Audio, last.
+2. ~~Item page~~ Done 2026-11-11: `ui.ItemPage` (glyph + summary panel; tabs by type:
+   radical Name/Found in, kanji Radicals/Meaning/Reading/Found in, vocabulary
+   Kanji/Meaning/Reading/Context; scrolls). Opened with `i` after a review answer; the
+   part not yet asked stays hidden. Previews: `item`, `item-vocab`.
+3. Lesson quiz and `PUT /assignments/:id/start` (next).
+4. Audio, last.
 
 ## Open questions
 
