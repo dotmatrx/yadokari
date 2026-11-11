@@ -4,7 +4,7 @@ Where the project stands and what comes next. The design rationale lives in the 
 doc (link in CLAUDE.md); deferred ideas live in `docs/backlog.md`. Update this file when
 a milestone moves.
 
-**Last updated:** 2026-11-10.
+**Last updated:** 2026-11-11.
 
 ## Milestones
 
@@ -13,9 +13,9 @@ a milestone moves.
 | Phase 0: spikes and safety net | Done | API client + mock, kitty placeholders (pass), IME (pass); OSC 66 skipped; findings in the design doc |
 | M1: read-only dashboard | Done | Store, incremental sync, token (keyring works in the toolbox), dashboard; verified on the live account |
 | M2: reviews against the mock | Done | Session engine, answer checking, glyph/gfx (kitty + plain), outbox + uploader, review and summary screens |
-| M3: live reviews | Dogfooding | All items done except the two weeks of daily use; see below |
-| UI pass | In progress | Calmer, grid-like, full-width frame; see below |
-| M4: lessons | Not started | Item pages with mnemonic markup, lesson quiz, `PUT /assignments/:id/start`, audio |
+| M3: live reviews | Dogfooding | Built; the two weeks of daily use (to 2026-11-22) run alongside M4 |
+| UI pass | Done | Panels frame on every screen; approved 2026-11-11 |
+| M4: lessons | In progress | Item pages with mnemonic markup, lesson quiz, `PUT /assignments/:id/start`, audio |
 | M5: polish | Not started | Settings screen, add synonym, font roulette, themes, packaging |
 
 ## Versions
@@ -29,25 +29,21 @@ someone else (after M4 and M5's packaging). `just build`/`just install` stamp
 `--version`, in the dashboard header and in each `writes.log` entry. `go run` builds
 (`just run`, `just dev`) say `dev`.
 
-## Where things were left (2026-11-08)
+## Where things were left (2026-11-11)
 
 - All work is committed on `main`; the user pushes to origin themselves.
-- **Terminal switch:** the user now runs Ghostty (host, rpm-ostree) as the daily
-  driver, with the app run from the `yadokari` toolbox inside it. The spikes looked
-  right, but the app fell back to the plain tier: toolbox hides Ghostty's `TERM`. Fixed
-  by probing the terminal (`gfx.Probe`) and a `--gfx` override. The probe also reads the
-  cell size (the toolbox pty reports none). Confirmed in Ghostty: `env tier plain`,
-  probe `{Kitty:true CellW:12 CellH:30}`. See CLAUDE.md.
-- **First live session done (2026-11-08):** 11 reviews, all accepted, outbox empty
-  afterwards; the user finds it "already feeling very usable". Dogfooding has begun.
-- M3 items 4 and 6 (summary half) are done: rejected reviews and the pending count on
-  the dashboard (`x` dismisses rejected rows), and per-item SRS movement in the
-  summary, filled in as uploads land.
+- **M3 dogfooding:** 55 live reviews over 2026-11-08 to 11-10, all 201. Still unseen:
+  a 422 body and a real network-down run; we watch for them rather than wait (every
+  write is in `writes.log`). The keyring token has full write permissions, including
+  `assignments:start` for lessons.
+- **UI pass done:** the user approved round 3 on 2026-11-11.
+- **Design doc:** the half-block suggestions (five edits) are accepted; none pending.
+- **Next: M4, starting with the WaniKani markup renderer** (see the M4 plan below).
+- Daily driver: Ghostty on the host, app from the `yadokari` toolbox (kitty tier via
+  `gfx.Probe`); `just install` puts a static binary in `~/.local/bin`.
 - `.dev/yadokari.db` (gitignored) may hold a saved review session; `r` resumes it.
 - A read-only API token is in `.env` (used by `just probe-live`); the user's real
-  token is in the desktop keyring (used by `go run ./cmd/yadokari`).
-- Five suggestions in the design doc (dropping the half-block tier) await the user's
-  review.
+  token is in the desktop keyring.
 
 ## UI pass (started 2026-11-08)
 
@@ -76,8 +72,7 @@ space, thin borders), **colour only where it means something** (type marks, bars
   "A"/"あ") into the right of its top border as a small grey badge plus a label
   (`[A] English`, `[あ] Kana`); an empty box shows a placeholder (答え / "Your
   answer"), as on WaniKani's site.
-- Next: the user's feedback, in Ghostty (`just preview`, `just mock --demo`
-  + `just dev`).
+- Approved 2026-11-11; the lesson screens reuse this frame.
 
 ## M3 plan: live reviews (agreed 2026-11-08)
 
@@ -98,9 +93,21 @@ space, thin borders), **colour only where it means something** (type marks, bars
 6. Dogfood daily for two weeks next to the website. ~~Summary SRS movement~~ done
    2026-11-08 (from the stored assignment that `resources_updated` returned).
 
+## M4 plan: lessons (started 2026-11-11)
+
+Groundwork exists: `wk.Client.StartAssignment` and the mock's
+`PUT /assignments/:id/start`. Build against the mock; lessons are refused against the
+live API without `--live`, as reviews are.
+
+1. **WaniKani markup renderer** (`<radical>`, `<kanji>`, `<vocabulary>`, `<reading>`,
+   `<ja>`, `<meaning>`…) to styled Lip Gloss text. Pure and table-tested. Also unlocks
+   mnemonics and hints in the review answer panel (backlog).
+2. Item pages (meaning, reading, mnemonics, components/context), then the lesson quiz
+   and `PUT /assignments/:id/start`.
+3. Audio, last.
+
 ## Open questions
 
-- Should lessons be in v1, or ship reviews only first? (design doc)
 - Distribution: `go install` only, or packages too? (design doc)
 - Settings: which session options become user settings, and where (config file vs a
   settings screen)? See the backlog.
