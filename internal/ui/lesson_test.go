@@ -162,8 +162,6 @@ func TestPickLessons(t *testing.T) {
 // ready, so its first glyph's upload must reach the terminal.
 func TestLessonQuizSendsFirstGlyph(t *testing.T) {
 	h := newHarness(t)
-	fake := &fakeKitty{seen: map[string]bool{}}
-	h.app.rdeps.Renderer = fake
 	h.key("l")
 	h.learn()
 	_, it, ok := h.app.review.current()
@@ -181,8 +179,6 @@ func TestLessonQuizSendsFirstGlyph(t *testing.T) {
 // at the new size; that upload must be sent too.
 func TestLessonResizeSendsGlyph(t *testing.T) {
 	h := newHarness(t)
-	fake := &fakeKitty{seen: map[string]bool{}}
-	h.app.rdeps.Renderer = fake
 	h.key("l")
 	h.send(tea.WindowSizeMsg{Width: 120, Height: 40})
 	cols, rows := h.app.lesson.page.glyphSize()

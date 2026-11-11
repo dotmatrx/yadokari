@@ -29,6 +29,7 @@ type harness struct {
 	mock *wkmock.Server
 	st   *store.Store
 	raw  strings.Builder // raw output (kitty uploads) the app sent
+	fake *fakeKitty      // the renderer: every glyph's upload is tracked
 }
 
 func newHarness(t *testing.T) *harness {
@@ -52,11 +53,12 @@ func newHarness(t *testing.T) *harness {
 	if _, err := syncer.Run(ctx, append(append([]string{}, wksync.Foreground...), wksync.Background...)); err != nil {
 		t.Fatal(err)
 	}
+	fake := &fakeKitty{seen: map[string]bool{}}
 	app := NewApp(
 		Deps{Store: st, Syncer: syncer, Now: func() time.Time { return clock }, Location: time.UTC, Endpoint: "mock"},
-		ReviewDeps{Renderer: gfx.New(gfx.Plain, 0, 0), Uploader: &wksync.Uploader{Client: client, Store: st}},
+		ReviewDeps{Renderer: fake, Uploader: &wksync.Uploader{Client: client, Store: st}},
 	)
-	h := &harness{t: t, app: app, mock: m, st: st}
+	h := &harness{t: t, app: app, mock: m, st: st, fake: fake}
 	h.send(tea.WindowSizeMsg{Width: 100, Height: 30})
 	h.send(h.app.dash.load()())
 	return h
@@ -68,6 +70,23 @@ func (h *harness) send(msg tea.Msg) {
 	h.t.Helper()
 	_, cmd := h.app.Update(msg)
 	h.run(cmd, 0)
+	h.checkGlyphsSent()
+}
+
+// checkGlyphsSent fails the test if the screen now shows a kitty image the
+// terminal was never sent: a blank glyph. Every harness test checks this
+// after every message.
+func (h *harness) checkGlyphsSent() {
+	h.t.Helper()
+	h.fake.drawn = nil
+	_ = h.app.View()
+	sent := h.raw.String()
+	for _, key := range h.fake.drawn {
+		if !strings.Contains(sent, "UPLOAD "+key+";") {
+			h.t.Fatalf("screen %d shows image %s, but its upload never reached the terminal\nsent: %q\n%s",
+				h.app.screen, key, sent, h.screen())
+		}
+	}
 }
 
 func (h *harness) run(cmd tea.Cmd, depth int) {
@@ -83,8 +102,8 @@ func (h *harness) run(cmd tea.Cmd, depth int) {
 		for _, c := range msg {
 			h.run(c, depth+1)
 		}
-	case tickMsg, reviewReadyMsg:
-		// timers: deliver once but don't follow up with another tick
+	case tickMsg:
+		// the dashboard's clock: deliver once but don't follow up with another tick
 		_, _ = h.app.Update(msg)
 	default:
 		_, next := h.app.Update(msg)
@@ -486,11 +505,13 @@ func TestAnswerBoxModeAndPlaceholder(t *testing.T) {
 type fakeKitty struct {
 	seen    map[string]bool
 	pending string
+	drawn   []string // keys drawn since the harness last cleared it
 }
 
 func (f *fakeKitty) Tier() gfx.Tier { return gfx.Kitty }
 func (f *fakeKitty) Draw(src gfx.Source, cols, rows int, _, _ color.Color) (string, error) {
 	key := fmt.Sprintf("%s@%dx%d", src.Key, cols, rows)
+	f.drawn = append(f.drawn, key)
 	if !f.seen[key] {
 		f.seen[key] = true
 		f.pending += "UPLOAD " + key + ";"
@@ -509,9 +530,6 @@ func TestResizeSendsGlyphUpload(t *testing.T) {
 	if h.app.screen != reviewScreen {
 		t.Fatalf("r should open reviews:\n%s", h.screen())
 	}
-	fake := &fakeKitty{seen: map[string]bool{}}
-	h.app.review.rdeps.Renderer = fake
-
 	_, cmd := h.app.Update(tea.WindowSizeMsg{Width: 120, Height: 40})
 	var raw strings.Builder
 	var collect func(tea.Cmd)
