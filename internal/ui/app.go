@@ -32,6 +32,7 @@ type App struct {
 	summary Summary
 	width   int
 	height  int
+	ready   bool // the alt screen is up: kitty uploads can be sent
 }
 
 // NewApp builds the app, starting on the dashboard.
@@ -42,10 +43,19 @@ func NewApp(d Deps, rd ReviewDeps) *App {
 	if d.Location == nil {
 		d.Location = time.Local
 	}
-	return &App{deps: d, rdeps: rd, dash: NewDashboard(d)}
+	a := &App{deps: d, rdeps: rd, dash: NewDashboard(d)}
+	a.rdeps.ready = &a.ready
+	return a
 }
 
-func (a *App) Init() tea.Cmd { return a.dash.Init() }
+// graphicsReadyMsg says the alt screen is up: kitty uploads sent before it
+// could be lost, so glyphs draw as blank blocks until then.
+type graphicsReadyMsg struct{}
+
+func (a *App) Init() tea.Cmd {
+	return tea.Batch(a.dash.Init(),
+		tea.Tick(100*time.Millisecond, func(time.Time) tea.Msg { return graphicsReadyMsg{} }))
+}
 
 func (a *App) quit() tea.Cmd {
 	a.dash.Stop()
@@ -57,8 +67,41 @@ func (a *App) quit() tea.Cmd {
 	return tea.Quit
 }
 
+// Update handles a message, then draws the visible screen's glyph and
+// sends any kitty upload that queued. This is the only place uploads are
+// sent: a screen just describes its glyph (DrawGlyph), so no command a
+// screen returns, or a caller drops, can strand an upload and leave the
+// glyph blank.
 func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	m, cmd := a.update(msg)
+	return m, tea.Batch(cmd, a.graphics())
+}
+
+// graphics draws the visible screen's glyph (queuing any upload) and,
+// once the alt screen is up, sends the queue.
+func (a *App) graphics() tea.Cmd {
+	rd := a.rdeps.Renderer
+	if !a.ready || rd == nil {
+		return nil
+	}
+	switch {
+	case a.screen == reviewScreen && a.review != nil:
+		a.review.DrawGlyph()
+	case a.screen == lessonScreen && a.lesson != nil:
+		a.lesson.DrawGlyph()
+	}
+	if s := rd.Flush(); s != "" {
+		return tea.Raw(s)
+	}
+	return nil
+}
+
+func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case graphicsReadyMsg:
+		a.ready = true
+		return a, nil
+
 	case tea.WindowSizeMsg:
 		a.width, a.height = msg.Width, msg.Height
 		a.dash.Update(msg)
@@ -68,9 +111,6 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			cmds = append(cmds, cmd)
 		}
 		if a.review != nil {
-			// The review's command carries the kitty upload for the glyph at
-			// its new size; the renderer already counts it as sent. Same for
-			// the lesson page above.
 			_, cmd := a.review.Update(msg)
 			cmds = append(cmds, cmd)
 		}
@@ -118,10 +158,9 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case lessonQuizMsg:
 		a.lesson = nil
-		msg.quiz.ready = true // the alt screen is already up
 		return a, a.startReview(msg.quiz)
 
-	case lessonReadyMsg, lessonImageMsg:
+	case lessonImageMsg:
 		var cmd tea.Cmd
 		if a.lesson != nil {
 			_, cmd = a.lesson.Update(msg)
@@ -147,7 +186,7 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case loadedMsg, syncEventMsg, syncPhaseMsg, tickMsg, uploadedMsg:
 		_, cmd := a.dash.Update(msg)
 		return a, cmd
-	case imageMsg, uploadMsg, reviewReadyMsg:
+	case imageMsg, uploadMsg:
 		var cmd tea.Cmd
 		if a.review != nil {
 			_, cmd = a.review.Update(msg)
@@ -179,9 +218,6 @@ func (a *App) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 // startReview shows a review session (or lesson quiz) at the current size.
-// Sizing it may already draw its glyph (a lesson quiz starts ready), so the
-// command carrying that kitty upload must be kept: dropped, the renderer
-// counts the image as sent and the glyph stays blank.
 func (a *App) startReview(r *Review) tea.Cmd {
 	a.review, a.screen = r, reviewScreen
 	_, cmd := a.review.Update(tea.WindowSizeMsg{Width: a.width, Height: a.height})

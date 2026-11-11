@@ -129,8 +129,10 @@ type ItemPage struct {
 type GlyphDeps struct {
 	Renderer gfx.Renderer
 	Font     *glyph.Font
-	Ready    bool // kitty uploads can be sent
+	ready    *bool // the App's flag: kitty uploads can be sent
 }
+
+func (g GlyphDeps) graphicsReady() bool { return g.ready != nil && *g.ready }
 
 // NewItemPage opens on the first tab.
 func NewItemPage(d ItemData, g GlyphDeps, svg []byte) *ItemPage {
@@ -203,13 +205,16 @@ func (p *ItemPage) innerWidth() int {
 	return max(w-4, 1)
 }
 
-// Draw queues the glyph's kitty upload; send the renderer's Flush after.
-func (p *ItemPage) Draw() {
-	if p.gfx.Renderer == nil || !p.gfx.Ready {
-		return
-	}
+// DrawGlyph draws the glyph so the renderer queues any upload. Only App
+// calls it (through the screen showing the page), then sends the queue.
+func (p *ItemPage) DrawGlyph() {
 	cols, rows := p.glyphSize()
-	_, _ = p.gfx.Renderer.Draw(p.source(), cols, rows, glyphFG, typeColour[p.data.Subject.Object])
+	_, _ = p.drawGlyph(cols, rows)
+}
+
+func (p *ItemPage) drawGlyph(cols, rows int) (string, error) {
+	missing := p.data.Subject.Data.Characters == nil && p.svg == nil
+	return drawSubjectGlyph(p.gfx.Renderer, p.gfx.graphicsReady(), p.source(), missing, cols, rows, typeColour[p.data.Subject.Object])
 }
 
 func (p *ItemPage) source() gfx.Source {
@@ -239,7 +244,7 @@ func (p *ItemPage) View() string {
 
 	cols, rows := p.glyphSize()
 	bg := typeColour[subj.Object]
-	cells, err := drawSubjectGlyph(p.gfx.Renderer, p.gfx.Ready, p.source(), subj.Data.Characters == nil && p.svg == nil, cols, rows, bg)
+	cells, err := p.drawGlyph(cols, rows)
 	if err != nil {
 		cells, _ = gfx.New(gfx.Plain, 0, 0).Draw(p.source(), cols, rows, glyphFG, bg)
 	}

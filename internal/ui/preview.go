@@ -22,6 +22,10 @@ var PreviewScreens = []string{"dashboard", "review-empty", "review", "review-rea
 // to h lines. With a kitty renderer, send rd.Renderer.Flush() before it.
 func Preview(ctx context.Context, d Deps, rd ReviewDeps, screen string, w, h int) (string, error) {
 	size := tea.WindowSizeMsg{Width: w, Height: h}
+	// Ready from the start: screens only draw in View here, and the caller
+	// sends what that queued (Flush).
+	ready := true
+	rd.ready = &ready
 	switch screen {
 	case "dashboard":
 		m := NewDashboard(d)
@@ -42,9 +46,6 @@ func Preview(ctx context.Context, d Deps, rd ReviewDeps, screen string, w, h int
 			return "", err
 		}
 		r.Update(size)
-		// Not ready while typing: each Update would otherwise queue a kitty
-		// upload into a command this function discards, and the final frame
-		// would point at an image the terminal never received.
 		want := session.Meaning
 		if screen == "review-reading" {
 			want = session.Reading
@@ -78,7 +79,6 @@ func Preview(ctx context.Context, d Deps, rd ReviewDeps, screen string, w, h int
 			typeKeys(r, wrong)
 			enterKey(r)
 		}
-		r.ready = true // the caller sends the View's uploads (Flush)
 		return fit(r.View(), h), nil
 
 	case "item", "item-vocab":
@@ -99,7 +99,6 @@ func Preview(ctx context.Context, d Deps, rd ReviewDeps, screen string, w, h int
 			return "", err
 		}
 		l.Update(size)
-		l.page.gfx.Ready = true // the caller sends the View's uploads (Flush)
 		return fit(l.View(), h), nil
 
 	case "summary":
@@ -138,7 +137,7 @@ func previewItem(ctx context.Context, d Deps, rd ReviewDeps, vocab bool) (*ItemP
 	if err != nil {
 		return nil, err
 	}
-	p := NewItemPage(data, GlyphDeps{Renderer: rd.Renderer, Font: rd.Font, Ready: true}, nil)
+	p := NewItemPage(data, rd.glyphs(), nil)
 	if !vocab && len(p.tabs) > 1 {
 		p.setTab(1)
 	}

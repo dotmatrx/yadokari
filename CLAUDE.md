@@ -98,8 +98,10 @@ anything with `--live` yourself. Tokens used during development are read-only.
   radical SVGs (normalized for oksvg: inline CSS classes, resolve `var()`, drop clip
   paths, scale stroke widths), disk cache for downloads. Radical PNG URLs are dead (403).
 - `internal/gfx` — tiers `kitty` (placeholders; image IDs < 256, recycled) and `plain`;
-  half-block was tried and dropped (unreadable). `Draw` queues kitty uploads; send
-  `Flush()` via `tea.Raw` from Update. `Choose` picks the tier: `--gfx` override, then
+  half-block was tried and dropped (unreadable). `Draw` queues kitty uploads. In the app only
+  `ui.App.Update` sends them: after every message it calls the visible screen's
+  `DrawGlyph` and sends `Flush()` via `tea.Raw`, once the alt screen is up (App's `ready`).
+  Screens never flush; the UI test harness fails if a shown glyph was never sent. `Choose` picks the tier: `--gfx` override, then
   env (`Detect`), then `Probe` (kitty graphics query + `CSI 16 t` + DA1 on `/dev/tty`,
   before Bubble Tea starts). `CellSize` uses the tty ioctl, else the probe: the
   toolbox pty reports no pixel size (Ghostty: 12×30 real vs the 10×20 guess). `Source.Mask` must

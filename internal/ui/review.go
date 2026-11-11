@@ -60,6 +60,18 @@ type ReviewDeps struct {
 	// Disabled, when set, explains why reviews can't start (shown on the
 	// dashboard instead of opening the review screen).
 	Disabled string
+
+	// ready points at the App's flag: the alt screen is up, so kitty
+	// uploads can be sent. Until then glyphs draw as a blank block.
+	ready *bool
+}
+
+// graphicsReady reports whether glyphs can be drawn as kitty images yet.
+func (rd ReviewDeps) graphicsReady() bool { return rd.ready != nil && *rd.ready }
+
+// glyphs is what an item page needs to draw its glyph.
+func (rd ReviewDeps) glyphs() GlyphDeps {
+	return GlyphDeps{Renderer: rd.Renderer, Font: rd.Font, ready: rd.ready}
 }
 
 type reviewState int
@@ -79,7 +91,6 @@ type Review struct {
 	resume bool
 
 	width, height int
-	ready         bool // alt screen active: safe to send kitty uploads
 
 	conv  ime.Converter
 	plain []rune
@@ -117,7 +128,6 @@ type (
 		err     error
 		pending int
 	}
-	reviewReadyMsg struct{}
 	// ReviewDoneMsg asks the app to show the summary.
 	ReviewDoneMsg struct{ Summary Summary }
 	// BackMsg asks the app to return to the dashboard.
@@ -192,11 +202,7 @@ func resumable(snap session.Snapshot, due map[int]store.ReviewItem, rng *rand.Ra
 }
 
 func (r *Review) Init() tea.Cmd {
-	return tea.Batch(
-		tea.Tick(100*time.Millisecond, func(time.Time) tea.Msg { return reviewReadyMsg{} }),
-		r.fetchImage(),
-		r.upload(),
-	)
+	return tea.Batch(r.fetchImage(), r.upload())
 }
 
 // shown is the question on screen: the graded one until Enter, else current.
@@ -270,8 +276,6 @@ func (r *Review) Update(msg tea.Msg) (*Review, tea.Cmd) {
 		}
 	case ItemClosedMsg:
 		r.item = nil
-	case reviewReadyMsg:
-		r.ready = true
 	case imageMsg:
 		delete(r.loading, msg.subject)
 		if msg.err != nil {
@@ -298,27 +302,20 @@ func (r *Review) Update(msg tea.Msg) (*Review, tea.Cmd) {
 			cmds = append(cmds, cmd)
 		}
 	}
-	cmds = append(cmds, r.flushGraphics())
 	return r, tea.Batch(cmds...)
 }
 
-// flushGraphics draws the current glyph so any kitty upload is queued, then
-// sends the queue. Called from Update so uploads never wait on a View.
-func (r *Review) flushGraphics() tea.Cmd {
-	if !r.ready || r.rdeps.Renderer == nil {
-		return nil
-	}
+// DrawGlyph draws the glyph on screen (the item page's, when open) so the
+// renderer queues any upload. Only App calls it, then sends the queue.
+func (r *Review) DrawGlyph() {
 	if r.item != nil {
-		r.item.gfx.Ready = true
-		r.item.Draw()
-	} else if _, it, ok := r.shown(); ok {
+		r.item.DrawGlyph()
+		return
+	}
+	if _, it, ok := r.shown(); ok {
 		cols, rows := r.glyphSize()
-		_, _ = r.rdeps.Renderer.Draw(r.source(it), cols, rows, glyphFG, typeColour[it.Subject.Object])
+		_, _ = r.drawGlyph(it, cols, rows, typeColour[it.Subject.Object])
 	}
-	if s := r.rdeps.Renderer.Flush(); s != "" {
-		return tea.Raw(s)
-	}
-	return nil
 }
 
 func (r *Review) key(msg tea.KeyPressMsg) tea.Cmd {
@@ -659,7 +656,7 @@ func (r *Review) answerPanel(q session.Question, it store.ReviewItem, width int)
 
 func (r *Review) drawGlyph(it store.ReviewItem, cols, rows int, bg color.Color) (string, error) {
 	missing := it.Subject.Data.Characters == nil && r.images[it.Subject.ID] == nil
-	return drawSubjectGlyph(r.rdeps.Renderer, r.ready, r.source(it), missing, cols, rows, bg)
+	return drawSubjectGlyph(r.rdeps.Renderer, r.rdeps.graphicsReady(), r.source(it), missing, cols, rows, bg)
 }
 
 // drawSubjectGlyph draws a glyph field: a blank coloured block until kitty
@@ -705,7 +702,7 @@ func (r *Review) openItem() {
 	}
 	d.Synonyms = it.Synonyms
 	showMeaning, showReading := r.revealed(q)
-	p := NewItemPage(d, GlyphDeps{Renderer: r.rdeps.Renderer, Font: r.rdeps.Font, Ready: r.ready}, r.images[it.Subject.ID])
+	p := NewItemPage(d, r.rdeps.glyphs(), r.images[it.Subject.ID])
 	p.HideMeaning, p.HideReading = !showMeaning, !showReading
 	p.SetSize(r.width, r.height)
 	r.item = p

@@ -60,6 +60,7 @@ func newHarness(t *testing.T) *harness {
 	)
 	h := &harness{t: t, app: app, mock: m, st: st, fake: fake}
 	h.send(tea.WindowSizeMsg{Width: 100, Height: 30})
+	h.send(graphicsReadyMsg{}) // as App.Init's timer would
 	h.send(h.app.dash.load()())
 	return h
 }

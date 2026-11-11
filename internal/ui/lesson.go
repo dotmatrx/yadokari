@@ -34,7 +34,6 @@ type (
 	}
 	// lessonQuizMsg hands the finished learning phase's quiz to the app.
 	lessonQuizMsg  struct{ quiz *Review }
-	lessonReadyMsg struct{}
 	lessonImageMsg imageMsg
 )
 
@@ -50,7 +49,6 @@ type Lesson struct {
 	rng   *rand.Rand
 
 	images map[int][]byte // subject ID → SVG, for image-only radicals
-	ready  bool
 
 	width, height int
 }
@@ -119,7 +117,7 @@ func (l *Lesson) open(i, tab int) error {
 	if err != nil {
 		return err
 	}
-	p := NewItemPage(d, GlyphDeps{Renderer: l.rdeps.Renderer, Font: l.rdeps.Font, Ready: l.ready}, l.images[it.Subject.ID])
+	p := NewItemPage(d, l.rdeps.glyphs(), l.images[it.Subject.ID])
 	p.Section = "lessons"
 	p.Strip = l.strip(i)
 	p.Progress = fmt.Sprintf("%d / %d", i+1, len(l.items))
@@ -148,7 +146,7 @@ func (l *Lesson) strip(cur int) string {
 }
 
 func (l *Lesson) Init() tea.Cmd {
-	cmds := []tea.Cmd{tea.Tick(100*time.Millisecond, func(time.Time) tea.Msg { return lessonReadyMsg{} })}
+	var cmds []tea.Cmd
 	for _, it := range l.items {
 		if it.Subject.Data.Characters != nil {
 			continue
@@ -174,8 +172,6 @@ func (l *Lesson) Update(msg tea.Msg) (*Lesson, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		l.width, l.height = msg.Width, msg.Height
 		l.page.SetSize(msg.Width, msg.Height)
-	case lessonReadyMsg:
-		l.ready = true
 	case lessonImageMsg:
 		if msg.err == nil {
 			l.images[msg.subject] = msg.raw
@@ -186,20 +182,11 @@ func (l *Lesson) Update(msg tea.Msg) (*Lesson, tea.Cmd) {
 	case tea.KeyPressMsg:
 		cmd = l.key(msg)
 	}
-	return l, tea.Batch(cmd, l.flushGraphics())
+	return l, cmd
 }
 
-func (l *Lesson) flushGraphics() tea.Cmd {
-	if !l.ready || l.rdeps.Renderer == nil {
-		return nil
-	}
-	l.page.gfx.Ready = true
-	l.page.Draw()
-	if s := l.rdeps.Renderer.Flush(); s != "" {
-		return tea.Raw(s)
-	}
-	return nil
-}
+// DrawGlyph draws the current page's glyph; see Review.DrawGlyph.
+func (l *Lesson) DrawGlyph() { l.page.DrawGlyph() }
 
 func (l *Lesson) key(msg tea.KeyPressMsg) tea.Cmd {
 	p := l.page
