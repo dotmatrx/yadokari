@@ -15,7 +15,7 @@ a milestone moves.
 | M2: reviews against the mock | Done | Session engine, answer checking, glyph/gfx (kitty + plain), outbox + uploader, review and summary screens |
 | M3: live reviews | Dogfooding | Built; the two weeks of daily use (to 2026-11-22) run alongside M4 |
 | UI pass | Done | Panels frame on every screen; approved 2026-11-11 |
-| M4: lessons | In progress | Item pages with mnemonic markup, lesson quiz, `PUT /assignments/:id/start`, audio |
+| M4: lessons | Done (v0.4.0) | Item pages with mnemonic markup, lessons + quiz, `PUT /assignments/:id/start`, audio; live-verified 2026-11-11 |
 | M5: polish | Not started | Settings screen, add synonym, font roulette, themes, packaging |
 
 ## Versions
@@ -38,11 +38,14 @@ someone else (after M4 and M5's packaging). `just build`/`just install` stamp
   `assignments:start` for lessons.
 - **UI pass done:** the user approved round 3 on 2026-11-11.
 - **Design doc:** the half-block suggestions (five edits) are accepted; none pending.
-- **M4:** markup renderer, item page, lessons (first live batch of 5 on 2026-11-11, all
-  accepted, outbox empty) and audio done. Glyph uploads now go through one place
-  (`App.Update`), enforced by the test harness. Left: the user hearing audio for real
-  (toolbox needs `pipewire-utils`), an optional resize check, then tag v0.4.0. The item
-  page's empty space is left as is until lessons have been used more.
+- **M4 done, tagged v0.4.0 (2026-11-11):** markup renderer, item page, lessons (first
+  live batch of 5, all accepted), audio with a loading/playing badge. Glyph uploads go
+  through one place (`App.Update`), enforced by the test harness; headers through
+  `headerLine`. Optional: a window-resize check in Ghostty. The item page's empty space
+  is left as is until lessons have been used more.
+- **M3 dogfooding** continues to about 2026-11-22.
+- **Next: M5 polish** (settings, add synonym, font roulette, themes, packaging); the
+  backlog holds the candidates.
 - Daily driver: Ghostty on the host, app from the `yadokari` toolbox (kitty tier via
   `gfx.Probe`); `just install` puts a static binary in `~/.local/bin`.
 - `.dev/yadokari.db` (gitignored) may hold a saved review session; `r` resumes it.
@@ -126,7 +129,7 @@ live API without `--live`, as reviews are.
    Reading tab). Heard on the real system 2026-11-11 (toolbox needed `pipewire-utils`).
    Header badge `♪ loading…` / `🔊 playing` (2026-11-11), after moving every screen's
    header onto one `headerLine` helper.
-5. Then: tag v0.4.0 (M4 done).
+5. ~~Tag v0.4.0~~ Done 2026-11-11.
 
 ## Open questions
 
