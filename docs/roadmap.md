@@ -200,6 +200,46 @@ behaved; an undone reading miss (市町村) went up as `incorrect_reading_answer
 Not in this step: the settings screen, lightning mode and relaxed `n` (new features;
 they become keys when built), voice choice (later).
 
+## M5 plan, step 2: font roulette (drafted 2026-11-14)
+
+From the design doc: draw each review glyph in a randomly chosen Japanese typeface
+(gothic, mincho, textbook, handwritten) so recognition survives real-world typography.
+Kitty tier only; the plain tier draws in the terminal's own font, so the setting does
+nothing there.
+
+**Findings (2026-11-14):**
+- `x/image/font/sfnt` can't read variable fonts (CFF2): the host's only mincho,
+  `NotoSerifCJK-VF.ttc`, and `NotoSansCJK-VF.ttc` fail the kanji/kana coverage check.
+  Static fonts work (all seven Noto Sans CJK weights load and draw).
+- Fedora packages static fonts: `google-noto-serif-cjk-fonts` (mincho),
+  `ipa-exmincho-fonts`, `ipa-exgothic-fonts`, `horai-ume-mincho-fonts`. Textbook and
+  handwritten styles (e.g. Klee One, Yomogi; OFL, Google Fonts) aren't packaged: they go
+  in `~/.local/share/fonts`, which the host and the toolbox share.
+
+**Proposed:**
+
+```toml
+[display]
+roulette = false        # a random Japanese font for each review question
+roulette_fonts = []     # font files; empty: every installed Japanese font, one per family
+```
+
+1. `internal/glyph`: `FindFonts()` lists installed Japanese fonts (`fc-list :lang=ja`
+   plus the `/run/host` and `~/.local/share/fonts` paths fontconfig may miss), keeps one
+   face per family (Regular, else the lightest bold-free weight), and drops families
+   that aren't Japanese (`… SC/TC/HK/KR` members, Mono) so no kanji gets a Chinese
+   form. Variable fonts are skipped (logged). Fonts load lazily and stay cached.
+2. Per question, not per item: an item asked again (or its other part) gets a new
+   draw, which is the point. No font twice in a row when there's a choice.
+3. After answering, the font's family shows in muted text (e.g. in the answer panel's
+   border), so a miss can be blamed on the typeface. Hidden while answering.
+4. Reviews and the lesson quiz use it; item pages and lesson pages keep the default
+   font (learning wants the clearest form).
+5. `gfx.Source.Key` includes the font, so kitty caches each (glyph, font) once.
+6. Radicals drawn from images (no Unicode character) are unaffected.
+7. Tests: discovery/filtering from a fake font list, the per-question draw, the key.
+   `just preview` gets a `--font` flag (or a roulette gallery) to eyeball fonts.
+
 ## Open questions
 
 - Distribution: `go install` only, or packages too? (design doc)
