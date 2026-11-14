@@ -280,7 +280,11 @@ same colour codes as before), `display.theme` (wanikani | yadokari; no per-role
 overrides yet), `just preview --theme=NAME|all`, and the gallery:
 https://claude.ai/artifact/SaUCBaDFb3FWyb4eWbUYHL (demo data). yadokari's text colours:
 correct `#6aa84f`, wrong `#c8283c`, warn `#e0b04a`, error `#e0364a`; lessons coral,
-reviews sea green, forecast bars sand. Next: the user's verdict on the palette; then
+reviews sea green, forecast bars sand. The user is living with draft 2
+(sea green) before deciding (2026-11-14); watch whether the correct-answer green
+`#6aa84f` feels too close to the radical green, and whether the sand bars and the
+gold/green text colours read as pastel. Palette changes are one-line edits in
+`ui/theme.go` until a public release. Then
 `[theme]` overrides, `terminal`, high-contrast + `NO_COLOR`.
 
 ## Open questions
