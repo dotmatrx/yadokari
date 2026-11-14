@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"testing"
 )
@@ -22,7 +23,7 @@ garbage line
 `
 
 func TestParseFCList(t *testing.T) {
-	got := parseFCList(fcSample)
+	got := parseFCList(fcSample, false)
 	want := []FontRef{
 		{"/f/NotoSansCJK-Regular.ttc", 0, "Noto Sans CJK JP"},      // Regular beats Bold
 		{"/f/NotoSerifCJK-ExtraLight.ttc", 0, "Noto Serif CJK JP"}, // the VF is skipped
@@ -35,7 +36,7 @@ func TestParseFCList(t *testing.T) {
 }
 
 func TestSelectFonts(t *testing.T) {
-	installed := parseFCList(fcSample)
+	installed := parseFCList(fcSample, false)
 	if got, _ := SelectFonts(installed, nil); len(got) != len(installed) {
 		t.Errorf("no names: all fonts, got %d", len(got))
 	}
@@ -137,7 +138,7 @@ func TestSelectFontsByFile(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, name := range []string{path, "~/fonts/Mine.ttf"} {
-		got, err := SelectFonts(parseFCList(fcSample), []string{name, "Yomogi"})
+		got, err := SelectFonts(parseFCList(fcSample, false), []string{name, "Yomogi"})
 		if err != nil || len(got) != 2 || got[0] != (FontRef{Path: path, Index: -1}) || got[1].Family != "Yomogi" {
 			t.Errorf("%s: %+v %v", name, got, err)
 		}
@@ -175,8 +176,12 @@ func TestOneFacePerFamily(t *testing.T) {
 	}
 }
 
-// Without fontconfig (macOS), the folder scan finds the same families.
+// Without fontconfig (macOS), the folder scan finds the same families. Checked
+// on Linux, where fontconfig's language data is the reference.
 func TestScanMatchesFontconfig(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip("fontconfig is the reference on Linux only")
+	}
 	out, err := exec.Command("fc-list", "-f", fcFormat, ":lang=ja").Output()
 	if err != nil {
 		t.Skip("no fontconfig")
@@ -193,8 +198,38 @@ func TestScanMatchesFontconfig(t *testing.T) {
 		slices.Sort(s)
 		return s
 	}
-	fc, scan := fam(parseFCList(string(out))), fam(scanFonts(fontDirs()))
+	fc, scan := fam(parseFCList(string(out), false)), fam(scanFonts(fontDirs()))
 	if !slices.Equal(fc, scan) {
 		t.Errorf("fontconfig %v, scan %v", fc, scan)
+	}
+}
+
+// fc-list on a GitHub macOS runner (Homebrew fontconfig), trimmed.
+const fcMac = `/System/Library/Fonts/ヒラギノ明朝 ProN.ttc	Hiragino Mincho Pro	W3	1	False
+/System/Library/Fonts/ヒラギノ明朝 ProN.ttc	Hiragino Mincho ProN	W3	0	False
+/System/Library/Fonts/ヒラギノ角ゴシック W3.ttc	.Hiragino Kaku Gothic Interface	W3	2	False
+/System/Library/Fonts/ヒラギノ角ゴシック W3.ttc	Hiragino Sans	W3	0	False
+/System/Library/Fonts/ヒラギノ角ゴシック W3.ttc	Hiragino Kaku Gothic ProN	W3	1	False
+/System/Library/Fonts/ヒラギノ角ゴシック W3.ttc	Hiragino Kaku Gothic Pro	W3	3	False
+/System/Library/Fonts/ヒラギノ角ゴシック W8.ttc	Hiragino Kaku Gothic StdN	W8	0	False
+/System/Library/Fonts/ヒラギノ角ゴシック W8.ttc	Hiragino Kaku Gothic Std	W8	1	False
+/System/Library/Fonts/ヒラギノ丸ゴ ProN W4.ttc	Hiragino Maru Gothic ProN	W4	0	False
+/System/Library/Fonts/ヒラギノ丸ゴ ProN W4.ttc	Hiragino Maru Gothic Pro	W4	1	False
+/Library/Fonts/Arial Unicode.ttf	Arial Unicode MS	Regular	0	False
+/System/Library/Fonts/AquaKana.ttc	.Aqua Kana	Regular	0	False
+/System/Library/Fonts/LastResort.otf	.LastResort	Regular	0	False
+`
+
+// One font per design: Hiragino's Pro/ProN/Std/StdN editions and Kaku
+// Gothic/Sans merge; hidden and pan-CJK fonts are dropped.
+func TestParseFCListMac(t *testing.T) {
+	got := parseFCList(fcMac, true)
+	want := []FontRef{
+		{"/System/Library/Fonts/ヒラギノ明朝 ProN.ttc", 0, "Hiragino Mincho ProN"},
+		{"/System/Library/Fonts/ヒラギノ角ゴシック W3.ttc", 0, "Hiragino Sans"},
+		{"/System/Library/Fonts/ヒラギノ丸ゴ ProN W4.ttc", 0, "Hiragino Maru Gothic ProN"},
+	}
+	if !slices.Equal(got, want) {
+		t.Errorf("got  %+v\nwant %+v", got, want)
 	}
 }

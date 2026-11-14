@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"strconv"
 	"strings"
@@ -31,7 +32,9 @@ const fcFormat = `%{file}\t%{family[0]}\t%{style[0]}\t%{index}\t%{variable}\n`
 func ListFonts() ([]FontRef, error) {
 	out, err := exec.Command("fc-list", "-f", fcFormat, ":lang=ja").Output()
 	if err == nil {
-		if refs := parseFCList(string(out)); len(refs) > 0 {
+		// On macOS, fontconfig (from Homebrew) counts pan-CJK fonts such
+		// as Arial Unicode MS as Japanese: keep the known families only.
+		if refs := parseFCList(string(out), runtime.GOOS == "darwin"); len(refs) > 0 {
 			return refs, nil
 		}
 	}
@@ -52,6 +55,30 @@ func otherScript(family string) bool {
 	})
 }
 
+// hidden marks system fonts not meant for users (macOS: .LastResort,
+// .Aqua Kana, .Hiragino Kaku Gothic Interface).
+func hidden(family string) bool { return strings.HasPrefix(family, ".") }
+
+// variantSuffixes name glyph-set editions of one design (Hiragino Kaku
+// Gothic Pro, ProN, Std, StdN): the roulette keeps one.
+var variantSuffixes = []string{" ProN", " StdN", " Pro", " Std"}
+
+// familyKey is the design a family belongs to: variants merged, and
+// Hiragino Kaku Gothic under its newer name, Hiragino Sans.
+func familyKey(family string) (key string, variant int) {
+	key = family
+	for i, s := range variantSuffixes {
+		if k, ok := strings.CutSuffix(family, s); ok {
+			key, variant = k, i+1
+			break
+		}
+	}
+	if key == "Hiragino Kaku Gothic" {
+		key, variant = "Hiragino Sans", variant+1
+	}
+	return key, variant
+}
+
 // candidate is one face of an installed font, before one per family is kept.
 type candidate struct {
 	ref   FontRef
@@ -68,18 +95,30 @@ func styleRank(style string) int {
 	return 99
 }
 
-// perFamily keeps one face per family (styleRank, then the first listed),
-// in the order families first appear.
+// perFamily keeps one face per design (familyKey): the text weight
+// (styleRank), then the plainest variant, then the first listed; in the
+// order designs first appear.
 func perFamily(cands []candidate) []FontRef {
 	var order []string
 	best := map[string]candidate{}
+	rank := func(c candidate) (int, int) {
+		_, v := familyKey(c.ref.Family)
+		return styleRank(c.style), v
+	}
 	for _, c := range cands {
-		old, seen := best[c.ref.Family]
+		key, _ := familyKey(c.ref.Family)
+		old, seen := best[key]
 		if !seen {
-			order = append(order, c.ref.Family)
+			order = append(order, key)
 		}
-		if !seen || styleRank(c.style) < styleRank(old.style) {
-			best[c.ref.Family] = c
+		if !seen {
+			best[key] = c
+			continue
+		}
+		s, v := rank(c)
+		bs, bv := rank(old)
+		if s < bs || (s == bs && v < bv) {
+			best[key] = c
 		}
 	}
 	refs := make([]FontRef, 0, len(order))
@@ -90,9 +129,10 @@ func perFamily(cands []candidate) []FontRef {
 }
 
 // parseFCList reads fc-list output (fcFormat) into one font per family.
-// Variable fonts (which sfnt can't draw), monospaced and non-Japanese CJK
-// families are left out.
-func parseFCList(out string) []FontRef {
+// Variable fonts (which sfnt can't draw), hidden, monospaced and
+// non-Japanese CJK families are left out; known keeps only the known
+// Japanese families (japaneseFamily).
+func parseFCList(out string, known bool) []FontRef {
 	var cands []candidate
 	for line := range strings.SplitSeq(out, "\n") {
 		f := strings.Split(line, "\t")
@@ -100,7 +140,8 @@ func parseFCList(out string) []FontRef {
 			continue
 		}
 		path, family, style, variable := f[0], f[1], f[2], f[4]
-		if strings.EqualFold(variable, "true") || strings.Contains(path, "-VF.") || otherScript(family) {
+		if strings.EqualFold(variable, "true") || strings.Contains(path, "-VF.") || otherScript(family) ||
+			hidden(family) || (known && !japaneseFamily(family)) {
 			continue
 		}
 		index, err := strconv.Atoi(f[3])
