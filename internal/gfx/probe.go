@@ -42,17 +42,17 @@ func Probe(timeout time.Duration) (Probed, error) {
 	defer tty.Close()
 	fd := int(tty.Fd())
 
-	old, err := unix.IoctlGetTermios(fd, unix.TCGETS)
+	old, err := unix.IoctlGetTermios(fd, ioctlGetTermios)
 	if err != nil {
 		return Probed{}, err
 	}
 	raw := *old
 	raw.Lflag &^= unix.ICANON | unix.ECHO
 	raw.Cc[unix.VMIN], raw.Cc[unix.VTIME] = 0, 0
-	if err := unix.IoctlSetTermios(fd, unix.TCSETS, &raw); err != nil {
+	if err := unix.IoctlSetTermios(fd, ioctlSetTermios, &raw); err != nil {
 		return Probed{}, err
 	}
-	defer unix.IoctlSetTermios(fd, unix.TCSETS, old)
+	defer unix.IoctlSetTermios(fd, ioctlSetTermios, old)
 
 	if _, err := tty.WriteString(probeQuery); err != nil {
 		return Probed{}, err

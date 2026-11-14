@@ -64,10 +64,11 @@ var candidates = []struct {
 	{[]string{"paplay"}, []string{MPEG}},
 	{[]string{"ffplay", "-nodisp", "-autoexit", "-loglevel", "error"}, []string{MPEG, WebM}},
 	{[]string{"mpv", "--no-terminal", "--no-video"}, []string{MPEG, WebM}},
+	{[]string{"afplay"}, []string{MPEG}}, // macOS's own
 }
 
 // ErrNoPlayer means none of the supported players is installed.
-var ErrNoPlayer = errors.New("no audio player found (install pipewire-utils for pw-play, or ffmpeg for ffplay)")
+var ErrNoPlayer = errors.New("no audio player found: install one of pw-play (pipewire-utils), paplay, ffplay (ffmpeg) or mpv, or set audio.player")
 
 // Find returns the first installed player; lookPath is exec.LookPath, or a
 // fake in tests.

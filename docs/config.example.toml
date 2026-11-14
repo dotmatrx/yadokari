@@ -62,7 +62,7 @@ order = "wanikani"
 
 [audio]
 # The command that plays pronunciations; the file path is added at the end.
-# Empty: the first of pw-play, paplay, ffplay or mpv that is installed.
+# Empty: the first of pw-play, paplay, ffplay, mpv or afplay (macOS) that is installed.
 # Examples: "mpv --no-terminal --no-video", "ffplay -nodisp -autoexit -loglevel error"
 player = ""
 

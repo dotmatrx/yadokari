@@ -1,0 +1,52 @@
+# Release builds: `git tag -a vX.Y.Z && git push origin vX.Y.Z` runs
+# .github/workflows/release.yml, which runs this. Check it locally with
+# `just release-check`.
+version: 2
+project_name: yadokari
+
+builds:
+  - id: yadokari
+    main: ./cmd/yadokari
+    binary: yadokari
+    env: [CGO_ENABLED=0] # static: pure-Go SQLite, no libc
+    goos: [linux, darwin]
+    goarch: [amd64, arm64]
+    flags: [-trimpath]
+    ldflags: ["-s -w -X main.version={{ .Tag }}"]
+
+archives:
+  - formats: [tar.gz]
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    files: [README.md, LICENSE, docs/config.example.toml]
+
+checksum:
+  name_template: checksums.txt
+
+changelog:
+  use: git
+  sort: asc
+  filters:
+    exclude: ["^docs:", "^Merge "]
+
+release:
+  prerelease: auto # v1.0.0-rc.1 and the like
+
+# Homebrew: `brew install jtharris/tap/yadokari`. Publishes to the public repo
+# jtharris/homebrew-tap with the HOMEBREW_TAP_TOKEN secret; skipped without
+# it. The binary isn't signed, so the cask clears macOS's quarantine flag.
+homebrew_casks:
+  - name: yadokari
+    repository:
+      owner: jtharris
+      name: homebrew-tap
+      token: '{{ envOrDefault "HOMEBREW_TAP_TOKEN" "" }}'
+    skip_upload: '{{ if envOrDefault "HOMEBREW_TAP_TOKEN" "" }}false{{ else }}true{{ end }}'
+    homepage: https://github.com/jtharris/yadokari
+    description: Unofficial terminal client for WaniKani reviews and lessons
+    license: MIT
+    hooks:
+      post:
+        install: |
+          if OS.mac?
+            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/yadokari"]
+          end

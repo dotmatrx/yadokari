@@ -25,56 +25,61 @@ type FontRef struct {
 // fcFormat is what ListFonts asks fc-list for: one font per line.
 const fcFormat = `%{file}\t%{family[0]}\t%{style[0]}\t%{index}\t%{variable}\n`
 
-// ListFonts returns the installed Japanese fonts, one per family, from
-// fontconfig.
+// ListFonts returns the installed Japanese fonts, one per family: from
+// fontconfig where there is one, else by scanning the usual font folders
+// (macOS has no fontconfig unless installed).
 func ListFonts() ([]FontRef, error) {
 	out, err := exec.Command("fc-list", "-f", fcFormat, ":lang=ja").Output()
-	if err != nil {
-		return nil, fmt.Errorf("glyph: fc-list: %w", err)
+	if err == nil {
+		if refs := parseFCList(string(out)); len(refs) > 0 {
+			return refs, nil
+		}
 	}
-	return parseFCList(string(out)), nil
+	refs := scanFonts(fontDirs())
+	if len(refs) == 0 && err != nil {
+		return nil, fmt.Errorf("glyph: fc-list: %w; no Japanese fonts in the font folders", err)
+	}
+	return refs, nil
 }
 
 // otherScripts are family-name markers of CJK fonts for other languages:
 // their kanji take Chinese or Korean forms.
-var otherScripts = []string{" SC", " TC", " HK", " KR", " CN", " Mono"}
+var otherScripts = []string{" SC", " TC", " HK", " KR", " CN", " GB", " CNS", " Mono"}
 
-// parseFCList reads fc-list output (fcFormat) into one font per family:
-// the Regular style if there is one, else the first listed. Variable fonts
-// (which sfnt can't draw), monospaced and non-Japanese CJK families are
-// left out.
-func parseFCList(out string) []FontRef {
-	type entry struct {
-		ref     FontRef
-		regular bool
+func otherScript(family string) bool {
+	return slices.ContainsFunc(otherScripts, func(m string) bool {
+		return strings.HasSuffix(family, m) || strings.Contains(family, m+" ")
+	})
+}
+
+// candidate is one face of an installed font, before one per family is kept.
+type candidate struct {
+	ref   FontRef
+	style string
+}
+
+// styleRank orders a family's faces: the text weight first.
+func styleRank(style string) int {
+	for i, s := range []string{"regular", "w3", "book", "normal", "w4", "medium", "r"} {
+		if strings.EqualFold(style, s) {
+			return i
+		}
 	}
+	return 99
+}
+
+// perFamily keeps one face per family (styleRank, then the first listed),
+// in the order families first appear.
+func perFamily(cands []candidate) []FontRef {
 	var order []string
-	best := map[string]entry{}
-	for line := range strings.SplitSeq(out, "\n") {
-		f := strings.Split(line, "\t")
-		if len(f) != 5 || f[0] == "" || f[1] == "" {
-			continue
-		}
-		path, family, style, variable := f[0], f[1], f[2], f[4]
-		if strings.EqualFold(variable, "true") || strings.Contains(path, "-VF.") {
-			continue
-		}
-		if slices.ContainsFunc(otherScripts, func(m string) bool {
-			return strings.HasSuffix(family, m) || strings.Contains(family, m+" ")
-		}) {
-			continue
-		}
-		index, err := strconv.Atoi(f[3])
-		if err != nil {
-			continue
-		}
-		e := entry{FontRef{Path: path, Index: index, Family: family}, strings.EqualFold(style, "Regular")}
-		old, seen := best[family]
+	best := map[string]candidate{}
+	for _, c := range cands {
+		old, seen := best[c.ref.Family]
 		if !seen {
-			order = append(order, family)
+			order = append(order, c.ref.Family)
 		}
-		if !seen || (e.regular && !old.regular) {
-			best[family] = e
+		if !seen || styleRank(c.style) < styleRank(old.style) {
+			best[c.ref.Family] = c
 		}
 	}
 	refs := make([]FontRef, 0, len(order))
@@ -82,6 +87,29 @@ func parseFCList(out string) []FontRef {
 		refs = append(refs, best[fam].ref)
 	}
 	return refs
+}
+
+// parseFCList reads fc-list output (fcFormat) into one font per family.
+// Variable fonts (which sfnt can't draw), monospaced and non-Japanese CJK
+// families are left out.
+func parseFCList(out string) []FontRef {
+	var cands []candidate
+	for line := range strings.SplitSeq(out, "\n") {
+		f := strings.Split(line, "\t")
+		if len(f) != 5 || f[0] == "" || f[1] == "" {
+			continue
+		}
+		path, family, style, variable := f[0], f[1], f[2], f[4]
+		if strings.EqualFold(variable, "true") || strings.Contains(path, "-VF.") || otherScript(family) {
+			continue
+		}
+		index, err := strconv.Atoi(f[3])
+		if err != nil {
+			continue
+		}
+		cands = append(cands, candidate{FontRef{Path: path, Index: index, Family: family}, style})
+	}
+	return perFamily(cands)
 }
 
 // SelectFonts narrows the installed fonts to the names given: a font file

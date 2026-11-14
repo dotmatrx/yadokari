@@ -16,7 +16,7 @@ a milestone moves.
 | M3: live reviews | Dogfooding | Built; the two weeks of daily use (to 2026-11-22) run alongside M4 |
 | UI pass | Done | Panels frame on every screen; approved 2026-11-11 |
 | M4: lessons | Done (v0.4.0) | Item pages with mnemonic markup, lessons + quiz, `PUT /assignments/:id/start`, audio; live-verified 2026-11-11 |
-| M5: polish | v0.5.0 (2026-11-14) | Config file, font roulette, themes done (yadokari palette on trial); left: packaging; add synonym deferred to the distribution decision |
+| M5: polish | v0.5.0 (2026-11-14); packaging built | Config file, font roulette, themes (yadokari palette on trial); packaging + CI built 2026-11-14, first release not cut yet; add synonym deferred to the distribution decision |
 
 ## Versions
 
@@ -301,8 +301,40 @@ changes are one-line edits in `ui/theme.go` until a public release. Not tried in
 real app yet: `terminal`, `high-contrast`, `NO_COLOR`. Open: the default theme at
 release.
 
+## M5 plan, step 4: packaging and CI (built 2026-11-14)
+
+For the user's Mac and a soft launch to friends. Decided with the user: MIT license;
+the repo stays private for now (public later, after a history check for personal
+data); Homebrew tap for macOS.
+
+Built:
+- macOS support: `gfx/termios_{linux,bsd}.go` (TCGETS vs TIOCGETA); `afplay`;
+  `glyph.ListFonts` falls back to scanning font folders (macOS: /System/Library/Fonts,
+  /Library/Fonts, ~/Library/Fonts, /System/Library/AssetsV2) with a list of Japanese
+  families + "… JP", one face per family by typographic family/subfamily (Hiragino
+  W3 over W0). On Linux the scan finds the same six families as fc-list in 80 ms.
+- `--version` from build info for `go install` builds; the "unofficial, not
+  affiliated with WaniKani or Tofugu LLC" line in `--version`, `--help`, the first-run
+  form and the README. The first-run form now asks for reviews:create and
+  assignments:start (it still said read-only). The "needs --live" notice no longer
+  talks about the mock.
+- LICENSE (MIT), README, `.goreleaser.yaml`, CI and release workflows, `just cross`,
+  `just release-check`.
+
+Not verified yet:
+- `.goreleaser.yaml` hasn't been run (`goreleaser check` needs Go ≥ 1.27.4 and the
+  sandbox refused the toolchain download): the user runs `just release-check`.
+- Nothing has run on a Mac: CI's macOS job (tags, or by hand) runs the tests; the
+  user tries the app on their Mac (Ghostty or kitty for glyphs, Hiragino, afplay,
+  keyring via `security`, the roulette scan).
+- First release: after pushing, tag v0.5.1 to run the release workflow.
+- Homebrew: create the public repo `jtharris/homebrew-tap` and a fine-grained token
+  with contents:write on it as the `HOMEBREW_TAP_TOKEN` secret. While yadokari's repo
+  is private, the cask can't download the release, so the tap waits for going public;
+  until then the user's Mac takes the release tar.gz (via the GitHub site or `gh`).
+
 ## Open questions
 
-- Distribution: `go install` only, or packages too? (design doc)
+- Distribution: GitHub releases + Homebrew tap (decided 2026-11-14); public repo when the user decides.
 - Settings: which session options become user settings, and where (config file vs a
   settings screen)? See the backlog.

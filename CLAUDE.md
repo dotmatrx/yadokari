@@ -30,10 +30,27 @@ Use `just` (no Makefile):
   once from demo data (kitty glyphs in Ghostty); `--html` writes a gallery page. Screens:
   `dashboard`, `review`, `review-reading`, `review-wrong`, `summary`, `item`, `item-vocab`, `lesson`. Use it to iterate on
   layout; `--font=NAME|all` draws glyphs in each roulette font; `--theme=NAME|all` each theme; `--fixtures=DIR` uses a recording (personal data: never publish that).
+- `just cross` — build every release target (linux/darwin × amd64/arm64), as CI does
+- `just release-check` — `goreleaser check` + a snapshot release into `dist/` (downloads
+  GoReleaser; the user runs it: Claude's sandbox may refuse the toolchain download)
 - `just probe-mock` — read-only full sync against the running mock
 - `just probe-live` — read-only full sync against the live API; records fixtures to
   `testdata/recordings/` (gitignored: contains personal data). Needs a **read-only**
   `WANIKANI_API_TOKEN` in `.env`. Only the user runs this.
+
+## CI and releases
+
+- `.github/workflows/ci.yml`: gofmt, vet, `go test -race` and the cross-build on
+  Linux (with `fonts-noto-cjk`); macOS tests on tags and by hand while the repo is
+  private (10× minutes), on every push once public.
+- `.github/workflows/release.yml`: on a `v*` tag push, tests then GoReleaser
+  (`.goreleaser.yaml`): static binaries for linux/darwin × amd64/arm64, tar.gz with
+  README, LICENSE and the example config, checksums, a GitHub release, and a Homebrew
+  cask in `jtharris/homebrew-tap` (skipped without the `HOMEBREW_TAP_TOKEN` secret; the
+  cask clears the quarantine flag since the binary is unsigned).
+- macOS: terminal ioctls by build tag (`gfx/termios_*.go`), `afplay` for audio, and
+  font discovery by folder scan when there's no fontconfig (`glyph/fontscan.go`).
+  Windows isn't supported. MIT license.
 
 ## Safety rule: never write to the live API by accident
 
@@ -64,7 +81,7 @@ anything with `--live` yourself. Tokens used during development are read-only.
   tag closes the innermost open tag). Pure; `ui.renderMarkup` styles and wraps it.
 - `internal/audio` — picks a pronunciation recording (default voice, primary reading,
   a format the player handles) and plays it with the first external player found
-  (`pw-play`, `paplay`, `ffplay`, `mpv`; the static binary can't open a sound device),
+  (`pw-play`, `paplay`, `ffplay`, `mpv`, `afplay`; the static binary can't open a sound device),
   detached from the terminal. In the UI only `App` plays (`playAudioMsg`), showing
   `♪ loading…` / `🔊 playing` in the header (play numbers ignore stale ends); files come
   from the download cache (`~/.cache/yadokari/audio`). The toolbox has no player unless

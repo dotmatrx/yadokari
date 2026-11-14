@@ -21,7 +21,9 @@ func AskToken() (string, error) {
 			Title("Welcome to yadokari").
 			Description("yadokari needs a WaniKani personal access token.\n\n"+
 				"Create one at "+TokenPageURL+"\n"+
-				"For now, leave every permission unticked: a read-only token is all this version needs."),
+				"For reviews and lessons, tick reviews:create and assignments:start;\n"+
+				"a token without them only shows the dashboard.\n\n"+
+				"yadokari is an unofficial client, not affiliated with WaniKani or Tofugu LLC."),
 		huh.NewInput().
 			Title("API token").
 			EchoMode(huh.EchoModePassword).

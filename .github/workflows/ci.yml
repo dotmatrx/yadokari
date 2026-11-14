@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Japanese fonts for the glyph tests
+        run: sudo apt-get install -y --no-install-recommends fonts-noto-cjk
+      - name: gofmt
+        run: test -z "$(gofmt -l cmd internal spikes)" || (gofmt -l cmd internal spikes; exit 1)
+      - name: vet
+        run: go vet ./...
+      - name: test
+        run: go test -race $(go list ./... | grep -v /spikes/)
+      - name: cross-build
+        run: |
+          for t in linux/amd64 linux/arm64 darwin/amd64 darwin/arm64; do
+            GOOS=${t%/*} GOARCH=${t#*/} CGO_ENABLED=0 go build -o /dev/null ./cmd/yadokari
+          done
+
+  # macOS runners cost 10× the minutes on a private repo: run them on tags
+  # and by hand there, and on every push once the repo is public.
+  macos:
+    if: >-
+      !github.event.repository.private
+      || startsWith(github.ref, 'refs/tags/')
+      || github.event_name == 'workflow_dispatch'
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: vet
+        run: go vet ./...
+      - name: test
+        run: go test $(go list ./... | grep -v /spikes/)

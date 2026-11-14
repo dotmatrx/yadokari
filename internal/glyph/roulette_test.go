@@ -4,6 +4,7 @@ import (
 	"errors"
 	"math/rand/v2"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"slices"
 	"testing"
@@ -143,5 +144,57 @@ func TestSelectFontsByFile(t *testing.T) {
 	}
 	if _, err := SelectFonts(nil, []string{"~/fonts/Missing.ttf"}); err == nil {
 		t.Error("a missing file must be an error")
+	}
+}
+
+func TestJapaneseFamily(t *testing.T) {
+	for fam, want := range map[string]bool{
+		"Hiragino Sans": true, "Hiragino Mincho ProN": true, "Hiragino Sans GB": false,
+		"Hiragino Sans CNS": false, "YuKyokasho": true, "Klee": true, "Noto Sans CJK JP": true,
+		"Noto Sans CJK SC": false, "Noto Sans Mono CJK JP": false, "PingFang SC": false,
+		"Apple SD Gothic Neo": false, "Arial Unicode MS": false, "Source Han Sans JP": true,
+	} {
+		if got := japaneseFamily(fam); got != want {
+			t.Errorf("japaneseFamily(%q) = %v", fam, got)
+		}
+	}
+}
+
+func TestOneFacePerFamily(t *testing.T) {
+	got := perFamily([]candidate{
+		{FontRef{Path: "W0.ttc", Family: "Hiragino Sans"}, "W0"},
+		{FontRef{Path: "W6.ttc", Family: "Hiragino Sans"}, "W6"},
+		{FontRef{Path: "W3.ttc", Family: "Hiragino Sans"}, "W3"},
+		{FontRef{Path: "Bold.ttc", Family: "Noto Sans CJK JP"}, "Bold"},
+		{FontRef{Path: "Regular.ttc", Family: "Noto Sans CJK JP"}, "Regular"},
+		{FontRef{Path: "Thin.ttc", Family: "Odd"}, "Thin"},
+	})
+	want := []FontRef{{Path: "W3.ttc", Family: "Hiragino Sans"}, {Path: "Regular.ttc", Family: "Noto Sans CJK JP"}, {Path: "Thin.ttc", Family: "Odd"}}
+	if !slices.Equal(got, want) {
+		t.Errorf("got %+v", got)
+	}
+}
+
+// Without fontconfig (macOS), the folder scan finds the same families.
+func TestScanMatchesFontconfig(t *testing.T) {
+	out, err := exec.Command("fc-list", "-f", fcFormat, ":lang=ja").Output()
+	if err != nil {
+		t.Skip("no fontconfig")
+	}
+	// Families fontconfig knows as Japanese but the scan's list doesn't
+	// (e.g. Droid Sans Fallback on CI) are expected to differ.
+	fam := func(refs []FontRef) []string {
+		var s []string
+		for _, r := range refs {
+			if japaneseFamily(r.Family) {
+				s = append(s, r.Family)
+			}
+		}
+		slices.Sort(s)
+		return s
+	}
+	fc, scan := fam(parseFCList(string(out))), fam(scanFonts(fontDirs()))
+	if !slices.Equal(fc, scan) {
+		t.Errorf("fontconfig %v, scan %v", fc, scan)
 	}
 }

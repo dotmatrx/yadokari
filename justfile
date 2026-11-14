@@ -58,9 +58,18 @@ spike name *args:
     go run ./spikes/{{name}} {{args}}
 
 clean:
-    rm -rf bin
+    rm -rf bin dist
 
 # Render screens once from demo data, e.g. `just preview dashboard --size=120x36`
 # (flags after screen names are fine); --html=FILE writes a gallery page
 preview *args:
     go run ./cmd/preview {{args}}
+
+# Build for every release target (no output), as CI does
+cross:
+    for t in linux/amd64 linux/arm64 darwin/amd64 darwin/arm64; do GOOS=${t%/*} GOARCH=${t#*/} CGO_ENABLED=0 go build -o /dev/null ./cmd/yadokari && echo "$t ok"; done
+
+# Check .goreleaser.yaml and build a snapshot release into dist/ (downloads GoReleaser, and a newer Go if it needs one)
+release-check:
+    GOTOOLCHAIN=auto go run github.com/goreleaser/goreleaser/v2@v2.20.2 check
+    GOTOOLCHAIN=auto go run github.com/goreleaser/goreleaser/v2@v2.20.2 release --snapshot --clean

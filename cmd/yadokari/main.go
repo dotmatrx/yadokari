@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime/debug"
 	"time"
 
 	tea "charm.land/bubbletea/v2"
@@ -26,8 +27,21 @@ import (
 	"github.com/jtharris/yadokari/internal/wksync"
 )
 
-// version is set at build time from `git describe` (see the justfile).
+// version is set at build time from `git describe` (the justfile, the
+// release builds); `go install …@v1.2.3` builds get it from the module.
 var version = "dev"
+
+func init() {
+	if version != "dev" {
+		return
+	}
+	if bi, ok := debug.ReadBuildInfo(); ok && bi.Main.Version != "" && bi.Main.Version != "(devel)" {
+		version = bi.Main.Version
+	}
+}
+
+// disclaimer goes wherever the app introduces itself.
+const disclaimer = "yadokari is an unofficial WaniKani client, not affiliated with WaniKani or Tofugu LLC."
 
 func main() {
 	if err := run(); err != nil {
@@ -50,7 +64,7 @@ func run() error {
 	gfxFlag := flag.String("gfx", "", "graphics tier: auto, kitty or plain (default: config display.gfx, else auto)")
 	flag.Usage = func() {
 		out := flag.CommandLine.Output()
-		fmt.Fprintf(out, "Usage: yadokari [flags]\n\nFlags:\n")
+		fmt.Fprintf(out, "Usage: yadokari [flags]\n\n%s\n\nFlags:\n", disclaimer)
 		flag.PrintDefaults()
 		fmt.Fprintf(out, "\nSettings: ~/.config/yadokari/config.toml (every key is documented in\ndocs/config.example.toml, https://github.com/jtharris/yadokari).\n")
 	}
@@ -58,6 +72,7 @@ func run() error {
 
 	if *showVersion {
 		fmt.Println("yadokari", version)
+		fmt.Println(disclaimer)
 		return nil
 	}
 
@@ -136,7 +151,7 @@ func run() error {
 	}
 	if client.IsLive() && !*live {
 		// Results would only pile up in the outbox and go stale.
-		rdeps.Disabled = "Reviews and lessons against the live API need --live. Try them on the mock: just mock-recorded, then just dev."
+		rdeps.Disabled = "Reviews and lessons send your answers to WaniKani: start yadokari with --live to allow that."
 	}
 	if warning != "" {
 		fmt.Fprintln(os.Stderr, "yadokari:", warning)

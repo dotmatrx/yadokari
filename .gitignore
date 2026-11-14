@@ -5,3 +5,4 @@
 # Recorded API responses may contain personal data; keep raw recordings out of git.
 /testdata/recordings/
 /.dev/
+/dist/
