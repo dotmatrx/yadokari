@@ -226,7 +226,7 @@ roulette_fonts = []     # font files; empty: every installed Japanese font, one 
 
 1. `internal/glyph`: `FindFonts()` lists installed Japanese fonts (`fc-list :lang=ja`
    plus the `/run/host` and `~/.local/share/fonts` paths fontconfig may miss), keeps one
-   face per family (Regular, else the lightest bold-free weight), and drops families
+   face per family (Regular, else the first one found), and drops families
    that aren't Japanese (`… SC/TC/HK/KR` members, Mono) so no kanji gets a Chinese
    form. Variable fonts are skipped (logged). Fonts load lazily and stay cached.
 2. Per question, not per item: an item asked again (or its other part) gets a new
