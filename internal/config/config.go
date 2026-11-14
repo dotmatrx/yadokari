@@ -109,6 +109,9 @@ type Audio struct {
 type Display struct {
 	Gfx  string `toml:"gfx"`  // see GfxTiers; "" = "auto"
 	Font string `toml:"font"` // a font file; "" = discovered
+	// Roulette draws each review question in a random Japanese font.
+	Roulette      bool     `toml:"roulette"`
+	RouletteFonts []string `toml:"roulette_fonts"` // files or family names; empty = all installed
 }
 
 // The values the enum settings accept. "wanikani" follows the WaniKani

@@ -113,6 +113,21 @@ func LoadFont(path string) (*Font, error) {
 	return first, nil // a collection without a JP member: better than nothing
 }
 
+// Covers reports whether the font has a glyph for every character of text.
+// A font without outlines (a test stand-in) covers everything.
+func (f *Font) Covers(text string) bool {
+	if f.sfnt == nil {
+		return true
+	}
+	var buf sfnt.Buffer
+	for _, r := range text {
+		if i, err := f.sfnt.GlyphIndex(&buf, r); err != nil || i == 0 {
+			return false
+		}
+	}
+	return true
+}
+
 // Name is a short description, e.g. "NotoSansCJK-Regular.ttc [Noto Sans CJK JP]".
 func (f *Font) Name() string { return fmt.Sprintf("%s [%s]", filepath.Base(f.Path), f.Family) }
 

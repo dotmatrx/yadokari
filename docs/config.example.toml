@@ -74,3 +74,18 @@ gfx = "auto"
 # A font file (.ttf, .otf, .ttc) with kanji and kana for the glyphs. Empty: ask
 # fontconfig for a Japanese font, then try well-known paths.
 font = ""
+
+# Font roulette: draw each review question (and lesson quiz question) in a
+# random Japanese font, never the same one twice in a row, so you learn to read
+# kanji in more than one typeface. The font's name shows under the glyph after
+# you answer. Item and lesson pages keep the font above. Needs the kitty
+# graphics tier; in the plain tier the terminal draws in its own font.
+roulette = false
+
+# The fonts to choose from: font files, or the family names of installed
+# fonts (as `fc-list :lang=ja family` prints them), e.g.
+#   ["Noto Serif CJK JP", "Klee One", "~/fonts/Yomogi-Regular.ttf"]
+# Empty: every installed Japanese font, one per family. Variable fonts
+# (*-VF.ttc) can't be drawn, so install static ones (on Fedora:
+# google-noto-serif-cjk-fonts, ipa-exmincho-fonts, ipa-exgothic-fonts).
+roulette_fonts = []

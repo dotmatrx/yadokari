@@ -16,7 +16,7 @@ a milestone moves.
 | M3: live reviews | Dogfooding | Built; the two weeks of daily use (to 2026-11-22) run alongside M4 |
 | UI pass | Done | Panels frame on every screen; approved 2026-11-11 |
 | M4: lessons | Done (v0.4.0) | Item pages with mnemonic markup, lessons + quiz, `PUT /assignments/:id/start`, audio; live-verified 2026-11-11 |
-| M5: polish | In progress | Config file done (2026-11-14); add synonym deferred to the distribution decision; font roulette, themes, packaging |
+| M5: polish | In progress | Config file done, font roulette built (2026-11-14); add synonym deferred to the distribution decision; themes, packaging |
 
 ## Versions
 
@@ -200,7 +200,7 @@ behaved; an undone reading miss (市町村) went up as `incorrect_reading_answer
 Not in this step: the settings screen, lightning mode and relaxed `n` (new features;
 they become keys when built), voice choice (later).
 
-## M5 plan, step 2: font roulette (drafted 2026-11-14)
+## M5 plan, step 2: font roulette (built 2026-11-14)
 
 From the design doc: draw each review glyph in a randomly chosen Japanese typeface
 (gothic, mincho, textbook, handwritten) so recognition survives real-world typography.
@@ -239,6 +239,21 @@ roulette_fonts = []     # font files; empty: every installed Japanese font, one 
 6. Radicals drawn from images (no Unicode character) are unaffected.
 7. Tests: discovery/filtering from a fake font list, the per-question draw, the key.
    `just preview` gets a `--font` flag (or a roulette gallery) to eyeball fonts.
+
+**Built** as planned (the user chose all three recommendations). Added on the way:
+- Coverage: a pick must have every character of the subject. Against all 9,401
+  subjects with characters, Noto Sans/Serif CJK JP miss none, IPAex Gothic/Mincho 14,
+  Klee One 29, Yomogi 55 (mostly radicals like 扌, 艹, 氵). No covering font → the
+  default font.
+- Installed on the user's machine 2026-11-14: `google-noto-serif-cjk-fonts`,
+  `ipa-exmincho-fonts`, `ipa-exgothic-fonts` (toolbox, dnf), Klee One and Yomogi
+  Regular (+ OFL texts) in `~/.local/share/fonts`. Six families in the roulette.
+- `roulette_fonts` takes font files (`~/` expanded) or installed family names; an
+  unknown name stops startup and lists the installed families.
+- `just preview review-wrong --font=all` shows a screen per font (or `--font=NAME`).
+- Fonts are read from disk on demand (`ParseCollectionReaderAt`), not held in memory.
+
+Not tried yet in the real app (Ghostty).
 
 ## Open questions
 

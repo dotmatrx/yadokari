@@ -54,6 +54,8 @@ var (
 type ReviewDeps struct {
 	Renderer gfx.Renderer
 	Font     *glyph.Font // nil: no font found, glyphs fall back to plain text
+	// Roulette, when set, gives each question a random font (kitty tier).
+	Roulette *glyph.Pool
 	Images   glyph.ImageCache
 	Uploader *wksync.Uploader
 	Settings Settings // from the config file
@@ -122,6 +124,11 @@ type Review struct {
 	pending   int
 	held      bool
 	upErr     string
+
+	// qfont is the roulette's font for the question on screen, picked when
+	// it is first drawn and kept until the next question (an undo keeps it).
+	qfont   *glyph.Font
+	fontRng *rand.Rand
 }
 
 type (
@@ -181,7 +188,8 @@ func LoadReview(ctx context.Context, deps Deps, rdeps ReviewDeps, user wk.User) 
 }
 
 func newReview(deps Deps, rdeps ReviewDeps, name string) *Review {
-	return &Review{name: name, deps: deps, rdeps: rdeps, images: map[int][]byte{}, loading: map[int]bool{}, imgErr: map[int]error{}}
+	return &Review{name: name, deps: deps, rdeps: rdeps, images: map[int][]byte{}, loading: map[int]bool{}, imgErr: map[int]error{},
+		fontRng: rand.New(rand.NewPCG(uint64(time.Now().UnixNano()), 0x2545f4914f6cdd1d))}
 }
 
 // lessons reports whether this is a lesson quiz: a finished item is started
@@ -404,6 +412,7 @@ func (r *Review) insert(s string) {
 func (r *Review) enter() tea.Cmd {
 	if r.state == graded {
 		r.state, r.info, r.warn = answering, false, ""
+		r.qfont = nil // the next question draws its own
 		r.conv.Reset()
 		r.plain = nil
 		if r.sess.Done() {
@@ -543,7 +552,31 @@ func (r *Review) glyphSize() (cols, rows int) {
 }
 
 func (r *Review) source(it store.ReviewItem) gfx.Source {
-	return subjectSource(it.Subject, r.rdeps.Font, r.images[it.Subject.ID])
+	return subjectSource(it.Subject, r.font(it), r.images[it.Subject.ID])
+}
+
+// font is the font the question on screen is drawn in: the roulette's
+// pick for it (one with all its characters), else the default font.
+func (r *Review) font(it store.ReviewItem) *glyph.Font {
+	if r.rdeps.Roulette == nil || it.Subject.Data.Characters == nil {
+		return r.rdeps.Font
+	}
+	if r.qfont == nil {
+		r.qfont = r.rdeps.Roulette.Pick(r.fontRng, *it.Subject.Data.Characters)
+		if r.qfont == nil {
+			r.qfont = r.rdeps.Font
+		}
+	}
+	return r.qfont
+}
+
+// fontLine names the roulette's font under the glyph once the question is
+// answered (blank otherwise, and for radicals drawn from images).
+func (r *Review) fontLine(it store.ReviewItem, w int) string {
+	if r.state != graded || r.rdeps.Roulette == nil || r.qfont == nil || it.Subject.Data.Characters == nil {
+		return ""
+	}
+	return lipgloss.PlaceHorizontal(w, lipgloss.Center, mutedSt.Render(r.qfont.Family))
 }
 
 // subjectSource is what the renderer draws for a subject: its characters in
@@ -551,6 +584,9 @@ func (r *Review) source(it store.ReviewItem) gfx.Source {
 func subjectSource(subj wk.Resource[wk.Subject], font *glyph.Font, svg []byte) gfx.Source {
 	src := gfx.Source{Key: fmt.Sprintf("subject:%d", subj.ID)}
 	if subj.Data.Characters != nil {
+		if font != nil {
+			src.Key += ":" + font.Name()
+		}
 		text := *subj.Data.Characters
 		src.Text = text
 		src.Mask = func(w, h int) (*image.Alpha, error) {
@@ -599,7 +635,7 @@ func (r *Review) View() string {
 	if err != nil {
 		cells, _ = gfx.New(gfx.Plain, 0, 0).Draw(r.source(it), cols, rows, glyphFG, bg)
 	}
-	b = append(b, cells, "")
+	b = append(b, cells, r.fontLine(it, w))
 
 	left, bw := answerBox(w)
 	indent := strings.Repeat(" ", left)

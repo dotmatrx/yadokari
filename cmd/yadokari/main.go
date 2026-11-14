@@ -191,9 +191,34 @@ func reviewDeps(client *wk.Client, st *store.Store, cfg config.Config, gfxTier s
 	cw, ch := 0, 0
 	if tier == gfx.Kitty {
 		cw, ch = gfx.CellSize(probe)
+		if cfg.Display.Roulette {
+			pool, err := roulette(cfg.Display.RouletteFonts)
+			if err != nil {
+				return rd, "", fmt.Errorf("config: display.roulette_fonts: %w", err)
+			}
+			rd.Roulette = pool
+		}
 	}
 	rd.Renderer = gfx.New(tier, cw, ch)
 	return rd, warning, nil
+}
+
+// roulette is the font pool for display.roulette: the fonts named, or every
+// installed Japanese font.
+func roulette(names []string) (*glyph.Pool, error) {
+	installed, err := glyph.ListFonts()
+	if err != nil {
+		slog.Warn("font roulette: can't list fonts", "err", err)
+	}
+	refs, err := glyph.SelectFonts(installed, names)
+	if err != nil {
+		return nil, err
+	}
+	if len(refs) == 0 {
+		return nil, fmt.Errorf("no Japanese fonts found; name font files instead")
+	}
+	slog.Info("font roulette", "fonts", len(refs))
+	return glyph.NewPool(refs), nil
 }
 
 // clientWithToken loads the stored token, or runs the first-run form, checks

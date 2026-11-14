@@ -29,7 +29,7 @@ Use `just` (no Makefile):
 - `just preview [screen...] [--size=WxH,...] [--html=FILE]` — render screens
   once from demo data (kitty glyphs in Ghostty); `--html` writes a gallery page. Screens:
   `dashboard`, `review`, `review-reading`, `review-wrong`, `summary`, `item`, `item-vocab`, `lesson`. Use it to iterate on
-  layout; `--fixtures=DIR` uses a recording (personal data: never publish that).
+  layout; `--font=NAME|all` draws glyphs in each roulette font; `--fixtures=DIR` uses a recording (personal data: never publish that).
 - `just probe-mock` — read-only full sync against the running mock
 - `just probe-live` — read-only full sync against the live API; records fixtures to
   `testdata/recordings/` (gitignored: contains personal data). Needs a **read-only**
@@ -110,6 +110,10 @@ anything with `--live` yourself. Tokens used during development are read-only.
   fontconfig may return a Latin font for `:lang=ja`), text → alpha masks,
   radical SVGs (normalized for oksvg: inline CSS classes, resolve `var()`, drop clip
   paths, scale stroke widths), disk cache for downloads. Radical PNG URLs are dead (403).
+  Font roulette (`roulette.go`): `ListFonts` (fc-list, one face per Japanese family; no
+  variable fonts, which sfnt can't read, no SC/TC/KR/Mono), `Pool.Pick` (random, never
+  twice in a row, only fonts covering the subject's characters); the review screen picks
+  per question (`Review.qfont`) and names the font under the glyph after answering.
 - `internal/gfx` — tiers `kitty` (placeholders; image IDs < 256, recycled) and `plain`;
   half-block was tried and dropped (unreadable). `Draw` queues kitty uploads. In the app only
   `ui.App.Update` sends them: after every message it calls the visible screen's

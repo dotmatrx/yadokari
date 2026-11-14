@@ -56,6 +56,7 @@ func run() error {
 	fixtures := flag.String("fixtures", "", "recording directory to use instead of demo data (personal data: don't publish)")
 	htmlOut := flag.String("html", "", "write an HTML gallery to this file instead of drawing in the terminal")
 	gfxFlag := flag.String("gfx", "auto", "graphics tier in the terminal: auto, kitty or plain")
+	fontFlag := flag.String("font", "", `glyph font as the roulette would show it: a font file or installed family name, or "all" for each installed Japanese font in turn`)
 	screens, err := parseArgs(flag.CommandLine, os.Args[1:])
 	if err != nil {
 		return err
@@ -88,6 +89,13 @@ func run() error {
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "preview:", err, "(glyphs in the terminal's font)")
 	}
+	fonts := []*glyph.Font{font}
+	if *fontFlag != "" {
+		if fonts, err = previewFonts(*fontFlag); err != nil {
+			return err
+		}
+		font = fonts[0]
+	}
 	renderer := gfx.New(gfx.Plain, 0, 0)
 	if *htmlOut == "" {
 		probe := func() (gfx.Probed, error) { return gfx.Probe(time.Second) }
@@ -105,22 +113,27 @@ func run() error {
 	var shots []shot
 	for _, sz := range sizes {
 		for _, screen := range screens {
-			// A fresh store each time: review previews queue reviews.
-			st, err := loadStore(ctx, data, now)
-			if err != nil {
-				return err
-			}
-			deps := ui.Deps{Store: st, Now: func() time.Time { return now }, Location: time.Local, Endpoint: "mock demo"}
-			rd := ui.ReviewDeps{Renderer: renderer, Font: font}
-			out, err := ui.Preview(ctx, deps, rd, screen, sz.w, sz.h)
-			st.Close()
-			if err != nil {
-				return fmt.Errorf("%s at %s: %w", screen, sz, err)
-			}
-			shots = append(shots, shot{screen: screen, size: sz, ansi: out})
-			if *htmlOut == "" {
-				fmt.Print(renderer.Flush())
-				fmt.Printf("\x1b[2m── %s %s %s\x1b[m\n%s\n", screen, sz, strings.Repeat("─", max(sz.w-len(screen)-len(sz.String())-5, 0)), out)
+			for _, f := range fonts {
+				// A fresh store each time: review previews queue reviews.
+				st, err := loadStore(ctx, data, now)
+				if err != nil {
+					return err
+				}
+				deps := ui.Deps{Store: st, Now: func() time.Time { return now }, Location: time.Local, Endpoint: "mock demo"}
+				rd := ui.ReviewDeps{Renderer: renderer, Font: f}
+				if *fontFlag != "" {
+					rd.Roulette = glyph.PoolOf(f)
+				}
+				out, err := ui.Preview(ctx, deps, rd, screen, sz.w, sz.h)
+				st.Close()
+				if err != nil {
+					return fmt.Errorf("%s at %s: %w", screen, sz, err)
+				}
+				shots = append(shots, shot{screen: screen, size: sz, ansi: out})
+				if *htmlOut == "" {
+					fmt.Print(renderer.Flush())
+					fmt.Printf("\x1b[2m── %s %s %s\x1b[m\n%s\n", screen, sz, strings.Repeat("─", max(sz.w-len(screen)-len(sz.String())-5, 0)), out)
+				}
 			}
 		}
 	}
@@ -218,4 +231,30 @@ func parseArgs(fs *flag.FlagSet, args []string) ([]string, error) {
 		return nil, err
 	}
 	return append(rest, fs.Args()...), nil
+}
+
+// previewFonts loads the fonts --font names: one font, or "all" installed.
+func previewFonts(name string) ([]*glyph.Font, error) {
+	installed, err := glyph.ListFonts()
+	if err != nil && name == "all" {
+		return nil, err
+	}
+	refs := installed
+	if name != "all" {
+		if refs, err = glyph.SelectFonts(installed, []string{name}); err != nil {
+			return nil, err
+		}
+	}
+	var fonts []*glyph.Font
+	for _, r := range refs {
+		f, err := glyph.LoadFontAt(r)
+		if err != nil {
+			return nil, err
+		}
+		fonts = append(fonts, f)
+	}
+	if len(fonts) == 0 {
+		return nil, fmt.Errorf("no Japanese fonts installed")
+	}
+	return fonts, nil
 }

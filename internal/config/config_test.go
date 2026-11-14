@@ -157,7 +157,7 @@ func TestDefaultPaths(t *testing.T) {
 
 func TestLoadConfig(t *testing.T) {
 	dir := t.TempDir()
-	if c, err := Load(filepath.Join(dir, "missing.toml")); err != nil || c != (Config{}) {
+	if c, err := Load(filepath.Join(dir, "missing.toml")); err != nil || !reflect.DeepEqual(c, Config{}) {
 		t.Fatalf("missing file: %+v %v", c, err)
 	}
 	path := filepath.Join(dir, "config.toml")
