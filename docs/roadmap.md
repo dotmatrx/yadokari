@@ -255,6 +255,26 @@ roulette_fonts = []     # font files; empty: every installed Japanese font, one 
 
 Not tried yet in the real app (Ghostty).
 
+## M5 plan, step 3: themes (drafted 2026-11-14)
+
+1. Refactor: every colour into one `ui.Theme` of named roles (three type colours,
+   lesson/review marks, correct/wrong/warn/error, glyph ink, lines). No visual change.
+2. `display.theme` + a `[theme]` section of per-role hex overrides.
+3. Themes: `wanikani` (today's), `yadokari` (own brand palette, below), `terminal`
+   (the terminal's ANSI palette, read with an OSC 4 query during the startup probe;
+   falls back), `high-contrast` + `NO_COLOR` (no text colour, grey glyph field),
+   `muted` optional.
+4. `just preview --theme=all` and an HTML gallery (demo data) to choose.
+
+**Brand (the user's idea, 2026-11-14):** if released, yadokari should look like its own
+thing, not WaniKani's, and say it is unofficial ("not affiliated with WaniKani or
+Tofugu LLC", the usual wording of third-party apps) in the README, `--version`, the
+first-run token form and any website. A starting palette from the name (宿借り, hermit
+crab: a borrowed shell, a tide pool), warm and sea-coloured where WaniKani is
+blue/pink/purple: radical sea-glass teal `#1f8a7d`, kanji coral `#d9572b`, vocabulary
+deep-sea indigo `#4c4fae`, accent sand `#d8b27a`. All carry white glyphs (large text,
+≥ 3:1). To be judged in the gallery. Open: which theme is the default at release.
+
 ## Open questions
 
 - Distribution: `go install` only, or packages too? (design doc)
