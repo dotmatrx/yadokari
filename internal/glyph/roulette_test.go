@@ -3,6 +3,8 @@ package glyph
 import (
 	"errors"
 	"math/rand/v2"
+	"os"
+	"path/filepath"
 	"slices"
 	"testing"
 )
@@ -120,5 +122,26 @@ func TestPoolPicksCoveringFonts(t *testing.T) {
 	}
 	if p.Pick(rng, "\U000F0000") != nil { // private use: no font has it
 		t.Error("no font covers it: nil")
+	}
+}
+
+func TestSelectFontsByFile(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	path := filepath.Join(home, "fonts", "Mine.ttf")
+	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte("x"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{path, "~/fonts/Mine.ttf"} {
+		got, err := SelectFonts(parseFCList(fcSample), []string{name, "Yomogi"})
+		if err != nil || len(got) != 2 || got[0] != (FontRef{Path: path, Index: -1}) || got[1].Family != "Yomogi" {
+			t.Errorf("%s: %+v %v", name, got, err)
+		}
+	}
+	if _, err := SelectFonts(nil, []string{"~/fonts/Missing.ttf"}); err == nil {
+		t.Error("a missing file must be an error")
 	}
 }
