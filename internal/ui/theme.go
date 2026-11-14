@@ -50,9 +50,9 @@ var (
 	// type colour (contrast 3.9–6.9).
 	themeYadokari = Theme{
 		Name:    "yadokari",
-		Radical: rgb(0x1f8a7d), Kanji: rgb(0xd9572b), Vocabulary: rgb(0x4c4fae),
+		Radical: rgb(0x2e8b57), Kanji: rgb(0xd9572b), Vocabulary: rgb(0x4c4fae),
 		Ink:     rgb(0xffffff),
-		Lessons: rgb(0xd9572b), Reviews: rgb(0x1f8a7d), Bar: rgb(0xd8b27a),
+		Lessons: rgb(0xd9572b), Reviews: rgb(0x2e8b57), Bar: rgb(0xd8b27a),
 		Correct: rgb(0x6aa84f), Wrong: rgb(0xc8283c), Warn: rgb(0xe0b04a), Error: rgb(0xe0364a),
 		Line: lipgloss.Color("8"),
 	}

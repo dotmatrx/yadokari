@@ -68,7 +68,7 @@ player = ""
 
 [display]
 # Colours: wanikani (WaniKani's type colours) or yadokari (this app's own:
-# teal radicals, coral kanji, indigo vocabulary).
+# sea-green radicals, coral kanji, indigo vocabulary).
 theme = "wanikani"
 
 # How glyphs are drawn: auto (ask the terminal), kitty (kitty graphics, e.g.

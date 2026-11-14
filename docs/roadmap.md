@@ -271,7 +271,7 @@ thing, not WaniKani's, and say it is unofficial ("not affiliated with WaniKani o
 Tofugu LLC", the usual wording of third-party apps) in the README, `--version`, the
 first-run token form and any website. A starting palette from the name (宿借り, hermit
 crab: a borrowed shell, a tide pool), warm and sea-coloured where WaniKani is
-blue/pink/purple: radical sea-glass teal `#1f8a7d`, kanji coral `#d9572b`, vocabulary
+blue/pink/purple: radical sea green `#2e8b57` (was teal `#1f8a7d`; greener per the user, 2026-11-14), kanji coral `#d9572b`, vocabulary
 deep-sea indigo `#4c4fae`, accent sand `#d8b27a`. All carry white glyphs (large text,
 ≥ 3:1). To be judged in the gallery. Open: which theme is the default at release.
 
@@ -280,7 +280,7 @@ same colour codes as before), `display.theme` (wanikani | yadokari; no per-role
 overrides yet), `just preview --theme=NAME|all`, and the gallery:
 https://claude.ai/artifact/SaUCBaDFb3FWyb4eWbUYHL (demo data). yadokari's text colours:
 correct `#6aa84f`, wrong `#c8283c`, warn `#e0b04a`, error `#e0364a`; lessons coral,
-reviews teal, forecast bars sand. Next: the user's verdict on the palette; then
+reviews sea green, forecast bars sand. Next: the user's verdict on the palette; then
 `[theme]` overrides, `terminal`, high-contrast + `NO_COLOR`.
 
 ## Open questions
