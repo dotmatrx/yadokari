@@ -4,7 +4,7 @@ Where the project stands and what comes next. The design rationale lives in the 
 doc (link in CLAUDE.md); deferred ideas live in `docs/backlog.md`. Update this file when
 a milestone moves.
 
-**Last updated:** 2026-11-14.
+**Last updated:** 2026-11-14 (v0.5.0).
 
 ## Milestones
 
@@ -16,7 +16,7 @@ a milestone moves.
 | M3: live reviews | Dogfooding | Built; the two weeks of daily use (to 2026-11-22) run alongside M4 |
 | UI pass | Done | Panels frame on every screen; approved 2026-11-11 |
 | M4: lessons | Done (v0.4.0) | Item pages with mnemonic markup, lessons + quiz, `PUT /assignments/:id/start`, audio; live-verified 2026-11-11 |
-| M5: polish | In progress | Config file, font roulette, themes done (2026-11-14; yadokari palette on trial); add synonym deferred to the distribution decision; packaging |
+| M5: polish | v0.5.0 (2026-11-14) | Config file, font roulette, themes done (yadokari palette on trial); left: packaging; add synonym deferred to the distribution decision |
 
 ## Versions
 
