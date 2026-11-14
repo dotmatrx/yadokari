@@ -193,7 +193,8 @@ Wiring (no new dependencies; BurntSushi/toml is already used):
 
 Built as planned. Undo is Backspace on a graded wrong answer ("Backspace retype" in
 the key hints); the app never writes a config file itself; `--help` points to the
-example. Not tried yet in the real app: a config with overrides, and undo.
+example. Verified live 2026-11-14 (v0.4.0-3): order, batch size and undo overrides
+behaved; an undone reading miss (市町村) went up as `incorrect_reading_answers: 0`.
 
 Not in this step: the settings screen, lightning mode and relaxed `n` (new features;
 they become keys when built), voice choice (later).
