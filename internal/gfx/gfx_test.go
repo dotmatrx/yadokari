@@ -223,6 +223,8 @@ func TestChoose(t *testing.T) {
 		{"toolbox hides ghostty; probe says yes", "auto", env("TERM", "xterm-256color"), yes, Kitty},
 		{"ptyxis", "auto", env("TERM", "xterm-256color"), no, Plain},
 		{"no tty", "auto", env(), fails, Plain},
+		{"NO_COLOR", "auto", env("NO_COLOR", "1", "TERM", "xterm-ghostty"), mustNot, Plain},
+		{"NO_COLOR beats an override", "kitty", env("NO_COLOR", "1"), mustNot, Plain},
 	} {
 		got, err := Choose(tt.override, tt.getenv, tt.probe)
 		if err != nil || got != tt.want {

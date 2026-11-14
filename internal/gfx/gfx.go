@@ -63,9 +63,18 @@ func Detect(getenv func(string) string) Tier {
 // Choose picks the tier: an explicit override ("kitty", "plain"), else
 // the environment, else the terminal's answer to probe. tmux always gets
 // Plain (kitty graphics would need passthrough). A probe error means Plain.
+// NO_COLOR always means Plain: Bubble Tea then strips every colour, and
+// kitty placeholders carry the image ID in their colour.
 func Choose(override string, getenv func(string) string, probe func() (Probed, error)) (Tier, error) {
-	if t, ok, err := ParseTier(override); err != nil || ok {
+	t, ok, err := ParseTier(override)
+	if err != nil {
 		return t, err
+	}
+	if getenv("NO_COLOR") != "" {
+		return Plain, nil
+	}
+	if ok {
+		return t, nil
 	}
 	if getenv("TMUX") != "" {
 		return Plain, nil

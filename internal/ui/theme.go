@@ -31,8 +31,13 @@ type Theme struct {
 	// up, a near miss); Error a failure (sync, upload, rejected).
 	Correct, Wrong, Warn, Error color.Color
 	// Line draws panel borders and the input mode badge. ANSI 8, the
-	// terminal's own grey, follows the terminal's theme.
+	// terminal's own grey, follows the terminal's theme. NoColor: the
+	// terminal's text colour (the badge is drawn reversed).
 	Line color.Color
+	// Muted is secondary text (labels, hints); nil draws it faint.
+	Muted color.Color
+	// Strong makes coloured text (right, wrong, warnings, errors) bold.
+	Strong bool
 }
 
 func rgb(hex uint32) color.RGBA {
@@ -71,7 +76,20 @@ var (
 		Correct: lipgloss.Color("2"), Wrong: lipgloss.Color("1"), Warn: lipgloss.Color("3"), Error: lipgloss.Color("1"),
 		Line: lipgloss.Color("8"),
 	}
-	Themes       = []Theme{themeWaniKani, themeYadokari, themeTerminal}
+	// high-contrast: WaniKani's hues, deep enough for white ink at 7:1 or
+	// more; text in the terminal's own palette (made for its background),
+	// bold; borders and secondary text in the full text colour, never faint.
+	themeHighContrast = Theme{
+		Name:    "high-contrast",
+		Radical: rgb(0x005a9e), Kanji: rgb(0xa3005c), Vocabulary: rgb(0x5c00a3),
+		Ink:     rgb(0xffffff),
+		Lessons: lipgloss.Color("5"), Reviews: lipgloss.Color("6"), Bar: lipgloss.Color("6"),
+		Correct: lipgloss.Color("2"), Wrong: lipgloss.Color("1"), Warn: lipgloss.Color("3"), Error: lipgloss.Color("1"),
+		Line:   lipgloss.NoColor{},
+		Muted:  lipgloss.NoColor{},
+		Strong: true,
+	}
+	Themes       = []Theme{themeWaniKani, themeYadokari, themeTerminal, themeHighContrast}
 	DefaultTheme = themeWaniKani
 )
 
@@ -207,8 +225,16 @@ func SetTheme(t Theme) {
 	fg := func(c color.Color) lipgloss.Style { return lipgloss.NewStyle().Foreground(c) }
 	lineSt = fg(t.Line)
 	badgeSt = lipgloss.NewStyle().Background(t.Line).Foreground(lipgloss.Color("15")).Bold(true).Padding(0, 1)
-	errSt, warnSt = fg(t.Error), fg(t.Warn).Bold(true)
-	correctSt, wrongSt = fg(t.Correct), fg(t.Wrong)
+	if _, ok := t.Line.(lipgloss.NoColor); ok {
+		badgeSt = lipgloss.NewStyle().Reverse(true).Bold(true).Padding(0, 1)
+	}
+	mutedSt = lipgloss.NewStyle().Faint(true)
+	if t.Muted != nil {
+		mutedSt = fg(t.Muted)
+	}
+	labelSt = mutedSt
+	errSt, warnSt = fg(t.Error).Bold(t.Strong), fg(t.Warn).Bold(true)
+	correctSt, wrongSt = fg(t.Correct).Bold(t.Strong), fg(t.Wrong).Bold(t.Strong)
 	lessonSt, reviewSt, barSt = fg(t.Lessons), fg(t.Reviews), fg(t.Bar)
 	markupSt = map[markup.Kind]lipgloss.Style{
 		markup.Radical:    fg(t.Radical),

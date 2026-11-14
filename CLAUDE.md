@@ -87,7 +87,8 @@ anything with `--live` yourself. Tokens used during development are read-only.
   `WANIKANI_API_TOKEN` → OS keyring → `0600` file fallback. Tests use a fake keyring;
   don't touch the real keyring from tests or tooling without asking the user.
 - `internal/ui` — colours only from `theme.go` (`Theme` roles → package styles via
-  `SetTheme`; `display.theme`; add a theme to `ui.Themes` and `config.ThemeNames`).
+  `SetTheme`; `display.theme` + `[theme]` overrides; add a theme to `ui.Themes` and
+  `config.ThemeNames`; palette colours are allowed, `InkFor` picks the ink for them).
   Bubble Tea screens under a root `App`, all in one frame (`layout.go`:
   header on the top row via `headerLine` (ranked segments, fits any width; the audio
   badge comes from App's `shared` state), key/status bar on the bottom, rounded `panel`s in ANSI 8

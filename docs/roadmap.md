@@ -16,7 +16,7 @@ a milestone moves.
 | M3: live reviews | Dogfooding | Built; the two weeks of daily use (to 2026-11-22) run alongside M4 |
 | UI pass | Done | Panels frame on every screen; approved 2026-11-11 |
 | M4: lessons | Done (v0.4.0) | Item pages with mnemonic markup, lessons + quiz, `PUT /assignments/:id/start`, audio; live-verified 2026-11-11 |
-| M5: polish | In progress | Config file, font roulette done; themes started (2026-11-14); add synonym deferred to the distribution decision; packaging |
+| M5: polish | In progress | Config file, font roulette, themes done (2026-11-14; yadokari palette on trial); add synonym deferred to the distribution decision; packaging |
 
 ## Versions
 
@@ -275,17 +275,31 @@ blue/pink/purple: radical sea green `#2e8b57` (was teal `#1f8a7d`; greener per t
 deep-sea indigo `#4c4fae`, accent sand `#d8b27a`. All carry white glyphs (large text,
 ≥ 3:1). To be judged in the gallery. Open: which theme is the default at release.
 
-**Done 2026-11-14:** 1 (`ui/theme.go`: `Theme` roles, `SetTheme`; previews use the
-same colour codes as before), `display.theme` (wanikani | yadokari; no per-role
-overrides yet), `just preview --theme=NAME|all`, and the gallery:
-https://claude.ai/artifact/SaUCBaDFb3FWyb4eWbUYHL (demo data). yadokari's text colours:
-correct `#6aa84f`, wrong `#c8283c`, warn `#e0b04a`, error `#e0364a`; lessons coral,
-reviews sea green, forecast bars sand. The user is living with draft 2
-(sea green) before deciding (2026-11-14); watch whether the correct-answer green
-`#6aa84f` feels too close to the radical green, and whether the sand bars and the
-gold/green text colours read as pastel. Palette changes are one-line edits in
-`ui/theme.go` until a public release. Then
-`[theme]` overrides, `terminal`, high-contrast + `NO_COLOR`.
+**Done 2026-11-14:**
+- `ui/theme.go`: `Theme` roles → package styles (`SetTheme`); the refactor kept every
+  colour code.
+- `display.theme`: `wanikani` (default), `yadokari`, `terminal`, `high-contrast`.
+- `[theme]` per-role overrides: `#rrggbb`, or a palette number `0`–`255` (not for
+  `ink`, which is drawn into the image).
+- Glyph fields may be palette colours: the cell background is the field (the kitty
+  image is transparent but for the ink), so `gfx.BgSGR` sends `4x`/`10x`/`48;5;N` and
+  the terminal paints its own shade.
+- `terminal`: cyan radicals, magenta kanji, blue vocabulary, ANSI text colours. The
+  probe also asks for palette 4–6 (OSC 4); `Theme.InkFor` picks white or dark ink,
+  whichever has the better worst-case contrast (white if nothing is reported).
+- `high-contrast`: WaniKani hues deep enough for 7:1+ behind white ink
+  (`#005a9e`, `#a3005c`, `#5c00a3`), ANSI text colours in bold, borders and muted
+  text in the full text colour (`Muted`, `Strong`, `Line: NoColor`).
+- `NO_COLOR`: Bubble Tea then drops all colour, kitty placeholders included, so
+  `gfx.Choose` returns plain whatever the override; glyphs are bold text.
+- Gallery (4 themes, demo data): https://claude.ai/artifact/SaUCBaDFb3FWyb4eWbUYHL
+
+The user is living with yadokari draft 2 (sea green) before deciding (2026-11-14);
+watch whether the correct-answer green `#6aa84f` feels too close to the radical
+green, and whether the sand bars and the gold/green text read as pastel. Palette
+changes are one-line edits in `ui/theme.go` until a public release. Not tried in the
+real app yet: `terminal`, `high-contrast`, `NO_COLOR`. Open: the default theme at
+release.
 
 ## Open questions
 

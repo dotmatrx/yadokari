@@ -70,7 +70,9 @@ player = ""
 # Colours: wanikani (WaniKani's type colours), yadokari (this app's own:
 # sea-green radicals, coral kanji, indigo vocabulary) or terminal (your
 # terminal's own palette: cyan radicals, magenta kanji, blue vocabulary, so it
-# follows your colour scheme).
+# follows your colour scheme) or high-contrast (deep type colours behind white
+# glyphs, bold marks, nothing faint). With NO_COLOR set, there is no colour at
+# all and glyphs are drawn as text.
 theme = "wanikani"
 
 # How glyphs are drawn: auto (ask the terminal), kitty (kitty graphics, e.g.
