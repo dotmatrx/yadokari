@@ -327,7 +327,13 @@ Not verified yet:
 - Nothing has run on a Mac: CI's macOS job (tags, or by hand) runs the tests; the
   user tries the app on their Mac (Ghostty or kitty for glyphs, Hiragino, afplay,
   keyring via `security`, the roulette scan).
-- First release: v0.5.1 tagged and pushed 2026-11-14 (`just release-check` passed locally first). Release workflow and macOS CI results: check on GitHub (Claude can't see the private repo).
+- First release: **v0.5.2** (2026-11-14), all four archives + checksums on the GitHub
+  release. v0.5.1's tag push started no workflow (cause unknown; it would have failed
+  `TestPlay` on Ubuntu anyway: dash forks `sleep`, fixed by killing the player's
+  process group). `gh` is installed and authenticated: Claude can watch runs.
+- The first macOS CI run (v0.5.2 tag) failed on font discovery: Homebrew fontconfig on
+  macOS lists hidden and pan-CJK fonts and Hiragino as eight families. Fixed on main
+  (macOS CI green); not in a release yet.
 - Homebrew: create the public repo `jtharris/homebrew-tap` and a fine-grained token
   with contents:write on it as the `HOMEBREW_TAP_TOKEN` secret. While yadokari's repo
   is private, the cask can't download the release, so the tap waits for going public;
