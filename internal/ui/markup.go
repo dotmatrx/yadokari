@@ -6,20 +6,7 @@ import (
 	"charm.land/lipgloss/v2"
 
 	"github.com/jtharris/yadokari/internal/markup"
-	"github.com/jtharris/yadokari/internal/wk"
 )
-
-// Styles for WaniKani markup: the subject types in their type colours,
-// readings and meanings bold, emphasis italic, links underlined (and clickable
-// where the terminal supports OSC 8). No backgrounds.
-var markupSt = map[markup.Kind]lipgloss.Style{
-	markup.Radical:    lipgloss.NewStyle().Foreground(typeColour[wk.ObjectRadical]),
-	markup.Kanji:      lipgloss.NewStyle().Foreground(typeColour[wk.ObjectKanji]),
-	markup.Vocabulary: lipgloss.NewStyle().Foreground(typeColour[wk.ObjectVocabulary]),
-	markup.Reading:    lipgloss.NewStyle().Bold(true),
-	markup.Meaning:    lipgloss.NewStyle().Bold(true),
-	markup.Link:       lipgloss.NewStyle().Underline(true),
-}
 
 // renderMarkup renders WaniKani markup wrapped to width, paragraphs separated
 // by a blank line.

@@ -16,21 +16,6 @@ import (
 	"github.com/jtharris/yadokari/internal/wksync"
 )
 
-// WaniKani type colours, used only as marks beside text, never as text.
-var (
-	lessonColour = lipgloss.Color("#ff00aa")
-	reviewColour = lipgloss.Color("#00aaff")
-)
-
-var (
-	boldSt   = lipgloss.NewStyle().Bold(true)
-	mutedSt  = lipgloss.NewStyle().Faint(true)
-	errSt    = lipgloss.NewStyle().Foreground(lipgloss.Color("#ff4455"))
-	barSt    = lipgloss.NewStyle().Foreground(reviewColour)
-	lessonSt = lipgloss.NewStyle().Foreground(lessonColour)
-	reviewSt = lipgloss.NewStyle().Foreground(reviewColour)
-)
-
 // Deps are what the dashboard needs.
 type Deps struct {
 	Store    *store.Store

@@ -8,15 +8,6 @@ import (
 	"github.com/charmbracelet/x/ansi"
 )
 
-// Frame pieces shared by every screen. Lines use the terminal's own grey
-// (ANSI 8) so they follow the user's theme, and nothing paints a
-// background: a translucent terminal shows through.
-var (
-	lineSt  = lipgloss.NewStyle().Foreground(lipgloss.Color("8"))
-	titleSt = lipgloss.NewStyle().Bold(true)
-	labelSt = mutedSt
-)
-
 // padRight pads (or truncates) s to exactly w cells.
 func padRight(s string, w int) string {
 	if lipgloss.Width(s) > w {

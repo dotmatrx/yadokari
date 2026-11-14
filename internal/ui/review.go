@@ -26,29 +26,10 @@ import (
 // sessionName keys the persisted review session in the store.
 const sessionName = "reviews"
 
-// Type colours (WaniKani's), used for the glyph field.
-var typeColour = map[string]color.RGBA{
-	wk.ObjectRadical:        {0x00, 0xaa, 0xff, 0xff},
-	wk.ObjectKanji:          {0xff, 0x00, 0xaa, 0xff},
-	wk.ObjectVocabulary:     {0xaa, 0x00, 0xff, 0xff},
-	wk.ObjectKanaVocabulary: {0xaa, 0x00, 0xff, 0xff},
-}
-
-var glyphFG = color.RGBA{0xff, 0xff, 0xff, 0xff}
-
 var typeName = map[string]string{
 	wk.ObjectRadical: "Radical", wk.ObjectKanji: "Kanji",
 	wk.ObjectVocabulary: "Vocabulary", wk.ObjectKanaVocabulary: "Vocabulary",
 }
-
-var (
-	// Correct and wrong colour the answer box's border and mark; nothing
-	// paints a background except the glyph field.
-	correctSt = lipgloss.NewStyle().Foreground(lipgloss.Color("#88cc00"))
-	wrongSt   = lipgloss.NewStyle().Foreground(lipgloss.Color("#ff0033"))
-	warnSt    = lipgloss.NewStyle().Foreground(lipgloss.Color("#ffcc00")).Bold(true)
-	pendingSt = lipgloss.NewStyle().Underline(true)
-)
 
 // ReviewDeps are what the review screen needs beyond Deps.
 type ReviewDeps struct {
@@ -707,7 +688,6 @@ func (r *Review) inputText(q session.Question) (text string, empty bool) {
 
 // badgeSt draws the input mode's letter as a small badge in the theme's
 // grey (the borders' colour): the one tiny painted block besides the glyph.
-var badgeSt = lipgloss.NewStyle().Background(lipgloss.Color("8")).Foreground(lipgloss.Color("15")).Bold(true).Padding(0, 1)
 
 // inputMode says what the box expects, for the right of its top border: a
 // badge with the mode's letter, then its name.
