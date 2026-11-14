@@ -181,6 +181,14 @@ func TestParseProbe(t *testing.T) {
 		{"\x1b_Gi=31;EINVAL:bad\x1b\\" + da1, Probed{}, true},
 		// DA1 not complete yet.
 		{"\x1b[?62;22", Probed{}, false},
+		// Palette colours: 16-bit (xterm, Ghostty), 8-bit, ended by BEL or ST.
+		{"\x1b]4;4;rgb:8181/a2a2/bebe\x1b\\\x1b]4;6;rgb:8a/be/b7\a" + da1,
+			func() Probed {
+				var p Probed
+				p.Palette[4] = color.RGBA{0x81, 0xa2, 0xbe, 0xff}
+				p.Palette[6] = color.RGBA{0x8a, 0xbe, 0xb7, 0xff}
+				return p
+			}(), true},
 	} {
 		got, done := parseProbe([]byte(tt.reply))
 		if got != tt.want || done != tt.done {
@@ -223,5 +231,21 @@ func TestChoose(t *testing.T) {
 	}
 	if _, err := Choose("sixel", env(), mustNot); err == nil {
 		t.Error("unknown override should fail")
+	}
+}
+
+func TestBgSGR(t *testing.T) {
+	for _, tt := range []struct {
+		c    color.Color
+		want string
+	}{
+		{ansi.BasicColor(4), "\x1b[44m"},
+		{ansi.BasicColor(13), "\x1b[105m"},
+		{ansi.IndexedColor(100), "\x1b[48;5;100m"},
+		{color.RGBA{1, 2, 3, 255}, "\x1b[48;2;1;2;3m"},
+	} {
+		if got := BgSGR(tt.c); got != tt.want {
+			t.Errorf("BgSGR(%v) = %q, want %q", tt.c, got, tt.want)
+		}
 	}
 }

@@ -3,6 +3,7 @@ package gfx
 import (
 	"bytes"
 	"errors"
+	"image/color"
 	"os"
 	"regexp"
 	"strconv"
@@ -13,14 +14,19 @@ import (
 
 // probeQuery asks for kitty graphics support (a 1×1 RGB query that the
 // terminal must not store) and the cell size in pixels (CSI 16 t), then
-// sends DA1. Every terminal answers DA1, so its reply arriving means every
-// answer that is coming has come.
-const probeQuery = "\x1b_Gi=31,s=1,v=1,a=q,t=d,f=24;AAAA\x1b\\" + "\x1b[16t" + "\x1b[c"
+// asks for palette colours 4–6 (OSC 4; the glyph fields of the "terminal"
+// theme), then sends DA1. Every terminal answers DA1, so its reply arriving
+// means every answer that is coming has come.
+const probeQuery = "\x1b_Gi=31,s=1,v=1,a=q,t=d,f=24;AAAA\x1b\\" + "\x1b[16t" +
+	"\x1b]4;4;?\x1b\\\x1b]4;5;?\x1b\\\x1b]4;6;?\x1b\\" + "\x1b[c"
 
 // Probed is what the terminal said.
 type Probed struct {
 	Kitty        bool // kitty graphics supported
 	CellW, CellH int  // cell size in pixels; 0 if not reported
+	// Palette holds the colours the terminal reported for palette
+	// entries 0–15 (only 4–6 are asked); alpha 0 means unknown.
+	Palette [16]color.RGBA
 }
 
 // Probe asks the terminal on /dev/tty about kitty graphics and its cell
@@ -81,7 +87,17 @@ func Probe(timeout time.Duration) (Probed, error) {
 	}
 }
 
-var cellReply = regexp.MustCompile(`\x1b\[6;(\d+);(\d+)t`)
+var (
+	cellReply    = regexp.MustCompile(`\x1b\[6;(\d+);(\d+)t`)
+	paletteReply = regexp.MustCompile(`\x1b\]4;(\d+);rgb:([0-9a-fA-F]{1,4})/([0-9a-fA-F]{1,4})/([0-9a-fA-F]{1,4})`)
+)
+
+// channel scales an OSC colour component of 1–4 hex digits to 8 bits.
+func channel(hex []byte) uint8 {
+	v, _ := strconv.ParseUint(string(hex), 16, 32)
+	max := uint64(1)<<(4*len(hex)) - 1
+	return uint8(v * 255 / max)
+}
 
 // parseProbe reads the terminal's replies so far: done once the DA1 reply
 // (ESC [ ? … c) has arrived.
@@ -90,6 +106,11 @@ func parseProbe(b []byte) (p Probed, done bool) {
 	if m := cellReply.FindSubmatch(b); m != nil {
 		p.CellH, _ = strconv.Atoi(string(m[1]))
 		p.CellW, _ = strconv.Atoi(string(m[2]))
+	}
+	for _, m := range paletteReply.FindAllSubmatch(b, -1) {
+		if n, err := strconv.Atoi(string(m[1])); err == nil && n < len(p.Palette) {
+			p.Palette[n] = color.RGBA{channel(m[2]), channel(m[3]), channel(m[4]), 0xff}
+		}
 	}
 	if i := bytes.Index(b, []byte("\x1b[?")); i >= 0 {
 		done = bytes.IndexByte(b[i:], 'c') >= 0

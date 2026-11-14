@@ -2,9 +2,11 @@ package ui
 
 import (
 	"image/color"
+	"math"
 	"slices"
 
 	"charm.land/lipgloss/v2"
+	"github.com/charmbracelet/x/ansi"
 
 	"github.com/jtharris/yadokari/internal/config"
 	"github.com/jtharris/yadokari/internal/markup"
@@ -58,7 +60,18 @@ var (
 		Correct: rgb(0x6aa84f), Wrong: rgb(0xc8283c), Warn: rgb(0xe0b04a), Error: rgb(0xe0364a),
 		Line: lipgloss.Color("8"),
 	}
-	Themes       = []Theme{themeWaniKani, themeYadokari}
+	// terminal: the terminal's own palette (cyan radicals, magenta kanji,
+	// blue vocabulary), so the app follows its colour scheme. The ink is
+	// white unless the terminal's shades want dark ink (InkFor).
+	themeTerminal = Theme{
+		Name:    "terminal",
+		Radical: lipgloss.Color("6"), Kanji: lipgloss.Color("5"), Vocabulary: lipgloss.Color("4"),
+		Ink:     rgb(0xffffff),
+		Lessons: lipgloss.Color("5"), Reviews: lipgloss.Color("6"), Bar: lipgloss.Color("6"),
+		Correct: lipgloss.Color("2"), Wrong: lipgloss.Color("1"), Warn: lipgloss.Color("3"), Error: lipgloss.Color("1"),
+		Line: lipgloss.Color("8"),
+	}
+	Themes       = []Theme{themeWaniKani, themeYadokari, themeTerminal}
 	DefaultTheme = themeWaniKani
 )
 
@@ -86,6 +99,70 @@ func (t Theme) WithColours(c config.Colours) Theme {
 		t.Ink = color.RGBA{uint8(r >> 8), uint8(g >> 8), uint8(b >> 8), 0xff}
 	}
 	return t
+}
+
+// darkInk is the alternative to white ink on light glyph fields.
+var darkInk = rgb(0x1a1a1a)
+
+// UsesPalette reports whether a glyph field takes a terminal palette colour,
+// whose shade only the terminal knows (InkFor needs the probe).
+func (t Theme) UsesPalette() bool {
+	for _, c := range []color.Color{t.Radical, t.Kanji, t.Vocabulary} {
+		if _, ok := c.(ansi.BasicColor); ok {
+			return true
+		}
+	}
+	return false
+}
+
+// InkFor picks white or dark ink, whichever reads better on the glyph
+// fields (their worst case), given the shades the terminal reported for
+// its palette (alpha 0: unknown, the field is skipped). An ink set in the
+// config file is kept.
+func (t Theme) InkFor(palette [16]color.RGBA, inkSet bool) Theme {
+	if inkSet {
+		return t
+	}
+	worst := func(ink color.RGBA) float64 {
+		w, seen := 99.0, false
+		for _, c := range []color.Color{t.Radical, t.Kanji, t.Vocabulary} {
+			field, ok := c.(color.RGBA)
+			if b, isPal := c.(ansi.BasicColor); isPal && int(b) < len(palette) {
+				field, ok = palette[b], palette[b].A != 0
+			}
+			if ok {
+				w, seen = min(w, contrast(ink, field)), true
+			}
+		}
+		if !seen {
+			return 0
+		}
+		return w
+	}
+	if worst(darkInk) > worst(rgb(0xffffff)) {
+		t.Ink = darkInk
+	}
+	return t
+}
+
+// contrast is the WCAG contrast ratio of two colours (1–21).
+func contrast(a, b color.RGBA) float64 {
+	la, lb := luminance(a), luminance(b)
+	if la < lb {
+		la, lb = lb, la
+	}
+	return (la + 0.05) / (lb + 0.05)
+}
+
+func luminance(c color.RGBA) float64 {
+	lin := func(v uint8) float64 {
+		s := float64(v) / 255
+		if s <= 0.03928 {
+			return s / 12.92
+		}
+		return math.Pow((s+0.055)/1.055, 2.4)
+	}
+	return 0.2126*lin(c.R) + 0.7152*lin(c.G) + 0.0722*lin(c.B)
 }
 
 // ThemeNamed returns the theme of that name.

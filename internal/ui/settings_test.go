@@ -145,3 +145,28 @@ func TestThemeWithColours(t *testing.T) {
 		t.Error("unset colours keep the theme's")
 	}
 }
+
+func TestTerminalThemeInk(t *testing.T) {
+	th, _ := ThemeNamed("terminal")
+	if !th.UsesPalette() || themeYadokari.UsesPalette() {
+		t.Error("UsesPalette")
+	}
+	var pal [16]color.RGBA
+	if got := th.InkFor(pal, false).Ink; got != rgb(0xffffff) {
+		t.Errorf("nothing reported: white ink, got %v", got)
+	}
+	// A dark scheme (Tomorrow Night's blue, magenta, cyan... muted, mid-light):
+	// pastel fields want dark ink.
+	pal[4], pal[5], pal[6] = rgb(0x81a2be), rgb(0xb294bb), rgb(0x8abeb7)
+	if got := th.InkFor(pal, false).Ink; got != darkInk {
+		t.Errorf("pastel fields: dark ink, got %v", got)
+	}
+	// Deep, saturated shades keep white.
+	pal[4], pal[5], pal[6] = rgb(0x1e3a8a), rgb(0x86198f), rgb(0x0e7490)
+	if got := th.InkFor(pal, false).Ink; got != rgb(0xffffff) {
+		t.Errorf("deep fields: white ink, got %v", got)
+	}
+	if got := th.WithColours(config.Colours{Ink: "#ff0000"}).InkFor(pal, true).Ink; got != rgb(0xff0000) {
+		t.Errorf("a configured ink is kept, got %v", got)
+	}
+}

@@ -127,9 +127,6 @@ func run() error {
 		return syncAndReport(ctx, syncer, &wksync.Uploader{Client: client, Store: st})
 	}
 
-	if t, ok := ui.ThemeNamed(cmp.Or(cfg.Display.Theme, ui.DefaultTheme.Name)); ok {
-		ui.SetTheme(t.WithColours(cfg.Theme))
-	}
 	if *gfxFlag == "" {
 		*gfxFlag = cmp.Or(cfg.Display.Gfx, "auto")
 	}
@@ -191,6 +188,16 @@ func reviewDeps(client *wk.Client, st *store.Store, cfg config.Config, gfxTier s
 		tier = gfx.Plain
 	}
 	rd.Font = font
+	th, _ := ui.ThemeNamed(cmp.Or(cfg.Display.Theme, ui.DefaultTheme.Name))
+	th = th.WithColours(cfg.Theme)
+	if th.UsesPalette() {
+		// The glyph fields are the terminal's colours: ask for their shades
+		// to pick an ink that reads on them.
+		if p, err := probe(); err == nil {
+			th = th.InkFor(p.Palette, cfg.Theme.Ink != "")
+		}
+	}
+	ui.SetTheme(th)
 	cw, ch := 0, 0
 	if tier == gfx.Kitty {
 		cw, ch = gfx.CellSize(probe)

@@ -13,6 +13,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"image/color"
 	"os"
 	"strconv"
 	"strings"
@@ -128,6 +129,9 @@ func run() error {
 	for _, sz := range sizes {
 		for _, screen := range screens {
 			for _, th := range themes {
+				if th.UsesPalette() {
+					th = th.InkFor(previewPalette(*htmlOut != ""), false)
+				}
 				ui.SetTheme(th)
 				for _, f := range fonts {
 					// A fresh store each time: review previews queue reviews.
@@ -278,4 +282,22 @@ func previewFonts(name string) ([]*glyph.Font, error) {
 		return nil, fmt.Errorf("no Japanese fonts installed")
 	}
 	return fonts, nil
+}
+
+// previewPalette is the palette the "terminal" theme is drawn with: the
+// gallery's (html.go's basic colours), or the terminal's own.
+func previewPalette(html bool) [16]color.RGBA {
+	var pal [16]color.RGBA
+	if html {
+		for i, hex := range basic {
+			var r, g, b uint8
+			fmt.Sscanf(hex, "#%02x%02x%02x", &r, &g, &b)
+			pal[i] = color.RGBA{r, g, b, 0xff}
+		}
+		return pal
+	}
+	if p, err := gfx.Probe(time.Second); err == nil {
+		pal = p.Palette
+	}
+	return pal
 }
