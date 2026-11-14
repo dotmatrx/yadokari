@@ -4,6 +4,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -167,5 +168,62 @@ func TestLoadConfig(t *testing.T) {
 	os.WriteFile(path, []byte(`api_bsae_url = "typo"`+"\n"), 0o600)
 	if _, err := Load(path); err == nil || !strings.Contains(err.Error(), "api_bsae_url") {
 		t.Fatalf("unknown keys should be reported: %v", err)
+	}
+}
+
+// The example file documents every key: it must load, and every key in
+// Config must appear in it (commented or not).
+func TestExampleConfig(t *testing.T) {
+	const path = "../../docs/config.example.toml"
+	if _, err := Load(path); err != nil {
+		t.Fatal(err)
+	}
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var keys func(typ reflect.Type) []string
+	keys = func(typ reflect.Type) []string {
+		var out []string
+		for f := range typ.Fields() {
+			tag := f.Tag.Get("toml")
+			if f.Type.Kind() == reflect.Struct {
+				out = append(out, "["+tag+"]")
+				out = append(out, keys(f.Type)...)
+				continue
+			}
+			out = append(out, tag)
+		}
+		return out
+	}
+	for _, k := range keys(reflect.TypeFor[Config]()) {
+		if !strings.Contains(string(raw), k) {
+			t.Errorf("%s is not in the example config", k)
+		}
+	}
+}
+
+func TestConfigRejectsBadValues(t *testing.T) {
+	for _, c := range []struct{ toml, want string }{
+		{"[reviews]\norder = \"random\"", `reviews.order = "random": use one of wanikani, shuffled`},
+		{"[reviews]\nstrictness = \"loose\"", "reviews.strictness"},
+		{"[lessons]\nbatch_size = -1", "lessons.batch_size = -1: must be 0 or more"},
+		{"[display]\ngfx = \"sixel\"", "display.gfx"},
+		{"[audio]\nplayer = \"  \"", "audio.player is blank"},
+		{"[reviews]\nordr = \"shuffled\"", `unknown setting "reviews.ordr"`},
+	} {
+		path := filepath.Join(t.TempDir(), "config.toml")
+		if err := os.WriteFile(path, []byte(c.toml), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := Load(path); err == nil || !strings.Contains(err.Error(), c.want) {
+			t.Errorf("%q: got %v, want %q", c.toml, err, c.want)
+		}
+	}
+	path := filepath.Join(t.TempDir(), "config.toml")
+	_ = os.WriteFile(path, []byte("[reviews]\nautoplay_audio = false\nlimit = 50"), 0o600)
+	c, err := Load(path)
+	if err != nil || c.Reviews.AutoplayAudio == nil || *c.Reviews.AutoplayAudio || c.Reviews.Limit != 50 {
+		t.Errorf("valid: %+v %v", c.Reviews, err)
 	}
 }

@@ -69,7 +69,7 @@ func LoadLessons(ctx context.Context, deps Deps, rdeps ReviewDeps, user wk.User)
 	if ok, err := deps.Store.LoadSession(ctx, lessonSessionName, &snap); err == nil && ok {
 		if sess, ordered, ok := resumable(snap, byAssignment, rng); ok {
 			q := newReview(deps, rdeps, lessonSessionName)
-			q.sess, q.items, q.resume, q.prefs = sess, ordered, true, user.Preferences
+			q.sess, q.items, q.resume, q.prefs = sess, ordered, true, rdeps.Settings.prefs(user.Preferences)
 			return nil, q, nil
 		}
 		_ = deps.Store.ClearSession(ctx, lessonSessionName)
@@ -77,8 +77,9 @@ func LoadLessons(ctx context.Context, deps Deps, rdeps ReviewDeps, user wk.User)
 	if len(items) == 0 {
 		return nil, nil, userError("no lessons are available")
 	}
-	l := &Lesson{deps: deps, rdeps: rdeps, rng: rng, images: map[int][]byte{}, prefs: user.Preferences,
-		items: pickLessons(items, user.Preferences, rng)}
+	prefs := rdeps.Settings.prefs(user.Preferences)
+	l := &Lesson{deps: deps, rdeps: rdeps, rng: rng, images: map[int][]byte{}, prefs: prefs,
+		items: pickLessons(items, prefs, rng)}
 	if err := l.open(0, 0); err != nil {
 		return nil, nil, err
 	}

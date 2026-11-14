@@ -244,8 +244,14 @@ func TestUndo(t *testing.T) {
 	s := New(items, Options{AllowUndo: true}, rng(7))
 	q, _ := s.Current()
 	s.Answer(false, t0)
+	if !s.CanUndo() {
+		t.Error("CanUndo after a wrong answer")
+	}
 	if err := s.Undo(); err != nil {
 		t.Fatal(err)
+	}
+	if s.CanUndo() {
+		t.Error("CanUndo after undoing")
 	}
 	if q2, _ := s.Current(); q2 != q {
 		t.Errorf("after undo, current %+v want %+v", q2, q)

@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"os/exec"
+	"path/filepath"
 	"slices"
 	"strings"
 	"sync"
@@ -78,6 +79,20 @@ func Find(lookPath func(string) (string, error)) (*Player, error) {
 		}
 	}
 	return nil, ErrNoPlayer
+}
+
+// Command makes a player from a command line set by the user, e.g.
+// "mpv --no-video"; the file path is appended. The formats it plays are
+// those of the known player of that name, else MPEG.
+func Command(cmdline string) *Player {
+	argv := strings.Fields(cmdline)
+	types := []string{MPEG}
+	for _, c := range candidates {
+		if filepath.Base(argv[0]) == c.argv[0] {
+			types = c.types
+		}
+	}
+	return New(types, argv...)
 }
 
 // New makes a player from a command line (the file path is appended).

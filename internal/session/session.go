@@ -278,6 +278,9 @@ func (s *Session) Undo() error {
 	return nil
 }
 
+// CanUndo reports whether Undo would succeed.
+func (s *Session) CanUndo() bool { return s.undo != nil }
+
 // WrapUp stops (or resumes) drawing new items into play.
 func (s *Session) WrapUp(on bool) {
 	s.wrapUp = on

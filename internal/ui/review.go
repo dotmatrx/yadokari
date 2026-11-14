@@ -52,11 +52,11 @@ var (
 
 // ReviewDeps are what the review screen needs beyond Deps.
 type ReviewDeps struct {
-	Renderer   gfx.Renderer
-	Font       *glyph.Font // nil: no font found, glyphs fall back to plain text
-	Images     glyph.ImageCache
-	Uploader   *wksync.Uploader
-	Strictness answer.Strictness
+	Renderer gfx.Renderer
+	Font     *glyph.Font // nil: no font found, glyphs fall back to plain text
+	Images   glyph.ImageCache
+	Uploader *wksync.Uploader
+	Settings Settings // from the config file
 	// Disabled, when set, explains why reviews can't start (shown on the
 	// dashboard instead of opening the review screen).
 	Disabled string
@@ -154,7 +154,7 @@ func LoadReview(ctx context.Context, deps Deps, rdeps ReviewDeps, user wk.User) 
 	}
 	rng := rand.New(rand.NewPCG(uint64(time.Now().UnixNano()), 0x9e3779b97f4a7c15))
 	r := newReview(deps, rdeps, sessionName)
-	r.prefs = user.Preferences
+	r.prefs = rdeps.Settings.prefs(user.Preferences)
 
 	var snap session.Snapshot
 	if ok, err := deps.Store.LoadSession(ctx, sessionName, &snap); err == nil && ok {
@@ -168,10 +168,7 @@ func LoadReview(ctx context.Context, deps Deps, rdeps ReviewDeps, user wk.User) 
 	if len(items) == 0 {
 		return nil, userError("no reviews are due")
 	}
-	opts := session.Options{}
-	if user.Preferences.ReviewsPresentationOrder == "lower_levels_first" {
-		opts.Order = session.LowerLevelsFirst
-	}
+	opts := rdeps.Settings.sessionOptions(user.Preferences)
 	sItems := make([]session.Item, len(items))
 	for i, it := range items {
 		sItems[i] = session.Item{
@@ -355,6 +352,10 @@ func (r *Review) key(msg tea.KeyPressMsg) tea.Cmd {
 	case "enter":
 		return r.enter()
 	case "backspace":
+		if r.state == graded && r.sess.CanUndo() {
+			r.undo()
+			return nil
+		}
 		if r.state == answering {
 			r.warn = ""
 			if q, _, ok := r.current(); ok && q.Kind == session.Reading {
@@ -375,6 +376,17 @@ func (r *Review) key(msg tea.KeyPressMsg) tea.Cmd {
 		r.insert(msg.Text)
 	}
 	return nil
+}
+
+// undo takes back a wrong answer (allow_undo): the question comes back with
+// the answer as typed, ready to edit, and the miss is forgotten.
+func (r *Review) undo() {
+	if err := r.sess.Undo(); err != nil {
+		return
+	}
+	r.wrong--
+	r.state, r.info, r.warn = answering, false, ""
+	r.save()
 }
 
 func (r *Review) insert(s string) {
@@ -408,7 +420,7 @@ func (r *Review) enter() tea.Cmd {
 	if q.Kind == session.Reading {
 		res = answer.CheckReading(r.conv.Finish(), it.Subject.Object, it.Subject.Data)
 	} else {
-		res = answer.CheckMeaning(string(r.plain), it.Subject.Data, it.Synonyms, r.rdeps.Strictness)
+		res = answer.CheckMeaning(string(r.plain), it.Subject.Data, it.Synonyms, r.rdeps.Settings.strictness())
 	}
 	if res.Verdict == answer.Retry {
 		r.warn = res.Message
@@ -566,6 +578,9 @@ func (r *Review) View() string {
 		help = "Enter next · Tab answer · i item · Esc dashboard · ctrl+w wrap-up"
 		if r.audible() {
 			help = "Enter next · Tab answer · i item · p audio · Esc dashboard · ctrl+w wrap-up"
+		}
+		if r.sess.CanUndo() {
+			help = "Backspace retype · " + help
 		}
 	}
 	if r.item != nil {

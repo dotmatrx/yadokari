@@ -17,6 +17,8 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"slices"
+	"strings"
 
 	"github.com/BurntSushi/toml"
 )
@@ -65,12 +67,58 @@ func DefaultPaths(env Env) (Paths, error) {
 	}, nil
 }
 
-// Config is the contents of config.toml. Every field is optional.
+// Config is the contents of config.toml. Every field is optional, and the
+// zero Config behaves as if there were no file: settings that mirror a
+// WaniKani preference follow it unless set. docs/config.example.toml lists
+// every key.
 type Config struct {
 	// APIBaseURL overrides the API endpoint, e.g. the local mock
 	// "http://127.0.0.1:8642/v2/". Empty means the live API.
-	APIBaseURL string `toml:"api_base_url"`
+	APIBaseURL string  `toml:"api_base_url"`
+	Reviews    Reviews `toml:"reviews"`
+	Lessons    Lessons `toml:"lessons"`
+	Audio      Audio   `toml:"audio"`
+	Display    Display `toml:"display"`
 }
+
+// Reviews are the review session settings.
+type Reviews struct {
+	Order         string `toml:"order"`       // see ReviewOrders; "" = "wanikani"
+	ActiveSize    int    `toml:"active_size"` // 0 = the default (10)
+	Limit         int    `toml:"limit"`       // 0 = all
+	BackToBack    bool   `toml:"back_to_back"`
+	ReadingFirst  bool   `toml:"reading_first"`
+	Strictness    string `toml:"strictness"` // see Strictnesses; "" = "wanikani"
+	AllowUndo     bool   `toml:"allow_undo"`
+	AutoplayAudio *bool  `toml:"autoplay_audio"` // nil = WaniKani's preference
+}
+
+// Lessons are the lesson settings.
+type Lessons struct {
+	BatchSize     int    `toml:"batch_size"` // 0 = WaniKani's preference
+	Order         string `toml:"order"`      // see LessonOrders; "" = "wanikani"
+	AutoplayAudio *bool  `toml:"autoplay_audio"`
+}
+
+// Audio picks the player.
+type Audio struct {
+	Player string `toml:"player"` // a command line; "" = the first one found
+}
+
+// Display is about drawing.
+type Display struct {
+	Gfx  string `toml:"gfx"`  // see GfxTiers; "" = "auto"
+	Font string `toml:"font"` // a font file; "" = discovered
+}
+
+// The values the enum settings accept. "wanikani" follows the WaniKani
+// preference of the same name.
+var (
+	ReviewOrders = []string{"wanikani", "shuffled", "lower_levels_first", "lower_stages_first", "by_type"}
+	LessonOrders = []string{"wanikani", "ascending_level_then_subject", "ascending_level_then_shuffled", "shuffled"}
+	Strictnesses = []string{"wanikani", "strict", "lenient"}
+	GfxTiers     = []string{"auto", "kitty", "plain"}
+)
 
 // Load reads config.toml. A missing file gives the zero Config.
 func Load(path string) (Config, error) {
@@ -85,5 +133,40 @@ func Load(path string) (Config, error) {
 	if undecoded := md.Undecoded(); len(undecoded) > 0 {
 		return Config{}, fmt.Errorf("config: %s: unknown setting %q", path, undecoded[0].String())
 	}
+	if err := c.validate(); err != nil {
+		return Config{}, fmt.Errorf("config: %s: %w", path, err)
+	}
 	return c, nil
+}
+
+func (c Config) validate() error {
+	for _, e := range []struct {
+		key, val string
+		allowed  []string
+	}{
+		{"reviews.order", c.Reviews.Order, ReviewOrders},
+		{"reviews.strictness", c.Reviews.Strictness, Strictnesses},
+		{"lessons.order", c.Lessons.Order, LessonOrders},
+		{"display.gfx", c.Display.Gfx, GfxTiers},
+	} {
+		if e.val != "" && !slices.Contains(e.allowed, e.val) {
+			return fmt.Errorf("%s = %q: use one of %s", e.key, e.val, strings.Join(e.allowed, ", "))
+		}
+	}
+	for _, e := range []struct {
+		key string
+		val int
+	}{
+		{"reviews.active_size", c.Reviews.ActiveSize},
+		{"reviews.limit", c.Reviews.Limit},
+		{"lessons.batch_size", c.Lessons.BatchSize},
+	} {
+		if e.val < 0 {
+			return fmt.Errorf("%s = %d: must be 0 or more", e.key, e.val)
+		}
+	}
+	if c.Audio.Player != "" && len(strings.Fields(c.Audio.Player)) == 0 {
+		return fmt.Errorf("audio.player is blank")
+	}
+	return nil
 }

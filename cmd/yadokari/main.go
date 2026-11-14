@@ -2,6 +2,7 @@
 package main
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"flag"
@@ -46,7 +47,13 @@ func run() error {
 	dbPath := flag.String("db", "", "database path (default: ~/.local/share/yadokari/yadokari.db)")
 	syncOnly := flag.Bool("sync", false, "sync, print a summary and exit (no TUI)")
 	logout := flag.Bool("logout", false, "remove the stored API token and exit")
-	gfxFlag := flag.String("gfx", "auto", "graphics tier: auto, kitty or plain")
+	gfxFlag := flag.String("gfx", "", "graphics tier: auto, kitty or plain (default: config display.gfx, else auto)")
+	flag.Usage = func() {
+		out := flag.CommandLine.Output()
+		fmt.Fprintf(out, "Usage: yadokari [flags]\n\nFlags:\n")
+		flag.PrintDefaults()
+		fmt.Fprintf(out, "\nSettings: ~/.config/yadokari/config.toml (every key is documented in\ndocs/config.example.toml, https://github.com/jtharris/yadokari).\n")
+	}
 	flag.Parse()
 
 	if *showVersion {
@@ -120,7 +127,10 @@ func run() error {
 		return syncAndReport(ctx, syncer, &wksync.Uploader{Client: client, Store: st})
 	}
 
-	rdeps, warning, err := reviewDeps(client, st, *gfxFlag)
+	if *gfxFlag == "" {
+		*gfxFlag = cmp.Or(cfg.Display.Gfx, "auto")
+	}
+	rdeps, warning, err := reviewDeps(client, st, cfg, *gfxFlag)
 	if err != nil {
 		return err
 	}
@@ -138,15 +148,20 @@ func run() error {
 
 // reviewDeps finds the font and graphics tier for the review screen. A
 // missing font is not fatal: glyphs fall back to the terminal's own font.
-func reviewDeps(client *wk.Client, st *store.Store, gfxTier string) (ui.ReviewDeps, string, error) {
-	rd := ui.ReviewDeps{Uploader: &wksync.Uploader{Client: client, Store: st}}
+func reviewDeps(client *wk.Client, st *store.Store, cfg config.Config, gfxTier string) (ui.ReviewDeps, string, error) {
+	rd := ui.ReviewDeps{
+		Uploader: &wksync.Uploader{Client: client, Store: st},
+		Settings: ui.Settings{Reviews: cfg.Reviews, Lessons: cfg.Lessons},
+	}
 	cacheDir, err := os.UserCacheDir()
 	if err != nil {
 		cacheDir = os.TempDir()
 	}
 	rd.Images = glyph.ImageCache{Dir: filepath.Join(cacheDir, "yadokari", "images")}
 	rd.Sounds = glyph.ImageCache{Dir: filepath.Join(cacheDir, "yadokari", "audio")}
-	if player, err := audio.Find(exec.LookPath); err == nil {
+	if cfg.Audio.Player != "" {
+		rd.Audio = audio.Command(cfg.Audio.Player)
+	} else if player, err := audio.Find(exec.LookPath); err == nil {
 		rd.Audio = player
 	} else {
 		rd.AudioErr = err // shown when p is pressed; not worth a startup warning
@@ -166,7 +181,7 @@ func reviewDeps(client *wk.Client, st *store.Store, gfxTier string) (ui.ReviewDe
 	if err != nil {
 		return rd, "", err
 	}
-	font, err := glyph.FindFont("")
+	font, err := glyph.FindFont(cfg.Display.Font)
 	warning := ""
 	if err != nil {
 		warning = err.Error() + "; showing kanji in the terminal's font"

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"os/exec"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -107,5 +108,15 @@ func TestPlay(t *testing.T) {
 	}
 	if time.Since(start) > 3*time.Second {
 		t.Error("the first play was not stopped")
+	}
+}
+
+func TestCommand(t *testing.T) {
+	p := Command("/usr/bin/mpv  --no-video")
+	if p.Name != "/usr/bin/mpv" || !slices.Equal(p.Types, []string{MPEG, WebM}) || !slices.Equal(p.argv, []string{"/usr/bin/mpv", "--no-video"}) {
+		t.Errorf("mpv: %+v", p)
+	}
+	if p := Command("my-player"); !slices.Equal(p.Types, []string{MPEG}) {
+		t.Errorf("unknown player: %+v", p.Types)
 	}
 }

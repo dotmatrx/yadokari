@@ -1,0 +1,76 @@
+# yadokari settings: ~/.config/yadokari/config.toml (or $XDG_CONFIG_HOME/yadokari/).
+#
+# Every key is optional; an empty or missing file is the same as the defaults
+# below. Settings that mirror a WaniKani preference ("wanikani", or a commented
+# autoplay key) follow your preference on the WaniKani website unless set here.
+# A changed setting applies from the next session; a resumed session keeps the
+# settings it started with. Precedence: command-line flag → this file →
+# WaniKani preference → built-in default.
+
+# The API endpoint. Empty: the live WaniKani API. The local mock is
+# "http://127.0.0.1:8642/v2/". --base overrides it.
+api_base_url = ""
+
+[reviews]
+# The order items come up in:
+#   wanikani            your WaniKani preference (shuffled or lower levels first)
+#   shuffled            random
+#   lower_levels_first  lower levels first, shuffled within a level
+#   lower_stages_first  lower SRS stages (Apprentice) first
+#   by_type             radicals, then kanji, then vocabulary
+order = "wanikani"
+
+# How many items are in play at once. Questions are drawn from these; a new
+# item comes in as each one is finished. 0: the default, 10.
+active_size = 10
+
+# The most items in one session. 0: all that are due.
+limit = 0
+
+# Ask an item's meaning and reading one right after the other.
+back_to_back = false
+# With back_to_back: the reading first.
+reading_first = false
+
+# How many typos a meaning may have:
+#   wanikani  like WaniKani (none for short words, more for longer ones)
+#   strict    exact answers only
+#   lenient   one more than WaniKani allows
+strictness = "wanikani"
+
+# After a wrong answer, Backspace puts the question back with your answer to
+# edit, and the miss isn't counted. WaniKani has no such key; it's off by default.
+allow_undo = false
+
+# Play the reading after a correct reading answer. Unset: your WaniKani
+# preference ("Autoplay audio in reviews").
+# autoplay_audio = true
+
+[lessons]
+# Items per lesson batch. 0: your WaniKani preference.
+batch_size = 0
+
+# The order lessons come in:
+#   wanikani                       your WaniKani preference
+#   ascending_level_then_subject   by level, then WaniKani's order (radicals, kanji, vocabulary)
+#   ascending_level_then_shuffled  by level, shuffled within a level
+#   shuffled                       random
+order = "wanikani"
+
+# Play the reading when a lesson reaches it. Unset: your WaniKani preference.
+# autoplay_audio = true
+
+[audio]
+# The command that plays pronunciations; the file path is added at the end.
+# Empty: the first of pw-play, paplay, ffplay or mpv that is installed.
+# Examples: "mpv --no-terminal --no-video", "ffplay -nodisp -autoexit -loglevel error"
+player = ""
+
+[display]
+# How glyphs are drawn: auto (ask the terminal), kitty (kitty graphics, e.g.
+# Ghostty, kitty) or plain (the terminal's own font). --gfx overrides it.
+gfx = "auto"
+
+# A font file (.ttf, .otf, .ttc) with kanji and kana for the glyphs. Empty: ask
+# fontconfig for a Japanese font, then try well-known paths.
+font = ""
