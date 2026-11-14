@@ -9,7 +9,7 @@ up; delete it when done or dropped.
 | 2026-11-11 | Audio voice choice in the config file | Player override and autoplay overrides are config keys (2026-11-14); the voice still follows WaniKani's default voice |
 | 2026-11-08 | Packaging beyond `just install`: tagged releases (goreleaser), then maybe COPR / AUR / Homebrew | Design doc open question; M5. The binary is static, so release artefacts are simple |
 | 2026-11-08 | A config setting to make `--live` the default | Needs the user to relax the safety rule in CLAUDE.md (writes only with `--live`); a shell alias does the job meanwhile |
-| 2026-11-07 | Add the typed answer as a user synonym (ctrl+s after a wrong meaning) | Needs `POST/PUT /study_materials`; design doc puts it in M5 |
+| 2026-11-07 | Add the typed answer as a user synonym (ctrl+s after a wrong meaning) | Needs `POST/PUT /study_materials`. **Deferred 2026-11-14 until the distribution decision** (the user doesn't use synonyms). Forum search: no usage numbers; a steady trickle of threads over years asking for more synonyms and for adding them in lessons (three generations of a lesson-synonyms userscript), so a real but minority habit, probably expected by people coming from the website or Tsurukame. Synonyms added on the website already work here (they sync and the answer check accepts them) |
 | 2026-11-07 | Mnemonics and hints in the answer panel | `i` opens the full item page after an answer (2026-11-11); this would put the mnemonic inline too. Revisit after dogfooding `i` |
 | 2026-11-07 | Pre-upload the next 2–3 glyphs to kitty so Enter never waits | Design doc idea; not needed so far |
 | 2026-11-07 | Lightning mode (auto-advance after a correct answer) | Design doc option; not built |

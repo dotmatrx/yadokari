@@ -16,7 +16,7 @@ a milestone moves.
 | M3: live reviews | Dogfooding | Built; the two weeks of daily use (to 2026-11-22) run alongside M4 |
 | UI pass | Done | Panels frame on every screen; approved 2026-11-11 |
 | M4: lessons | Done (v0.4.0) | Item pages with mnemonic markup, lessons + quiz, `PUT /assignments/:id/start`, audio; live-verified 2026-11-11 |
-| M5: polish | In progress | Config file done (2026-11-14); next add synonym; then font roulette, themes, packaging |
+| M5: polish | In progress | Config file done (2026-11-14); add synonym deferred to the distribution decision; font roulette, themes, packaging |
 
 ## Versions
 
@@ -47,8 +47,9 @@ someone else (after M4 and M5's packaging). `just build`/`just install` stamp
   reviews queued while offline, the head row retried, all sent exactly once after
   reconnecting. The user's feedback: on-screen errors were raw Go errors (URLs, IDs);
   fixed the same day — plain words on screen, details in `yadokari.log`.
-- **M5 started 2026-11-14:** step 1, the config file, is done (plan below). Next: add
-  synonym (ctrl+s after a wrong meaning). Then font roulette, themes, packaging; the
+- **M5 started 2026-11-14:** step 1, the config file, is done (plan below). Add synonym
+  is deferred until deciding whether to distribute (backlog). Font roulette, themes,
+  packaging remain; the
   backlog holds the candidates.
 - Daily driver: Ghostty on the host, app from the `yadokari` toolbox (kitty tier via
   `gfx.Probe`); `just install` puts a static binary in `~/.local/bin`.
