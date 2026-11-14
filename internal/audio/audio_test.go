@@ -85,8 +85,10 @@ func TestPlay(t *testing.T) {
 		t.Errorf("failing player: %v", err)
 	}
 
-	// A second Play stops the first, which then reports no error.
-	slow := New([]string{MPEG}, "sh", "-c", "sleep 5", "sh")
+	// A second Play stops the first, which then reports no error. "; exit 0"
+	// keeps every shell from exec'ing sleep, so the player has a child
+	// (as dash always does, and some real players do): it must stop too.
+	slow := New([]string{MPEG}, "sh", "-c", "sleep 5; exit 0", "sh")
 	first := make(chan error, 1)
 	start := time.Now()
 	go func() { first <- slow.Play(ctx, "a.mp3") }()

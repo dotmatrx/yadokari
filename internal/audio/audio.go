@@ -14,6 +14,7 @@ import (
 	"strings"
 	"sync"
 	"syscall"
+	"time"
 
 	"github.com/jtharris/yadokari/internal/wk"
 )
@@ -120,10 +121,15 @@ func (p *Player) Start(ctx context.Context, path string) (wait func() error, err
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	// Stop the player's whole process group: a player (or a shell wrapper,
+	// e.g. dash for `sh -c`) may run the decoder as a child, which would
+	// keep playing and hold stderr open after its parent died.
+	cmd.Cancel = func() error { return killGroup(cmd) }
+	cmd.WaitDelay = time.Second // never hang on a pipe a stray child holds
 
 	p.mu.Lock()
 	if p.cur != nil && p.cur.Process != nil {
-		_ = p.cur.Process.Kill()
+		_ = killGroup(p.cur)
 	}
 	if err := cmd.Start(); err != nil {
 		p.mu.Unlock()
@@ -156,3 +162,9 @@ func (p *Player) Start(ctx context.Context, path string) (wait func() error, err
 
 // Formats returns the content types the player plays, preferred first.
 func (p *Player) Formats() []string { return p.Types }
+
+// killGroup kills the process group a player was started in (Setpgid makes
+// its PID the group ID).
+func killGroup(cmd *exec.Cmd) error {
+	return syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
+}
