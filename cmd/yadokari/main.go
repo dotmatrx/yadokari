@@ -128,7 +128,7 @@ func run() error {
 	}
 
 	if t, ok := ui.ThemeNamed(cmp.Or(cfg.Display.Theme, ui.DefaultTheme.Name)); ok {
-		ui.SetTheme(t)
+		ui.SetTheme(t.WithColours(cfg.Theme))
 	}
 	if *gfxFlag == "" {
 		*gfxFlag = cmp.Or(cfg.Display.Gfx, "auto")

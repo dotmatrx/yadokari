@@ -1,6 +1,9 @@
 package ui
 
 import (
+	"image/color"
+
+	"charm.land/lipgloss/v2"
 	"strings"
 	"testing"
 
@@ -127,5 +130,18 @@ func TestThemeNamesMatchConfig(t *testing.T) {
 	}
 	if strings.Join(names, ",") != strings.Join(config.ThemeNames, ",") {
 		t.Errorf("ui.Themes %v, config.ThemeNames %v", names, config.ThemeNames)
+	}
+}
+
+func TestThemeWithColours(t *testing.T) {
+	th := themeYadokari.WithColours(config.Colours{Kanji: "#112233", Line: "7", Ink: "#000000"})
+	if r, g, b, _ := th.Kanji.RGBA(); r>>8 != 0x11 || g>>8 != 0x22 || b>>8 != 0x33 {
+		t.Errorf("kanji %v", th.Kanji)
+	}
+	if th.Line != lipgloss.Color("7") || th.Ink != (color.RGBA{0, 0, 0, 0xff}) {
+		t.Errorf("line %v ink %v", th.Line, th.Ink)
+	}
+	if th.Radical != themeYadokari.Radical || th.Vocabulary != themeYadokari.Vocabulary {
+		t.Error("unset colours keep the theme's")
 	}
 }

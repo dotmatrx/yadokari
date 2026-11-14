@@ -736,17 +736,12 @@ func (r *Review) drawGlyph(it store.ReviewItem, cols, rows int, bg color.Color) 
 // caller falls back to plain text).
 func drawSubjectGlyph(rd gfx.Renderer, ready bool, src gfx.Source, missing bool, cols, rows int, bg color.Color) (string, error) {
 	if rd == nil || (rd.Tier() == gfx.Kitty && !ready) {
-		return strings.TrimSuffix(strings.Repeat(bgSGR(bg)+strings.Repeat(" ", cols)+"\x1b[m\n", rows), "\n"), nil
+		return strings.TrimSuffix(strings.Repeat(gfx.BgSGR(bg)+strings.Repeat(" ", cols)+"\x1b[m\n", rows), "\n"), nil
 	}
 	if missing {
 		return "", errors.New("image not loaded")
 	}
 	return rd.Draw(src, cols, rows, glyphFG, bg)
-}
-
-func bgSGR(c color.Color) string {
-	cr, cg, cb, _ := c.RGBA()
-	return fmt.Sprintf("\x1b[48;2;%d;%d;%dm", cr>>8, cg>>8, cb>>8)
 }
 
 func (r *Review) uploadStatus() string {

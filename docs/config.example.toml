@@ -93,3 +93,20 @@ roulette = false
 # (*-VF.ttc) can't be drawn, so install static ones (on Fedora:
 # google-noto-serif-cjk-fonts, ipa-exmincho-fonts, ipa-exgothic-fonts).
 roulette_fonts = []
+
+[theme]
+# Change single colours of the theme above. Each takes "#rrggbb", or a number
+# "0"–"255" for a colour of your terminal's palette (e.g. "4" is its blue),
+# which then follows your terminal's colour scheme. Empty: the theme's colour.
+radical = ""     # radicals: the glyph field, marks and mnemonic text
+kanji = ""
+vocabulary = ""
+ink = ""         # the glyph drawn on its field: "#rrggbb" only
+lessons = ""     # the dashboard's lesson count
+reviews = ""     # the dashboard's review count
+bar = ""         # the review forecast bars
+correct = ""     # the answer box after a right answer
+wrong = ""       # the answer box after a wrong answer
+warn = ""        # nudges: wrapping up, a near miss
+error = ""       # failures: sync, upload, a rejected review
+line = ""        # panel borders (default: the terminal's grey, "8")

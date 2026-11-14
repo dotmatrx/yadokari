@@ -17,7 +17,9 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/BurntSushi/toml"
@@ -79,6 +81,35 @@ type Config struct {
 	Lessons    Lessons `toml:"lessons"`
 	Audio      Audio   `toml:"audio"`
 	Display    Display `toml:"display"`
+	Theme      Colours `toml:"theme"`
+}
+
+// Colours override single colours of the chosen theme: "#rrggbb", or a
+// terminal palette number "0"–"255" (the terminal's own shade). Ink is the
+// glyph itself, drawn into an image, so it takes "#rrggbb" only.
+type Colours struct {
+	Radical    string `toml:"radical"`
+	Kanji      string `toml:"kanji"`
+	Vocabulary string `toml:"vocabulary"`
+	Ink        string `toml:"ink"`
+	Lessons    string `toml:"lessons"`
+	Reviews    string `toml:"reviews"`
+	Bar        string `toml:"bar"`
+	Correct    string `toml:"correct"`
+	Wrong      string `toml:"wrong"`
+	Warn       string `toml:"warn"`
+	Error      string `toml:"error"`
+	Line       string `toml:"line"`
+}
+
+var hexColour = regexp.MustCompile(`^#[0-9a-fA-F]{6}$`)
+
+func validColour(s string, paletteOK bool) bool {
+	if hexColour.MatchString(s) {
+		return true
+	}
+	n, err := strconv.Atoi(s)
+	return paletteOK && err == nil && n >= 0 && n <= 255
 }
 
 // Reviews are the review session settings.
@@ -170,6 +201,24 @@ func (c Config) validate() error {
 		if e.val < 0 {
 			return fmt.Errorf("%s = %d: must be 0 or more", e.key, e.val)
 		}
+	}
+	t := c.Theme
+	for _, e := range []struct {
+		key, val  string
+		paletteOK bool
+	}{
+		{"radical", t.Radical, true}, {"kanji", t.Kanji, true}, {"vocabulary", t.Vocabulary, true},
+		{"ink", t.Ink, false}, {"lessons", t.Lessons, true}, {"reviews", t.Reviews, true},
+		{"bar", t.Bar, true}, {"correct", t.Correct, true}, {"wrong", t.Wrong, true},
+		{"warn", t.Warn, true}, {"error", t.Error, true}, {"line", t.Line, true},
+	} {
+		if e.val == "" || validColour(e.val, e.paletteOK) {
+			continue
+		}
+		if e.paletteOK {
+			return fmt.Errorf("theme.%s = %q: use \"#rrggbb\" or a palette number \"0\"–\"255\"", e.key, e.val)
+		}
+		return fmt.Errorf("theme.%s = %q: use \"#rrggbb\"", e.key, e.val)
 	}
 	if c.Audio.Player != "" && len(strings.Fields(c.Audio.Player)) == 0 {
 		return fmt.Errorf("audio.player is blank")

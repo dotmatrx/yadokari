@@ -6,6 +6,7 @@ import (
 
 	"charm.land/lipgloss/v2"
 
+	"github.com/jtharris/yadokari/internal/config"
 	"github.com/jtharris/yadokari/internal/markup"
 	"github.com/jtharris/yadokari/internal/wk"
 )
@@ -17,7 +18,8 @@ type Theme struct {
 	Name string
 	// Subject types: the glyph field behind the characters, and marks
 	// beside items and in mnemonics.
-	Radical, Kanji, Vocabulary color.RGBA
+	// A palette colour (lipgloss.Color("6")) paints the terminal's own shade.
+	Radical, Kanji, Vocabulary color.Color
 	// Ink is the glyph drawn on its field.
 	Ink color.RGBA
 	// Lessons and Reviews mark the dashboard's counts; Bar fills the
@@ -60,6 +62,32 @@ var (
 	DefaultTheme = themeWaniKani
 )
 
+// WithColours applies the config file's [theme] overrides (validated by
+// config.Load).
+func (t Theme) WithColours(c config.Colours) Theme {
+	set := func(dst *color.Color, s string) {
+		if s != "" {
+			*dst = lipgloss.Color(s)
+		}
+	}
+	set(&t.Radical, c.Radical)
+	set(&t.Kanji, c.Kanji)
+	set(&t.Vocabulary, c.Vocabulary)
+	set(&t.Lessons, c.Lessons)
+	set(&t.Reviews, c.Reviews)
+	set(&t.Bar, c.Bar)
+	set(&t.Correct, c.Correct)
+	set(&t.Wrong, c.Wrong)
+	set(&t.Warn, c.Warn)
+	set(&t.Error, c.Error)
+	set(&t.Line, c.Line)
+	if c.Ink != "" {
+		r, g, b, _ := lipgloss.Color(c.Ink).RGBA()
+		t.Ink = color.RGBA{uint8(r >> 8), uint8(g >> 8), uint8(b >> 8), 0xff}
+	}
+	return t
+}
+
 // ThemeNamed returns the theme of that name.
 func ThemeNamed(name string) (Theme, bool) {
 	i := slices.IndexFunc(Themes, func(t Theme) bool { return t.Name == name })
@@ -72,7 +100,7 @@ func ThemeNamed(name string) (Theme, bool) {
 // The styles screens draw with, set from the theme by SetTheme. One theme
 // per process (cmd/preview switches between renders).
 var (
-	typeColour map[string]color.RGBA
+	typeColour map[string]color.Color
 	glyphFG    color.RGBA
 
 	boldSt    = lipgloss.NewStyle().Bold(true)
@@ -92,7 +120,7 @@ func init() { SetTheme(DefaultTheme) }
 // SetTheme makes t the UI's colours.
 func SetTheme(t Theme) {
 
-	typeColour = map[string]color.RGBA{
+	typeColour = map[string]color.Color{
 		wk.ObjectRadical:        t.Radical,
 		wk.ObjectKanji:          t.Kanji,
 		wk.ObjectVocabulary:     t.Vocabulary,

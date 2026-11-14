@@ -18,6 +18,7 @@ package gfx
 
 import (
 	"fmt"
+	"github.com/charmbracelet/x/ansi"
 	"image"
 	"image/color"
 	"os"
@@ -131,7 +132,21 @@ func rgb(c color.Color) (r, g, b uint8) {
 	return uint8(cr >> 8), uint8(cg >> 8), uint8(cb >> 8)
 }
 
-func bgSGR(c color.Color) string {
+func bgSGR(c color.Color) string { return BgSGR(c) }
+
+// BgSGR sets the background colour: a palette colour (ansi.BasicColor or
+// IndexedColor, e.g. lipgloss.Color("6")) by its index, so the terminal
+// paints its own shade; anything else as 24-bit RGB.
+func BgSGR(c color.Color) string {
+	switch c := c.(type) {
+	case ansi.BasicColor:
+		if c < 8 {
+			return fmt.Sprintf("\x1b[%dm", 40+int(c))
+		}
+		return fmt.Sprintf("\x1b[%dm", 100+int(c)-8)
+	case ansi.IndexedColor:
+		return fmt.Sprintf("\x1b[48;5;%dm", int(c))
+	}
 	r, g, b := rgb(c)
 	return fmt.Sprintf("\x1b[48;2;%d;%d;%dm", r, g, b)
 }

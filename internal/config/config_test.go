@@ -211,6 +211,9 @@ func TestConfigRejectsBadValues(t *testing.T) {
 		{"[display]\ngfx = \"sixel\"", "display.gfx"},
 		{"[audio]\nplayer = \"  \"", "audio.player is blank"},
 		{"[reviews]\nordr = \"shuffled\"", `unknown setting "reviews.ordr"`},
+		{"[theme]\nkanji = \"pink\"", `theme.kanji = "pink": use "#rrggbb" or a palette number`},
+		{"[theme]\nline = \"256\"", "theme.line"},
+		{"[theme]\nink = \"7\"", `theme.ink = "7": use "#rrggbb"`},
 	} {
 		path := filepath.Join(t.TempDir(), "config.toml")
 		if err := os.WriteFile(path, []byte(c.toml), 0o600); err != nil {
