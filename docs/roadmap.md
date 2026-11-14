@@ -134,6 +134,65 @@ live API without `--live`, as reviews are.
    header onto one `headerLine` helper.
 5. ~~Tag v0.4.0~~ Done 2026-11-11.
 
+## M5 plan, step 1: config file (drafted 2026-11-14)
+
+Expose settings that already exist in code through `~/.config/yadokari/config.toml`.
+No settings screen yet; the file is the interface. Nothing new is built except the undo
+key and a player override.
+
+**Precedence:** flag → config file → WaniKani preference (where one exists) → built-in
+default. A key that mirrors a WaniKani preference defaults to `"wanikani"` (or unset),
+so an empty file behaves exactly like today.
+
+```toml
+api_base_url = ""            # exists today
+
+[reviews]
+order = "wanikani"           # wanikani | shuffled | lower_levels_first | lower_stages_first | by_type
+active_size = 10             # items in play at once
+limit = 0                    # max items per session; 0 = all
+back_to_back = false         # an item's meaning and reading consecutively
+reading_first = false        # with back_to_back
+strictness = "wanikani"      # meaning typos: wanikani | strict | lenient
+allow_undo = false           # a key to retype after a wrong answer (see below)
+# autoplay_audio = true      # unset: WaniKani's reviews_autoplay_audio
+
+[lessons]
+batch_size = 0               # 0: WaniKani's lessons_batch_size
+order = "wanikani"           # wanikani | ascending_level_then_shuffled | shuffled | ascending_level_then_subject
+# autoplay_audio = true      # unset: WaniKani's lessons_autoplay_audio
+
+[audio]
+player = ""                  # command line, e.g. "mpv --no-video"; empty: first of pw-play, paplay, ffplay, mpv
+
+[display]
+gfx = "auto"                 # auto | kitty | plain; --gfx overrides
+font = ""                    # path to a Japanese font; empty: fontconfig, then known paths
+```
+
+Wiring (no new dependencies; BurntSushi/toml is already used):
+
+1. `internal/config`: the sections above as typed structs; `*bool` for "unset follows
+   WaniKani". `Load` validates enum values and ranges and names the bad key and the
+   allowed values. Unknown keys stay an error, as today.
+2. `cmd/yadokari`: map the config to `ui.ReviewDeps` (session options, strictness,
+   autoplay overrides, lesson batch/order), `gfx.Choose` (flag still wins),
+   `glyph.FindFont(font)`, and `audio.New` for a player override (the content types
+   come from the command name, falling back to MPEG).
+3. `internal/ui`: `LoadReview` / `pickLessons` / autoplay read the resolved settings
+   instead of `wk.Preferences` directly. Resolve once in one function, table-tested
+   for precedence.
+4. Undo (`allow_undo`): `session.Undo` exists; add a key on a graded wrong answer
+   that puts the question back with the typed answer for editing. The key hint shows
+   only when it's on.
+5. `docs/config.example.toml`: every key, commented, with its default. A test decodes
+   it so it can't drift from the code. `yadokari --help` points to it.
+6. A setting changes the next session, not a saved one: a resumed session keeps the
+   options in its snapshot.
+
+Not in this step: the settings screen, lightning mode and relaxed `n` (new features;
+they become keys when built), voice choice (later).
+
 ## Open questions
 
 - Distribution: `go install` only, or packages too? (design doc)
