@@ -36,13 +36,13 @@ type Uploader struct {
 type UploadResult struct {
 	Sent     int  // accepted by the API
 	Rejected int  // definitively refused; kept and shown, never retried
-	Held     int  // not attempted: live writes are disabled (dry-run)
+	Held     int  // not attempted: a development build against the live API
 	Live     bool // the client points at the live API
 }
 
 // ErrHeld is returned when reviews are being held because writes to the
 // live API are disabled.
-var ErrHeld = errors.New("uploads held: writes to the live WaniKani API are disabled (run with --live)")
+var ErrHeld = errors.New("uploads held: development builds don't write to the live WaniKani API")
 
 // Flush posts every pending review. It stops at the first transient failure
 // (network, rate limit, server error) so reviews go out in order; the

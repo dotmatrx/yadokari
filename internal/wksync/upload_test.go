@@ -104,13 +104,13 @@ func TestUploadHeldForLiveAPI(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer st.Close()
-	live, _ := wk.New("tok") // default base: the live API, no --live
+	live, _ := wk.New("tok") // default base: the live API, a development client
 	st.QueueReview(ctx, 1, wk.ReviewInput{AssignmentID: 1})
 	st.QueueReview(ctx, 2, wk.ReviewInput{AssignmentID: 2})
 
 	res, err := (&Uploader{Client: live, Store: st}).Flush(ctx)
 	if !errors.Is(err, ErrHeld) || res.Held != 2 || res.Sent != 0 || !res.Live {
-		t.Fatalf("live without --live must hold everything: %+v %v", res, err)
+		t.Fatalf("live writes off must hold everything: %+v %v", res, err)
 	}
 	if live.Requests() != 0 {
 		t.Fatal("a request reached the network")

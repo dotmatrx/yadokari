@@ -56,22 +56,31 @@ Use `just` (no Makefile):
 
 WaniKani review submissions (`POST /reviews`) and lesson starts
 (`PUT /assignments/:id/start`) are **irreversible**. All development runs against the
-mock server (`internal/wkmock`). Code must not perform a write against
-`api.wanikani.com` unless the user passed `--live`; dry-run is the default. Never run
-anything with `--live` yourself. Tokens used during development are read-only.
+mock server (`internal/wkmock`, `just dev`).
+
+- **Only builds made to be used write to `api.wanikani.com`:** stamped at build time
+  (`just install`, the GoReleaser release builds) or `go install` of a clean release
+  tag (`cmd/yadokari`: `buildKind` → `liveWrites` → `wk.WithLiveWrites`). Development
+  builds (`go run`, `just run`/`dev`/`build`, tests, a `+dirty` or pseudo-version) can
+  never write to the live host, whatever their flags; there is no flag to allow it
+  (`--live` was removed on 2026-11-14). Keep it that way: no new path may set
+  `WithLiveWrites(true)`.
+- **Never run an installed or release binary** (`~/.local/bin/yadokari`, `dist/`, a
+  download) yourself, except `--version`/`--help`; the user's keyring holds a token
+  that can write. Run development builds, against the mock.
+- Tokens used during development (`.env`) are read-only.
 
 ## Layout
 
 - `cmd/preview` — screen previews and the HTML gallery (`ui.Preview` does the work).
 - `cmd/yadokari` — entry point. Flags: `--base`, `--db`, `--sync` (no TUI), `--logout`,
-  `--gfx auto|kitty|plain`,
-  `--live` (writes; never use it yourself). Logs problems to `yadokari.log` next to the
+  `--gfx auto|kitty|plain`, `--version`. Logs problems to `yadokari.log` next to the
   database (`log/slog`); the UI shows them in plain words via `ui.problem` (no Go
   error text, URLs or IDs on screen; `userError` for messages written for the user).
 - `internal/wk` — typed API client: auth, pagination via `next_url` (same-host only),
   ETags, client-side rate limit + `RateLimit-*` handling, 429 retry; GETs retry on 5xx,
   writes never auto-retry; non-GET to the live host fails with `ErrLiveWritesDisabled`
-  unless built `WithLiveWrites(true)`. `WithWriteLog` appends each write attempt
+  unless built `WithLiveWrites(true)` (only builds made to be used). `WithWriteLog` appends each write attempt
   (request, status, raw response; never the token) as a JSON line; the app writes it
   to `writes.log` next to the database (`~/.local/share/yadokari/`, or `.dev/`).
 - `internal/wkmock` — in-memory fake API (fixtures or `SampleData`), logs all writes,
@@ -115,11 +124,11 @@ anything with `--live` yourself. Tokens used during development are read-only.
   first-run token form (Huh), and the item page (`item.go`: glyph + summary, tabs by
   subject type, mnemonics via `renderMarkup`; `i` opens it after a review answer, hiding
   the part not yet asked; lessons will reuse it). Review sessions are refused against
-  the live API without `--live`. Lessons (`lesson.go`): `l` on the dashboard picks a
+  the live API in a development build (`ReviewDeps.Disabled`). Lessons (`lesson.go`): `l` on the dashboard picks a
   batch (the user's batch size and presentation order), steps through each item's page,
   then a quiz that is the review screen in lesson mode (`Review.name == "lessons"`):
   a finished item is queued as a start (`store.QueueStart`), misses cost nothing, and
-  the quiz is saved and resumed like reviews. Refused without `--live` too.
+  the quiz is saved and resumed like reviews. Refused in development builds too.
 - `internal/session` — review engine: backlog → active set (default 10) → random question; per-part
   misses; `Completion` = what `POST /reviews` needs; wrap-up, limit, ordering, back-to-back,
   undo of a wrong answer; JSON `Snapshot`/`Restore`. Pure.

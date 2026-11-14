@@ -8,16 +8,17 @@ version := `git describe --always --dirty --tags`
 default:
     @just --list
 
-# Build the binary into bin/
+# Build a development binary into bin/ (never writes to the live API)
 build:
-    go build -ldflags "-X main.version={{version}}" -o {{bin}} ./cmd/yadokari
+    go build -o {{bin}} ./cmd/yadokari
 
-# Install a static binary to ~/.local/bin (shared by the host and the toolbox)
+# Install a static binary to ~/.local/bin (shared by the host and the toolbox).
+# Stamped with the version, it is a build for use: it writes to the live API.
 install:
     CGO_ENABLED=0 go build -trimpath -ldflags "-s -w -X main.version={{version}}" -o ~/.local/bin/yadokari ./cmd/yadokari
     @echo "installed ~/.local/bin/yadokari $(~/.local/bin/yadokari --version)"
 
-# Run the app (dry-run by default); pass extra flags after the recipe name
+# Run a development build (never writes to the live API); extra flags after the recipe name
 run *args:
     go run ./cmd/yadokari {{args}}
 

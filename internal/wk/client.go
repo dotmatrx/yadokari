@@ -31,7 +31,7 @@ const liveHost = "api.wanikani.com"
 
 // ErrLiveWritesDisabled is returned for a write to the live API when the
 // client was not explicitly allowed to make one.
-var ErrLiveWritesDisabled = errors.New("wk: writes to the live WaniKani API are disabled (dry-run); pass --live to enable")
+var ErrLiveWritesDisabled = errors.New("wk: this build doesn't write to the live WaniKani API (a development build)")
 
 // APIError is a non-2xx response from the API.
 type APIError struct {
@@ -127,7 +127,8 @@ func WithRateLimit(perMinute, burst int) Option {
 	}
 }
 
-// WithLiveWrites allows writes to the live API. Only the --live flag should set this.
+// WithLiveWrites allows writes to the live API. Only the app's own builds
+// made to be used set it (cmd/yadokari: liveWrites), never development builds.
 func WithLiveWrites(allow bool) Option {
 	return func(c *Client) error { c.liveWrites = allow; return nil }
 }

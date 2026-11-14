@@ -260,9 +260,9 @@ func TestReviewItemsMatchQueue(t *testing.T) {
 
 func TestReviewsDisabledShowsNotice(t *testing.T) {
 	h := newHarness(t)
-	h.app.rdeps.Disabled = "Reviews against the live API need --live."
+	h.app.rdeps.Disabled = "This is a development build: it never sends answers to WaniKani."
 	h.key("r")
-	if h.app.screen != dashScreen || !strings.Contains(h.screen(), "need --live") {
+	if h.app.screen != dashScreen || !strings.Contains(h.screen(), "development build") {
 		t.Errorf("expected a notice on the dashboard:\n%s", h.screen())
 	}
 	if len(h.mock.Writes()) != 0 {

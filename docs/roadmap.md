@@ -333,6 +333,17 @@ Not verified yet:
   is private, the cask can't download the release, so the tap waits for going public;
   until then the user's Mac takes the release tar.gz (via the GitHub site or `gh`).
 
+## Live writes by build, not `--live` (2026-11-14)
+
+The user decided `--live` had served its purpose (~100 live writes, an offline run,
+lessons and undo, all as expected). Now builds made to be used (`just install`,
+releases, `go install` of a tag) write to the live API by default, and development
+builds never can (no flag; `buildKind` in `cmd/yadokari`). `--live` is gone, with no
+compatibility shim (the user's choice: one user, no scripts). No `--dry-run` either:
+the mock (`--base`, `just dev`) is the development path, and `cmd/wkmock` isn't linked
+into the app. `just build` no longer stamps a version, so `bin/yadokari` is a
+development build. The safety rule in CLAUDE.md was rewritten accordingly.
+
 ## Open questions
 
 - Distribution: GitHub releases + Homebrew tap (decided 2026-11-14); public repo when the user decides.

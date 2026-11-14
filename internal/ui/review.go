@@ -749,7 +749,7 @@ func (r *Review) uploadStatus() string {
 	case r.upErr != "":
 		return fmt.Sprintf("%d waiting to upload: %s", r.pending, r.upErr)
 	case r.held && r.pending > 0:
-		return fmt.Sprintf("%d held (dry-run)", r.pending)
+		return fmt.Sprintf("%d held (dev build)", r.pending)
 	case r.uploading:
 		return "uploading…"
 	case r.pending > 0:

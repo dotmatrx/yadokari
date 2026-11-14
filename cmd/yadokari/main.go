@@ -12,7 +12,9 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"runtime/debug"
+	"strings"
 	"time"
 
 	tea "charm.land/bubbletea/v2"
@@ -27,17 +29,42 @@ import (
 	"github.com/jtharris/yadokari/internal/wksync"
 )
 
-// version is set at build time from `git describe` (the justfile, the
-// release builds); `go install …@v1.2.3` builds get it from the module.
+// version is stamped at build time (`just install`, the release builds).
+// Unstamped builds take the module version: a release tag for
+// `go install …@v1.2.3`, else a development version (v1.2.3+dirty, a
+// pseudo-version) or "dev".
 var version = "dev"
 
+// liveWrites says whether this build may write to the live WaniKani API
+// (submit reviews, start lessons; irreversible). Builds made to be used
+// may; development builds (go run, just run/dev/build, tests) never can,
+// whatever their flags, so trying a change can't touch a real account.
+var liveWrites bool
+
 func init() {
-	if version != "dev" {
-		return
+	module := ""
+	if bi, ok := debug.ReadBuildInfo(); ok {
+		module = bi.Main.Version
 	}
-	if bi, ok := debug.ReadBuildInfo(); ok && bi.Main.Version != "" && bi.Main.Version != "(devel)" {
-		version = bi.Main.Version
+	version, liveWrites = buildKind(version, module)
+}
+
+// pseudoVersion matches the tail Go gives a commit that isn't a tag.
+var pseudoVersion = regexp.MustCompile(`\d{14}-[0-9a-f]{12}$`)
+
+// buildKind decides the version shown and whether the build is one made to
+// be used: stamped at build time, or a module built at a clean release tag.
+func buildKind(stamped, module string) (string, bool) {
+	if stamped != "dev" {
+		return stamped, true
 	}
+	switch {
+	case module == "" || module == "(devel)":
+		return "dev", false
+	case strings.HasPrefix(module, "v") && !strings.Contains(module, "+") && !pseudoVersion.MatchString(module):
+		return module, true
+	}
+	return module, false
 }
 
 // disclaimer goes wherever the app introduces itself.
@@ -56,7 +83,6 @@ func run() error {
 	showVersion := flag.Bool("version", false, "print version and exit")
 	// Writes to the real WaniKani API are irreversible. Nothing may submit
 	// reviews or start assignments unless this flag is set.
-	live := flag.Bool("live", false, "allow writes to the live WaniKani API (default: dry-run)")
 	base := flag.String("base", "", "API base URL (default: config api_base_url, else the live API)")
 	dbPath := flag.String("db", "", "database path (default: ~/.local/share/yadokari/yadokari.db)")
 	syncOnly := flag.Bool("sync", false, "sync, print a summary and exit (no TUI)")
@@ -122,7 +148,7 @@ func run() error {
 	slog.SetDefault(slog.New(slog.NewTextHandler(appLog, nil)).With("version", version))
 
 	ctx := context.Background()
-	client, err := clientWithToken(ctx, tokens, baseURL, wk.WithLiveWrites(*live), wk.WithWriteLog(writeLog), wk.WithVersion(version))
+	client, err := clientWithToken(ctx, tokens, baseURL, wk.WithLiveWrites(liveWrites), wk.WithWriteLog(writeLog), wk.WithVersion(version))
 	if err != nil {
 		return err
 	}
@@ -149,9 +175,9 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	if client.IsLive() && !*live {
+	if client.IsLive() && !liveWrites {
 		// Results would only pile up in the outbox and go stale.
-		rdeps.Disabled = "Reviews and lessons send your answers to WaniKani: start yadokari with --live to allow that."
+		rdeps.Disabled = "This is a development build: it never sends answers to WaniKani. Use the mock (just dev), or install a build (just install)."
 	}
 	if warning != "" {
 		fmt.Fprintln(os.Stderr, "yadokari:", warning)

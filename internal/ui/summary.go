@@ -55,7 +55,7 @@ type Summary struct {
 	Correct   []SummaryItem
 	Incorrect []SummaryItem
 	Pending   int  // reviews still waiting to upload
-	Held      bool // waiting because live writes are disabled
+	Held      bool // waiting: a development build against the live API
 	Lessons   bool // a lesson quiz: items were started, not reviewed
 }
 
@@ -103,7 +103,7 @@ func (s Summary) View(w, h int) string {
 	var status string
 	switch {
 	case s.Held && s.Pending > 0:
-		status = warnSt.Render(fmt.Sprintf("%d %s held, not sent: writes to the live API need --live", s.Pending, noun))
+		status = warnSt.Render(fmt.Sprintf("%d %s held, not sent: development builds don't write to the live API", s.Pending, noun))
 	case s.Pending > 0:
 		status = mutedSt.Render(fmt.Sprintf("%d %s still uploading", s.Pending, noun))
 	default:

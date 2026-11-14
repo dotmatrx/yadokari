@@ -48,18 +48,6 @@ create it; a token without them only shows the dashboard. The token is kept in y
 system keyring (or a `0600` file where there is none); `yadokari --logout` removes it.
 `WANIKANI_API_TOKEN` overrides it.
 
-### `--live`
-
-Submitting a review or starting a lesson can't be undone, so yadokari only sends
-them when you pass `--live`:
-
-```sh
-yadokari --live
-```
-
-Without it, the dashboard works and reviews and lessons are refused. A shell alias
-(`alias yadokari='yadokari --live'`) makes it the default.
-
 ## Use
 
 | Screen | Keys |
@@ -99,7 +87,10 @@ in full).
 
 Go 1.27 and [just](https://github.com/casey/just). `just` lists the recipes:
 `just test`, `just check`, `just build`. Development runs against a fake API
-(`just mock --demo`, then `just dev`), never the live one. See
+(`just mock --demo`, then `just dev`). Submitting a review or starting a lesson can't
+be undone, so development builds (`go run`, `just run`, `just dev`, `just build`)
+never write to WaniKani; only installed builds (`just install`, releases,
+`go install …@vX.Y.Z`) do. See
 [`docs/roadmap.md`](docs/roadmap.md) for where things stand.
 
 ## License

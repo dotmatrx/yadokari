@@ -12,14 +12,14 @@ func TestHeaderLine(t *testing.T) {
 		{text: "12 / 40", rank: rankKey},
 		{text: "85% correct", rank: rankExtra},
 		{text: "wrapping up", rank: rankInfo},
-		{text: "3 held (dry-run)", rank: rankInfo},
+		{text: "3 held (dev build)", rank: rankInfo},
 	}
 	tests := []struct {
 		w            int
 		want, absent []string
 	}{
-		{120, []string{"12 / 40 · 85% correct · wrapping up · 3 held (dry-run)"}, nil},
-		{62, []string{"12 / 40 · wrapping up · 3 held (dry-run)"}, []string{"85%"}},
+		{120, []string{"12 / 40 · 85% correct · wrapping up · 3 held (dev build)"}, nil},
+		{64, []string{"12 / 40 · wrapping up · 3 held (dev build)"}, []string{"85%"}},
 		{60, []string{"12 / 40 · wrapping up"}, []string{"85%", "held"}},
 		{42, []string{"12 / 40 · wrapping up"}, []string{"85%", "held"}},
 		{30, []string{"12 / 40"}, []string{"wrapping"}},
