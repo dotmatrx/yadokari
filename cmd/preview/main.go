@@ -56,6 +56,7 @@ func run() error {
 	fixtures := flag.String("fixtures", "", "recording directory to use instead of demo data (personal data: don't publish)")
 	htmlOut := flag.String("html", "", "write an HTML gallery to this file instead of drawing in the terminal")
 	gfxFlag := flag.String("gfx", "auto", "graphics tier in the terminal: auto, kitty or plain")
+	themeFlag := flag.String("theme", "", `colour theme: a name (wanikani, yadokari), or "all" for each in turn (default: wanikani)`)
 	fontFlag := flag.String("font", "", `glyph font as the roulette would show it: a font file or installed family name, or "all" for each installed Japanese font in turn`)
 	screens, err := parseArgs(flag.CommandLine, os.Args[1:])
 	if err != nil {
@@ -109,30 +110,50 @@ func run() error {
 		}
 	}
 
+	themes := []ui.Theme{ui.DefaultTheme}
+	switch *themeFlag {
+	case "":
+	case "all":
+		themes = ui.Themes
+	default:
+		t, ok := ui.ThemeNamed(*themeFlag)
+		if !ok {
+			return fmt.Errorf("no theme %q", *themeFlag)
+		}
+		themes = []ui.Theme{t}
+	}
+
 	ctx := context.Background()
 	var shots []shot
 	for _, sz := range sizes {
 		for _, screen := range screens {
-			for _, f := range fonts {
-				// A fresh store each time: review previews queue reviews.
-				st, err := loadStore(ctx, data, now)
-				if err != nil {
-					return err
-				}
-				deps := ui.Deps{Store: st, Now: func() time.Time { return now }, Location: time.Local, Endpoint: "mock demo"}
-				rd := ui.ReviewDeps{Renderer: renderer, Font: f}
-				if *fontFlag != "" {
-					rd.Roulette = glyph.PoolOf(f)
-				}
-				out, err := ui.Preview(ctx, deps, rd, screen, sz.w, sz.h)
-				st.Close()
-				if err != nil {
-					return fmt.Errorf("%s at %s: %w", screen, sz, err)
-				}
-				shots = append(shots, shot{screen: screen, size: sz, ansi: out})
-				if *htmlOut == "" {
-					fmt.Print(renderer.Flush())
-					fmt.Printf("\x1b[2m── %s %s %s\x1b[m\n%s\n", screen, sz, strings.Repeat("─", max(sz.w-len(screen)-len(sz.String())-5, 0)), out)
+			for _, th := range themes {
+				ui.SetTheme(th)
+				for _, f := range fonts {
+					// A fresh store each time: review previews queue reviews.
+					st, err := loadStore(ctx, data, now)
+					if err != nil {
+						return err
+					}
+					deps := ui.Deps{Store: st, Now: func() time.Time { return now }, Location: time.Local, Endpoint: "mock demo"}
+					rd := ui.ReviewDeps{Renderer: renderer, Font: f}
+					if *fontFlag != "" {
+						rd.Roulette = glyph.PoolOf(f)
+					}
+					out, err := ui.Preview(ctx, deps, rd, screen, sz.w, sz.h)
+					st.Close()
+					if err != nil {
+						return fmt.Errorf("%s at %s: %w", screen, sz, err)
+					}
+					label := screen
+					if len(themes) > 1 || *themeFlag != "" {
+						label += " · " + th.Name
+					}
+					shots = append(shots, shot{screen: label, size: sz, ansi: out})
+					if *htmlOut == "" {
+						fmt.Print(renderer.Flush())
+						fmt.Printf("\x1b[2m── %s %s %s\x1b[m\n%s\n", label, sz, strings.Repeat("─", max(sz.w-len(label)-len(sz.String())-5, 0)), out)
+					}
 				}
 			}
 		}

@@ -29,7 +29,7 @@ Use `just` (no Makefile):
 - `just preview [screen...] [--size=WxH,...] [--html=FILE]` — render screens
   once from demo data (kitty glyphs in Ghostty); `--html` writes a gallery page. Screens:
   `dashboard`, `review`, `review-reading`, `review-wrong`, `summary`, `item`, `item-vocab`, `lesson`. Use it to iterate on
-  layout; `--font=NAME|all` draws glyphs in each roulette font; `--fixtures=DIR` uses a recording (personal data: never publish that).
+  layout; `--font=NAME|all` draws glyphs in each roulette font; `--theme=NAME|all` each theme; `--fixtures=DIR` uses a recording (personal data: never publish that).
 - `just probe-mock` — read-only full sync against the running mock
 - `just probe-live` — read-only full sync against the live API; records fixtures to
   `testdata/recordings/` (gitignored: contains personal data). Needs a **read-only**
@@ -86,7 +86,9 @@ anything with `--live` yourself. Tokens used during development are read-only.
   precedence flag → file → WaniKani preference → default), and the token store: env
   `WANIKANI_API_TOKEN` → OS keyring → `0600` file fallback. Tests use a fake keyring;
   don't touch the real keyring from tests or tooling without asking the user.
-- `internal/ui` — Bubble Tea screens under a root `App`, all in one frame (`layout.go`:
+- `internal/ui` — colours only from `theme.go` (`Theme` roles → package styles via
+  `SetTheme`; `display.theme`; add a theme to `ui.Themes` and `config.ThemeNames`).
+  Bubble Tea screens under a root `App`, all in one frame (`layout.go`:
   header on the top row via `headerLine` (ranked segments, fits any width; the audio
   badge comes from App's `shared` state), key/status bar on the bottom, rounded `panel`s in ANSI 8
   grey, no painted backgrounds except the review glyph field): dashboard (from the store, sync in

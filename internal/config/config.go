@@ -107,8 +107,9 @@ type Audio struct {
 
 // Display is about drawing.
 type Display struct {
-	Gfx  string `toml:"gfx"`  // see GfxTiers; "" = "auto"
-	Font string `toml:"font"` // a font file; "" = discovered
+	Gfx   string `toml:"gfx"`   // see GfxTiers; "" = "auto"
+	Theme string `toml:"theme"` // see ThemeNames; "" = "wanikani"
+	Font  string `toml:"font"`  // a font file; "" = discovered
 	// Roulette draws each review question in a random Japanese font.
 	Roulette      bool     `toml:"roulette"`
 	RouletteFonts []string `toml:"roulette_fonts"` // files or family names; empty = all installed
@@ -121,6 +122,7 @@ var (
 	LessonOrders = []string{"wanikani", "ascending_level_then_subject", "ascending_level_then_shuffled", "shuffled"}
 	Strictnesses = []string{"wanikani", "strict", "lenient"}
 	GfxTiers     = []string{"auto", "kitty", "plain"}
+	ThemeNames   = []string{"wanikani", "yadokari"} // ui.Themes; a test keeps them in step
 )
 
 // Load reads config.toml. A missing file gives the zero Config.
@@ -151,6 +153,7 @@ func (c Config) validate() error {
 		{"reviews.strictness", c.Reviews.Strictness, Strictnesses},
 		{"lessons.order", c.Lessons.Order, LessonOrders},
 		{"display.gfx", c.Display.Gfx, GfxTiers},
+		{"display.theme", c.Display.Theme, ThemeNames},
 	} {
 		if e.val != "" && !slices.Contains(e.allowed, e.val) {
 			return fmt.Errorf("%s = %q: use one of %s", e.key, e.val, strings.Join(e.allowed, ", "))

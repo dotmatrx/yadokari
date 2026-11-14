@@ -119,3 +119,13 @@ func TestNoUndoByDefault(t *testing.T) {
 		t.Errorf("undo is off by default:\n%s", h.screen())
 	}
 }
+
+func TestThemeNamesMatchConfig(t *testing.T) {
+	var names []string
+	for _, th := range Themes {
+		names = append(names, th.Name)
+	}
+	if strings.Join(names, ",") != strings.Join(config.ThemeNames, ",") {
+		t.Errorf("ui.Themes %v, config.ThemeNames %v", names, config.ThemeNames)
+	}
+}

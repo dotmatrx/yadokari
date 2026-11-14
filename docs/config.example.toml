@@ -67,6 +67,10 @@ order = "wanikani"
 player = ""
 
 [display]
+# Colours: wanikani (WaniKani's type colours) or yadokari (this app's own:
+# teal radicals, coral kanji, indigo vocabulary).
+theme = "wanikani"
+
 # How glyphs are drawn: auto (ask the terminal), kitty (kitty graphics, e.g.
 # Ghostty, kitty) or plain (the terminal's own font). --gfx overrides it.
 gfx = "auto"

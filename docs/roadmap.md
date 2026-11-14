@@ -16,7 +16,7 @@ a milestone moves.
 | M3: live reviews | Dogfooding | Built; the two weeks of daily use (to 2026-11-22) run alongside M4 |
 | UI pass | Done | Panels frame on every screen; approved 2026-11-11 |
 | M4: lessons | Done (v0.4.0) | Item pages with mnemonic markup, lessons + quiz, `PUT /assignments/:id/start`, audio; live-verified 2026-11-11 |
-| M5: polish | In progress | Config file done, font roulette built (2026-11-14); add synonym deferred to the distribution decision; themes, packaging |
+| M5: polish | In progress | Config file, font roulette done; themes started (2026-11-14); add synonym deferred to the distribution decision; packaging |
 
 ## Versions
 
@@ -255,7 +255,7 @@ roulette_fonts = []     # font files; empty: every installed Japanese font, one 
 
 Not tried yet in the real app (Ghostty).
 
-## M5 plan, step 3: themes (drafted 2026-11-14)
+## M5 plan, step 3: themes (started 2026-11-14)
 
 1. Refactor: every colour into one `ui.Theme` of named roles (three type colours,
    lesson/review marks, correct/wrong/warn/error, glyph ink, lines). No visual change.
@@ -274,6 +274,14 @@ crab: a borrowed shell, a tide pool), warm and sea-coloured where WaniKani is
 blue/pink/purple: radical sea-glass teal `#1f8a7d`, kanji coral `#d9572b`, vocabulary
 deep-sea indigo `#4c4fae`, accent sand `#d8b27a`. All carry white glyphs (large text,
 ≥ 3:1). To be judged in the gallery. Open: which theme is the default at release.
+
+**Done 2026-11-14:** 1 (`ui/theme.go`: `Theme` roles, `SetTheme`; previews use the
+same colour codes as before), `display.theme` (wanikani | yadokari; no per-role
+overrides yet), `just preview --theme=NAME|all`, and the gallery:
+https://claude.ai/artifact/SaUCBaDFb3FWyb4eWbUYHL (demo data). yadokari's text colours:
+correct `#6aa84f`, wrong `#c8283c`, warn `#e0b04a`, error `#e0364a`; lessons coral,
+reviews teal, forecast bars sand. Next: the user's verdict on the palette; then
+`[theme]` overrides, `terminal`, high-contrast + `NO_COLOR`.
 
 ## Open questions
 

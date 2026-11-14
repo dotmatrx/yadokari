@@ -127,6 +127,9 @@ func run() error {
 		return syncAndReport(ctx, syncer, &wksync.Uploader{Client: client, Store: st})
 	}
 
+	if t, ok := ui.ThemeNamed(cmp.Or(cfg.Display.Theme, ui.DefaultTheme.Name)); ok {
+		ui.SetTheme(t)
+	}
 	if *gfxFlag == "" {
 		*gfxFlag = cmp.Or(cfg.Display.Gfx, "auto")
 	}
