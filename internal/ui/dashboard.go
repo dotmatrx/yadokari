@@ -58,15 +58,16 @@ type Dashboard struct {
 	pending  int        // reviews waiting to upload
 	rejected []rejected // reviews the API refused
 
-	notice   string
-	syncing  bool
-	phase    string
-	event    wksync.Event
-	syncErr  error
-	upErr    error // the last upload attempt's failure (not "held")
-	events   chan tea.Msg
-	cancel   context.CancelFunc
-	tickedAt time.Time
+	notice      string
+	syncing     bool
+	phase       string
+	event       wksync.Event
+	syncErr     error
+	syncProblem string // syncErr, for the user
+	upProblem   string // the last upload attempt's failure (not "held"), for the user
+	events      chan tea.Msg
+	cancel      context.CancelFunc
+	tickedAt    time.Time
 }
 
 // NewDashboard builds the dashboard.
@@ -215,7 +216,7 @@ func (m *Dashboard) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	case loadedMsg:
 		if msg.err != nil {
-			m.syncErr = msg.err
+			m.syncErr, m.syncProblem = msg.err, problem("loading the dashboard", msg.err)
 			return m, nil
 		}
 		if msg.user != nil {
@@ -227,14 +228,14 @@ func (m *Dashboard) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.phase = msg.Collection
 		return m, listen(m.events)
 	case uploadedMsg:
-		m.upErr = nil
+		m.upProblem = ""
 		if msg.err != nil && !errors.Is(msg.err, wksync.ErrHeld) {
-			m.upErr = msg.err
+			m.upProblem = problem("upload", msg.err)
 		}
 		return m, tea.Batch(m.load(), listen(m.events))
 	case syncPhaseMsg:
 		if msg.err != nil {
-			m.syncErr = msg.err
+			m.syncErr, m.syncProblem = msg.err, problem("sync", msg.err)
 		}
 		if msg.done {
 			m.syncing = false
@@ -273,7 +274,7 @@ func (m *Dashboard) View() tea.View {
 
 func (m *Dashboard) firstSyncLine() string {
 	if m.syncErr != nil {
-		return errSt.Render("First sync failed: " + m.syncErr.Error())
+		return errSt.Render("First sync failed: " + m.syncProblem)
 	}
 	e := m.event
 	if e.Total > 0 {
@@ -286,7 +287,7 @@ func (m *Dashboard) statusLine() string {
 	var s string
 	switch {
 	case m.syncErr != nil && m.loaded:
-		s = errSt.Render("sync failed: "+shortErr(m.syncErr)) + mutedSt.Render(" · showing data from "+ago(m.deps.Now(), m.lastSync))
+		s = errSt.Render("sync failed: "+m.syncProblem) + mutedSt.Render(" · showing data from "+ago(m.deps.Now(), m.lastSync))
 	case m.syncing && m.loaded:
 		s = mutedSt.Render("syncing " + m.phase + "…")
 	case m.loaded:
@@ -294,8 +295,8 @@ func (m *Dashboard) statusLine() string {
 	}
 	if m.pending > 0 {
 		s += mutedSt.Render(fmt.Sprintf(" · %d to upload", m.pending))
-		if m.upErr != nil {
-			s += errSt.Render(" (upload failed: " + shortErr(m.upErr) + ")")
+		if m.upProblem != "" && m.upProblem != m.syncProblem { // say it once
+			s += errSt.Render(" (" + m.upProblem + ")")
 		}
 	}
 	keys := "r reviews · l lessons · s sync · q quit"
@@ -305,14 +306,6 @@ func (m *Dashboard) statusLine() string {
 	help := mutedSt.Render(keys)
 	gap := max(max(m.width, 40)-lipgloss.Width(s)-lipgloss.Width(help)-2, 1)
 	return s + strings.Repeat(" ", gap) + help
-}
-
-func shortErr(err error) string {
-	s := err.Error()
-	if len(s) > 60 {
-		s = s[:57] + "…"
-	}
-	return s
 }
 
 func ago(now, t time.Time) string {

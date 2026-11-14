@@ -4,7 +4,7 @@ Where the project stands and what comes next. The design rationale lives in the 
 doc (link in CLAUDE.md); deferred ideas live in `docs/backlog.md`. Update this file when
 a milestone moves.
 
-**Last updated:** 2026-11-11.
+**Last updated:** 2026-11-14.
 
 ## Milestones
 
@@ -43,7 +43,10 @@ someone else (after M4 and M5's packaging). `just build`/`just install` stamp
   through one place (`App.Update`), enforced by the test harness; headers through
   `headerLine`. Optional: a window-resize check in Ghostty. The item page's empty space
   is left as is until lessons have been used more.
-- **M3 dogfooding** continues to about 2026-11-22.
+- **M3 dogfooding** continues to about 2026-11-22. Offline run done 2026-11-14 (live):
+  reviews queued while offline, the head row retried, all sent exactly once after
+  reconnecting. The user's feedback: on-screen errors were raw Go errors (URLs, IDs);
+  fixed the same day — plain words on screen, details in `yadokari.log`.
 - **Next: M5 polish** (settings, add synonym, font roulette, themes, packaging); the
   backlog holds the candidates.
 - Daily driver: Ghostty on the host, app from the `yadokari` toolbox (kitty tier via

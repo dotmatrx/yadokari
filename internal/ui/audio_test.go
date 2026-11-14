@@ -2,7 +2,6 @@ package ui
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 	"testing"
@@ -133,7 +132,7 @@ func TestReviewAudioRespectsHiddenReading(t *testing.T) {
 func TestAudioProblemsAreShown(t *testing.T) {
 	h := newHarness(t)
 	h.app.rdeps.Audio, h.app.rdeps.Sounds = nil, nil
-	h.app.rdeps.AudioErr = errors.New("no audio player found (install pipewire-utils)")
+	h.app.rdeps.AudioErr = audio.ErrNoPlayer
 	h.key("l")
 	for h.app.lesson.page.data.Subject.Object != wk.ObjectVocabulary {
 		h.key("enter")

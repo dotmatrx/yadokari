@@ -6,6 +6,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"log/slog"
 	"net/url"
 	"os"
 	"os/exec"
@@ -90,6 +91,13 @@ func run() error {
 		return err
 	}
 	defer writeLog.Close()
+	// Problems the UI reports in plain words, with the full error, here.
+	appLog, err := os.OpenFile(filepath.Join(filepath.Dir(*dbPath), "yadokari.log"), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o600)
+	if err != nil {
+		return err
+	}
+	defer appLog.Close()
+	slog.SetDefault(slog.New(slog.NewTextHandler(appLog, nil)).With("version", version))
 
 	ctx := context.Background()
 	client, err := clientWithToken(ctx, tokens, baseURL, wk.WithLiveWrites(*live), wk.WithWriteLog(writeLog), wk.WithVersion(version))

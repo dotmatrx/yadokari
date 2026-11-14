@@ -421,7 +421,7 @@ func TestOfflineReviewsUploadOnNextSync(t *testing.T) {
 	d.Update(windowSize(120, 30))
 	drain(d, tea.Batch(d.load(), d.startSync())) // Init minus its 30 s timer
 	out := ansi.Strip(d.render())
-	if !strings.Contains(out, "1 to upload (upload failed") || len(h.mock.Writes()) != 0 {
+	if !strings.Contains(out, "sync failed: can't reach WaniKani") || !strings.Contains(out, "1 to upload") || len(h.mock.Writes()) != 0 {
 		t.Errorf("offline: the review should stay queued:\n%s", out)
 	}
 

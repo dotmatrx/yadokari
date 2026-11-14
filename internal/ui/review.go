@@ -166,7 +166,7 @@ func LoadReview(ctx context.Context, deps Deps, rdeps ReviewDeps, user wk.User) 
 	}
 
 	if len(items) == 0 {
-		return nil, errors.New("no reviews are due")
+		return nil, userError("no reviews are due")
 	}
 	opts := session.Options{}
 	if user.Preferences.ReviewsPresentationOrder == "lower_levels_first" {
@@ -296,7 +296,7 @@ func (r *Review) Update(msg tea.Msg) (*Review, tea.Cmd) {
 		r.held = errors.Is(msg.err, wksync.ErrHeld)
 		r.upErr = ""
 		if msg.err != nil && !r.held {
-			r.upErr = msg.err.Error()
+			r.upErr = problem("upload", msg.err)
 		}
 		if r.again {
 			r.again = false
@@ -426,13 +426,13 @@ func (r *Review) enter() tea.Cmd {
 	}
 	done, err := r.sess.Answer(correct, r.deps.Now())
 	if err != nil {
-		r.warn = err.Error()
+		r.warn = problem("answer", err)
 		return nil
 	}
 	var cmd tea.Cmd
 	if done != nil && r.lessons() {
 		if err := r.deps.Store.QueueStart(context.Background(), done.AssignmentID, done.SubjectID, done.CompletedAt.UTC()); err != nil {
-			r.upErr = err.Error()
+			r.upErr = problem("queueing", err)
 		}
 		cmd = r.upload()
 	} else if done != nil {
@@ -444,7 +444,7 @@ func (r *Review) enter() tea.Cmd {
 			CreatedAt:               &created,
 		})
 		if err != nil {
-			r.upErr = err.Error()
+			r.upErr = problem("queueing", err)
 		}
 		cmd = r.upload()
 	}
@@ -721,7 +721,7 @@ func bgSGR(c color.Color) string {
 func (r *Review) uploadStatus() string {
 	switch {
 	case r.upErr != "":
-		return "upload problem: " + shortErr(errors.New(r.upErr))
+		return fmt.Sprintf("%d waiting to upload: %s", r.pending, r.upErr)
 	case r.held && r.pending > 0:
 		return fmt.Sprintf("%d held (dry-run)", r.pending)
 	case r.uploading:
@@ -738,7 +738,7 @@ func (r *Review) openItem() {
 	q, it := r.answered, r.answeredIt
 	d, err := LoadItem(context.Background(), r.deps.Store, it.Subject.ID)
 	if err != nil {
-		r.warn = err.Error()
+		r.warn = problem("opening item", err)
 		return
 	}
 	d.Synonyms = it.Synonyms

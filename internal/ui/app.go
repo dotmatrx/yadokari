@@ -154,7 +154,7 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case lessonLoadedMsg:
 		switch {
 		case msg.err != nil:
-			a.dash.Notice(msg.err.Error())
+			a.dash.Notice(problem("loading lessons", msg.err))
 			a.screen, a.lesson = dashScreen, nil
 			return a, a.dash.Reload()
 		case msg.quiz != nil: // resuming a quiz
@@ -177,7 +177,7 @@ func (a *App) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case reviewLoadedMsg:
 		if msg.err != nil {
-			a.dash.Notice(msg.err.Error())
+			a.dash.Notice(problem("loading reviews", msg.err))
 			return a, nil
 		}
 		return a, a.startReview(msg.review)

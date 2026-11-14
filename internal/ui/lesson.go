@@ -2,7 +2,6 @@ package ui
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"math/rand/v2"
 	"slices"
@@ -76,7 +75,7 @@ func LoadLessons(ctx context.Context, deps Deps, rdeps ReviewDeps, user wk.User)
 		_ = deps.Store.ClearSession(ctx, lessonSessionName)
 	}
 	if len(items) == 0 {
-		return nil, nil, errors.New("no lessons are available")
+		return nil, nil, userError("no lessons are available")
 	}
 	l := &Lesson{deps: deps, rdeps: rdeps, rng: rng, images: map[int][]byte{}, prefs: user.Preferences,
 		items: pickLessons(items, user.Preferences, rng)}

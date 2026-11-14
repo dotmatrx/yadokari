@@ -48,7 +48,9 @@ anything with `--live` yourself. Tokens used during development are read-only.
 - `cmd/preview` — screen previews and the HTML gallery (`ui.Preview` does the work).
 - `cmd/yadokari` — entry point. Flags: `--base`, `--db`, `--sync` (no TUI), `--logout`,
   `--gfx auto|kitty|plain`,
-  `--live` (writes; never use it yourself).
+  `--live` (writes; never use it yourself). Logs problems to `yadokari.log` next to the
+  database (`log/slog`); the UI shows them in plain words via `ui.problem` (no Go
+  error text, URLs or IDs on screen; `userError` for messages written for the user).
 - `internal/wk` — typed API client: auth, pagination via `next_url` (same-host only),
   ETags, client-side rate limit + `RateLimit-*` handling, 429 retry; GETs retry on 5xx,
   writes never auto-retry; non-GET to the live host fails with `ErrLiveWritesDisabled`

@@ -2,7 +2,6 @@ package ui
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	tea "charm.land/bubbletea/v2"
@@ -45,7 +44,7 @@ func playAudio(s wk.Resource[wk.Subject]) tea.Cmd {
 func hasAudio(s wk.Resource[wk.Subject]) bool { return len(s.Data.PronunciationAudios) > 0 }
 
 // errNoRecording is shown when p is pressed on a subject without audio.
-var errNoRecording = errors.New("no pronunciation audio for this item")
+var errNoRecording error = userError("no pronunciation audio for this item")
 
 // play fetches and plays the subject's recording in the background: the
 // user's default voice, the primary reading, a format the player handles.
@@ -123,14 +122,15 @@ func primaryReading(s wk.Subject) string {
 
 // audioProblem shows a playback error on the visible screen.
 func (a *App) audioProblem(err error) {
+	msg := "can't play audio: " + problem("audio", err)
 	switch {
 	case a.screen == reviewScreen && a.review != nil:
 		if a.review.item != nil {
-			a.review.item.Status = err.Error()
+			a.review.item.Status = msg
 		} else {
-			a.review.warn = err.Error()
+			a.review.warn = msg
 		}
 	case a.screen == lessonScreen && a.lesson != nil:
-		a.lesson.page.Status = err.Error()
+		a.lesson.page.Status = msg
 	}
 }
