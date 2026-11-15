@@ -109,6 +109,12 @@ func TestBackspace(t *testing.T) {
 		{"n\bka", "か"},        //
 		{"\b\bka", "か"},       // backspace on empty is a no-op
 		{"kos\bnn", "こん"},     //
+		// A letter left behind by a typo still combines with what follows.
+		{"ks\ba", "か"},    //
+		{"kos\bka", "こか"}, //
+		{"kyz\bo", "きょ"},  //
+		{"sx\bhi", "し"},   //
+		{"Ks\ba", "カ"},    //
 	}
 	for _, tt := range tests {
 		if got := typeKeys(tt.keys).String(); got != tt.want {

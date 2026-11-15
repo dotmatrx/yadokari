@@ -44,15 +44,31 @@ func (c *Converter) TypeString(s string) {
 	}
 }
 
-// Backspace deletes the last pending letter, or else the last kana.
+// Backspace deletes the last pending letter, or else the last kana. Letters
+// that were kept as typed because they couldn't start any kana (the k of a
+// mistyped "ks") go back to pending, so after "ks⌫" an "a" still gives か.
 func (c *Converter) Backspace() {
 	switch {
 	case len(c.pending) > 0:
 		c.pending = c.pending[:len(c.pending)-1]
 	case len(c.committed) > 0:
 		c.committed = c.committed[:len(c.committed)-1]
+	default:
+		return
 	}
+	i := len(c.committed)
+	for i > 0 && isASCIILetter(c.committed[i-1]) {
+		i--
+	}
+	if i == len(c.committed) {
+		return
+	}
+	c.pending = append(append([]rune{}, c.committed[i:]...), c.pending...)
+	c.committed = c.committed[:i]
+	c.resolve(false)
 }
+
+func isASCIILetter(r rune) bool { return r < unicode.MaxASCII && unicode.IsLetter(r) }
 
 // Committed is the converted text.
 func (c *Converter) Committed() string { return string(c.committed) }
