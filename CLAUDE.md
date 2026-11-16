@@ -17,10 +17,9 @@ Use `just` (no Makefile):
   `~/.local/bin/yadokari`, which the host and the toolbox share; it runs on the host too
   (pure-Go SQLite, keyring over D-Bus).
 - `just run [flags]` — run the app
-- `just test [go test flags]` — all tests except `spikes/`. Some tests also run
+- `just test [go test flags]` — all tests. Some tests also run
   against the newest local recording in `testdata/recordings/` and skip without one.
 - `just check` — gofmt check + `go vet`
-- `just spike <name>` — run `spikes/<name>`
 - `just mock-recorded` + `just dev [flags]` — serve the newest recording through the
   mock, then run the app against it with a scratch database in `.dev/` (gitignored).
   `just dev --sync` syncs and prints a summary without the TUI.
@@ -157,7 +156,6 @@ mock server (`internal/wkmock`, `just dev`).
 - `docs/backlog.md` — deferred ideas; add to it rather than leaving them in chat.
 - `internal/` — real packages Keep `session`, `answer`, `markup` and `ime`
   free of I/O and UI code, and table-test them heavily.
-- `spikes/` — throwaway experiments and their findings; see `spikes/README.md`
 
 ## Environment notes
 

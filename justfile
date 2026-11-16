@@ -22,17 +22,17 @@ install:
 run *args:
     go run ./cmd/yadokari {{args}}
 
-# Run all tests (spikes excluded)
+# Run all tests
 test *args:
-    go test {{args}} $(go list ./... | grep -v /spikes/)
+    go test {{args}} ./...
 
 # Format and vet
 check:
-    test -z "$(gofmt -l cmd internal spikes 2>/dev/null)" || (gofmt -l cmd internal spikes; exit 1)
+    test -z "$(gofmt -l cmd internal 2>/dev/null)" || (gofmt -l cmd internal; exit 1)
     go vet ./...
 
 fmt:
-    gofmt -w cmd internal spikes
+    gofmt -w cmd internal
 
 # Serve the fake API on 127.0.0.1:8642 (sample data, or --fixtures=DIR)
 mock *args:
@@ -53,10 +53,6 @@ mock-recorded:
 # Run the app against the local mock with a scratch database in .dev/
 dev *args:
     mkdir -p .dev && WANIKANI_API_TOKEN=mock go run ./cmd/yadokari --base=http://127.0.0.1:8642/v2/ --db=.dev/yadokari.db {{args}}
-
-# Run a throwaway spike, e.g. `just spike placeholders`
-spike name *args:
-    go run ./spikes/{{name}} {{args}}
 
 clean:
     rm -rf bin dist

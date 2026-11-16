@@ -21,11 +21,11 @@ jobs:
       - name: Japanese fonts for the glyph tests
         run: sudo apt-get install -y --no-install-recommends fonts-noto-cjk
       - name: gofmt
-        run: test -z "$(gofmt -l cmd internal spikes)" || (gofmt -l cmd internal spikes; exit 1)
+        run: test -z "$(gofmt -l cmd internal)" || (gofmt -l cmd internal; exit 1)
       - name: vet
         run: go vet ./...
       - name: test
-        run: go test -race $(go list ./... | grep -v /spikes/)
+        run: go test -race ./...
       - name: cross-build
         run: |
           for t in linux/amd64 linux/arm64 darwin/amd64 darwin/arm64; do
@@ -48,4 +48,4 @@ jobs:
       - name: vet
         run: go vet ./...
       - name: test
-        run: go test $(go list ./... | grep -v /spikes/)
+        run: go test ./...

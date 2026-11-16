@@ -6,18 +6,8 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
-	"strings"
 	"time"
 )
-
-// Ints formats ids for an array filter (comma-separated).
-func Ints(ids []int) string {
-	s := make([]string, len(ids))
-	for i, id := range ids {
-		s[i] = strconv.Itoa(id)
-	}
-	return strings.Join(s, ",")
-}
 
 // Time formats a timestamp for filters such as updated_after.
 func Time(t time.Time) string { return t.UTC().Format(time.RFC3339Nano) }
