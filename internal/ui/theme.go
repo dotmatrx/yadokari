@@ -237,10 +237,9 @@ func SetTheme(t Theme) {
 		wk.ObjectVocabulary:     t.Vocabulary,
 		wk.ObjectKanaVocabulary: t.Vocabulary,
 	}
-	glyphFG, frameFG = t.Ink, rgb(0xffffff)
-	if t.inkSet {
-		frameFG = t.Ink
-	}
+	glyphFG = t.Ink
+	themeInk, themeInkSet = t.Ink, t.inkSet
+	setFrameInk()
 	fg := func(c color.Color) lipgloss.Style { return lipgloss.NewStyle().Foreground(c) }
 	lineSt = fg(t.Line)
 	badgeSt = lipgloss.NewStyle().Background(t.Line).Foreground(lipgloss.Color("15")).Bold(true).Padding(0, 1)

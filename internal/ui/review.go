@@ -736,14 +736,14 @@ func (r *Review) drawGlyph(it store.ReviewItem, cols, rows int, bg color.Color) 
 // caller falls back to plain text).
 func drawSubjectGlyph(rd gfx.Renderer, ready bool, src gfx.Source, missing bool, cols, rows int, bg color.Color) (string, error) {
 	if rd == nil || (rd.Tier() == gfx.Kitty && !ready) {
-		return framedGlyph(cols, rows, bg, func(cols, rows int, _, fill color.Color) (string, error) {
+		return framedGlyph(cols, rows, bg, false, func(cols, rows int, _, fill color.Color) (string, error) {
 			return strings.TrimSuffix(strings.Repeat(gfx.BgSGR(fill)+strings.Repeat(" ", cols)+"\x1b[m\n", rows), "\n"), nil
 		})
 	}
 	if missing {
 		return "", errors.New("image not loaded")
 	}
-	return framedGlyph(cols, rows, bg, func(c, r int, fg, fill color.Color) (string, error) {
+	return framedGlyph(cols, rows, bg, rd.Tier() == gfx.Plain, func(c, r int, fg, fill color.Color) (string, error) {
 		return rd.Draw(src, c, r, fg, fill)
 	})
 }

@@ -73,7 +73,9 @@ mock server (`internal/wkmock`, `just dev`).
 
 - `cmd/preview` — screen previews and the HTML gallery (`ui.Preview` does the work).
 - `cmd/yadokari` — entry point. Flags: `--base`, `--db`, `--sync` (no TUI), `--logout`,
-  `--gfx auto|kitty|plain`, `--version`. Logs problems to `yadokari.log` next to the
+  `--gfx auto|kitty|plain`, `--terminal` (what the probe found and what was chosen: tier
+  and why, cell size, font, background, glyph ink, theme; `setupDisplay` serves both it
+  and the app), `--version`. Logs problems to `yadokari.log` next to the
   database (`log/slog`); the UI shows them in plain words via `ui.problem` (no Go
   error text, URLs or IDs on screen; `userError` for messages written for the user).
 - `internal/wk` — typed API client: auth, pagination via `next_url` (same-host only),
@@ -149,8 +151,11 @@ mock server (`internal/wkmock`, `just dev`).
   `ui.App.Update` sends them: after every message it calls the visible screen's
   `DrawGlyph` and sends `Flush()` via `tea.Raw`, once the alt screen is up (App's `ready`).
   Screens never flush; the UI test harness fails if a shown glyph was never sent. `Choose` picks the tier: `--gfx` override, then
-  env (`Detect`), then `Probe` (kitty graphics query + `CSI 16 t` + DA1 on `/dev/tty`,
-  before Bubble Tea starts). `CellSize` uses the tty ioctl, else the probe: the
+  env (`Detect`), then `Probe` (kitty graphics query + `CSI 16 t` + OSC 4/10/11 colours + DA1 on
+  `/dev/tty`, before Bubble Tea starts; `ChooseWhy` also says why). The background:
+  `ui.DetectBackground` (`display.background` → the terminal's OSC 11 answer →
+  `COLORFGBG` → dark); a framed glyph's ink is the config's, else the terminal's text
+  colour (OSC 10), else white/near-black; the plain tier leaves it to the terminal. `CellSize` uses the tty ioctl, else the probe: the
   toolbox pty reports no pixel size (Ghostty: 12×30 real vs the 10×20 guess). `Source.Mask` must
   return exactly w×h.
 - `docs/roadmap.md` — milestone status and next steps.

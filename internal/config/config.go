@@ -141,6 +141,8 @@ type Display struct {
 	Gfx   string `toml:"gfx"`   // see GfxTiers; "" = "auto"
 	Theme string `toml:"theme"` // see ThemeNames; "" = "wanikani"
 	Font  string `toml:"font"`  // a font file; "" = discovered
+	// Background is the terminal's background: see Backgrounds; "" = "auto".
+	Background string `toml:"background"`
 	// Roulette draws each review question in a random Japanese font.
 	Roulette      bool     `toml:"roulette"`
 	RouletteFonts []string `toml:"roulette_fonts"` // files or family names; empty = all installed
@@ -153,6 +155,7 @@ var (
 	LessonOrders = []string{"wanikani", "ascending_level_then_subject", "ascending_level_then_shuffled", "shuffled"}
 	Strictnesses = []string{"wanikani", "strict", "lenient"}
 	GfxTiers     = []string{"auto", "kitty", "plain"}
+	Backgrounds  = []string{"auto", "dark", "light"}
 	ThemeNames   = []string{"wanikani", "yadokari", "blackbox", "terminal", "high-contrast"} // ui.Themes; a test keeps them in step
 )
 
@@ -185,6 +188,7 @@ func (c Config) validate() error {
 		{"lessons.order", c.Lessons.Order, LessonOrders},
 		{"display.gfx", c.Display.Gfx, GfxTiers},
 		{"display.theme", c.Display.Theme, ThemeNames},
+		{"display.background", c.Display.Background, Backgrounds},
 	} {
 		if e.val != "" && !slices.Contains(e.allowed, e.val) {
 			return fmt.Errorf("%s = %q: use one of %s", e.key, e.val, strings.Join(e.allowed, ", "))

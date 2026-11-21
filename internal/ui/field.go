@@ -51,13 +51,19 @@ func imageSize(cols, rows int) (int, int) {
 }
 
 // framedGlyph draws a glyph field of cols×rows cells in the type colour c.
-// draw draws the glyph into the cells it is given, in ink fg on fill.
-func framedGlyph(cols, rows int, c color.Color, draw func(cols, rows int, fg, fill color.Color) (string, error)) (string, error) {
+// draw draws the glyph into the cells it is given, in ink fg on fill;
+// text says it draws text (the plain tier), whose colour inside a frame
+// can be left to the terminal.
+func framedGlyph(cols, rows int, c color.Color, text bool, draw func(cols, rows int, fg, fill color.Color) (string, error)) (string, error) {
 	inCols, inRows := imageSize(cols, rows)
 	if inCols == cols && inRows == rows {
 		return draw(cols, rows, glyphFG, c)
 	}
-	inner, err := draw(inCols, inRows, frameFG, lipgloss.NoColor{})
+	fg := color.Color(frameFG)
+	if text {
+		fg = frameText
+	}
+	inner, err := draw(inCols, inRows, fg, lipgloss.NoColor{})
 	if err != nil {
 		return "", err
 	}
@@ -66,7 +72,7 @@ func framedGlyph(cols, rows int, c color.Color, draw func(cols, rows int, fg, fi
 
 // plainGlyph is the text fallback, in the same field.
 func plainGlyph(src gfx.Source, cols, rows int, c color.Color) (string, error) {
-	return framedGlyph(cols, rows, c, func(cols, rows int, fg, fill color.Color) (string, error) {
+	return framedGlyph(cols, rows, c, true, func(cols, rows int, fg, fill color.Color) (string, error) {
 		return gfx.New(gfx.Plain, 0, 0).Draw(src, cols, rows, fg, fill)
 	})
 }

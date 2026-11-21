@@ -16,7 +16,7 @@ func TestFramedGlyphFillsItsCells(t *testing.T) {
 		}
 		for _, sz := range [][2]int{{40, 10}, {6, 3}, {5, 2}} {
 			var gotFG color.Color
-			out, err := framedGlyph(sz[0], sz[1], rgb(0x5cd6ff), func(cols, rows int, fg, _ color.Color) (string, error) {
+			out, err := framedGlyph(sz[0], sz[1], rgb(0x5cd6ff), false, func(cols, rows int, fg, _ color.Color) (string, error) {
 				gotFG = fg
 				return strings.TrimSuffix(strings.Repeat(strings.Repeat("x", cols)+"\n", rows), "\n"), nil
 			})

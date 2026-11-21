@@ -7,6 +7,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"image/color"
 	"log/slog"
 	"net/url"
 	"os"
@@ -87,6 +88,7 @@ func run() error {
 	dbPath := flag.String("db", "", "database path (default: ~/.local/share/yadokari/yadokari.db)")
 	syncOnly := flag.Bool("sync", false, "sync, print a summary and exit (no TUI)")
 	logout := flag.Bool("logout", false, "remove the stored API token and exit")
+	terminal := flag.Bool("terminal", false, "show what yadokari found out about the terminal (graphics, background, font) and exit")
 	gfxFlag := flag.String("gfx", "", "graphics tier: auto, kitty or plain (default: config display.gfx, else auto)")
 	flag.Usage = func() {
 		out := flag.CommandLine.Output()
@@ -109,6 +111,9 @@ func run() error {
 	cfg, err := config.Load(paths.Config)
 	if err != nil {
 		return err
+	}
+	if *terminal {
+		return terminalReport(cfg, paths.Config, cmp.Or(*gfxFlag, cfg.Display.Gfx, "auto"))
 	}
 	tokens := config.TokenStore{Keyring: config.OSKeyring, File: paths.TokenFile, Getenv: os.Getenv}
 	if *logout {
@@ -208,7 +213,46 @@ func reviewDeps(client *wk.Client, st *store.Store, cfg config.Config, gfxTier s
 		rd.AudioErr = err // shown when p is pressed; not worth a startup warning
 	}
 
-	// Ask the terminal at most once, and only if needed.
+	d, err := setupDisplay(cfg, gfxTier)
+	if err != nil {
+		return rd, "", err
+	}
+	slog.Info("terminal", "tier", d.tier, "why", d.tierWhy, "light", d.bg.Light, "background", hexOr(d.bg.Colour, "unknown"),
+		"text", hexOr(d.bg.Text, "unknown"), "from", d.bg.From)
+	warning := ""
+	if d.fontErr != nil {
+		warning = d.fontErr.Error() + "; showing kanji in the terminal's font"
+	}
+	rd.Font = d.font
+	if d.tier == gfx.Kitty {
+		if cfg.Display.Roulette {
+			pool, err := roulette(cfg.Display.RouletteFonts)
+			if err != nil {
+				return rd, "", fmt.Errorf("config: display.roulette_fonts: %w", err)
+			}
+			rd.Roulette = pool
+		}
+	}
+	rd.Renderer = gfx.New(d.tier, d.cellW, d.cellH)
+	return rd, warning, nil
+}
+
+// display is what the terminal and the config say about drawing.
+type display struct {
+	tier         gfx.Tier
+	tierWhy      string
+	cellW, cellH int
+	font         *glyph.Font
+	fontErr      error
+	theme        ui.Theme
+	bg           ui.Background
+}
+
+// setupDisplay asks the terminal (at most once, before Bubble Tea starts),
+// picks the graphics tier, font and theme, and sets the UI's theme and
+// background.
+func setupDisplay(cfg config.Config, gfxTier string) (display, error) {
+	var d display
 	var probed *gfx.Probed
 	var probeErr error
 	probe := func() (gfx.Probed, error) {
@@ -218,17 +262,13 @@ func reviewDeps(client *wk.Client, st *store.Store, cfg config.Config, gfxTier s
 		}
 		return *probed, probeErr
 	}
-	tier, err := gfx.Choose(gfxTier, os.Getenv, probe)
-	if err != nil {
-		return rd, "", err
+	var err error
+	if d.tier, d.tierWhy, err = gfx.ChooseWhy(gfxTier, os.Getenv, probe); err != nil {
+		return d, err
 	}
-	font, err := glyph.FindFont(cfg.Display.Font)
-	warning := ""
-	if err != nil {
-		warning = err.Error() + "; showing kanji in the terminal's font"
-		tier = gfx.Plain
+	if d.font, d.fontErr = glyph.FindFont(cfg.Display.Font); d.fontErr != nil {
+		d.tier, d.tierWhy = gfx.Plain, "no Japanese font found"
 	}
-	rd.Font = font
 	th, _ := ui.ThemeNamed(cmp.Or(cfg.Display.Theme, ui.DefaultTheme.Name))
 	th = th.WithColours(cfg.Theme)
 	if th.UsesPalette() {
@@ -238,20 +278,70 @@ func reviewDeps(client *wk.Client, st *store.Store, cfg config.Config, gfxTier s
 			th = th.InkFor(p.Palette, cfg.Theme.Ink != "")
 		}
 	}
+	d.theme = th
 	ui.SetTheme(th)
-	cw, ch := 0, 0
-	if tier == gfx.Kitty {
-		cw, ch = gfx.CellSize(probe)
-		if cfg.Display.Roulette {
-			pool, err := roulette(cfg.Display.RouletteFonts)
-			if err != nil {
-				return rd, "", fmt.Errorf("config: display.roulette_fonts: %w", err)
-			}
-			rd.Roulette = pool
-		}
+	d.bg = ui.DetectBackground(cfg.Display.Background, os.Getenv, probe)
+	ui.SetBackground(d.bg)
+	if d.tier == gfx.Kitty {
+		d.cellW, d.cellH = gfx.CellSize(probe)
 	}
-	rd.Renderer = gfx.New(tier, cw, ch)
-	return rd, warning, nil
+	return d, nil
+}
+
+func hexOr(c color.RGBA, unknown string) string {
+	if c.A == 0 {
+		return unknown
+	}
+	return fmt.Sprintf("#%02x%02x%02x", c.R, c.G, c.B)
+}
+
+// terminalReport prints what yadokari found out about the terminal and
+// what it chose, for yadokari --terminal.
+func terminalReport(cfg config.Config, configPath, gfxTier string) error {
+	d, err := setupDisplay(cfg, gfxTier)
+	if err != nil {
+		return err
+	}
+	row := func(k, v string) { fmt.Printf("%-11s %s\n", k, v) }
+	row("graphics", fmt.Sprintf("%s (%s)", d.tier, d.tierWhy))
+	if d.tier == gfx.Kitty {
+		row("cell size", fmt.Sprintf("%d×%d px", d.cellW, d.cellH))
+	}
+	if d.fontErr != nil {
+		row("font", "none found: kanji are drawn in the terminal's own font")
+	} else {
+		row("font", d.font.Name())
+	}
+	bg := "dark"
+	if d.bg.Light {
+		bg = "light"
+	}
+	if d.bg.Colour.A != 0 {
+		row("background", fmt.Sprintf("%s → %s (%s)", hexOr(d.bg.Colour, ""), bg, d.bg.From))
+	} else {
+		row("background", fmt.Sprintf("%s (%s)", bg, d.bg.From))
+	}
+	ink := hexOr(ui.FrameInk(), "") + " (white on dark)"
+	switch {
+	case cfg.Theme.Ink != "":
+		ink = hexOr(ui.FrameInk(), "") + " (set in the config file)"
+	case d.bg.Text.A != 0:
+		ink = hexOr(ui.FrameInk(), "") + " (the terminal's text colour)"
+	case d.bg.Light:
+		ink = hexOr(ui.FrameInk(), "") + " (near-black on light)"
+	}
+	if d.tier == gfx.Plain && cfg.Theme.Ink == "" {
+		ink = "the terminal's own text colour"
+	}
+	row("glyph ink", ink)
+	row("theme", d.theme.Name)
+	if d.bg.From == "not reported; assumed dark" {
+		fmt.Println("\nYour terminal didn't say what its background is. If it is light, add")
+		fmt.Println(`  [display]
+  background = "light"`)
+		fmt.Println("to " + configPath + ".")
+	}
+	return nil
 }
 
 // roulette is the font pool for display.roulette: the fonts named, or every

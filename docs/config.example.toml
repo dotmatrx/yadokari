@@ -76,6 +76,13 @@ player = ""
 # all and glyphs are drawn as text.
 theme = "wanikani"
 
+# Your terminal's background: auto (ask the terminal; most answer, and
+# COLORFGBG is checked if it doesn't), dark or light. Glyphs are drawn in the
+# terminal's own text colour when it reports one, else white on dark and
+# near-black on light. Unknown means dark. `yadokari --terminal` shows what
+# was found.
+background = "auto"
+
 # How glyphs are drawn: auto (ask the terminal), kitty (kitty graphics, e.g.
 # Ghostty, kitty) or plain (the terminal's own font). --gfx overrides it.
 gfx = "auto"
@@ -106,7 +113,7 @@ roulette_fonts = []
 radical = ""     # radicals: the glyph field, marks and mnemonic text
 kanji = ""
 vocabulary = ""
-ink = ""         # the glyph inside its frame (default white): "#rrggbb" only
+ink = ""         # the glyph inside its frame (default: your terminal's text colour): "#rrggbb" only
 lessons = ""     # the dashboard's lesson count
 reviews = ""     # the dashboard's review count
 bar = ""         # the review forecast bars

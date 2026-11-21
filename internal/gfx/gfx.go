@@ -67,26 +67,36 @@ func Detect(getenv func(string) string) Tier {
 // NO_COLOR always means Plain: Bubble Tea then strips every colour, and
 // kitty placeholders carry the image ID in their colour.
 func Choose(override string, getenv func(string) string, probe func() (Probed, error)) (Tier, error) {
+	t, _, err := ChooseWhy(override, getenv, probe)
+	return t, err
+}
+
+// ChooseWhy is Choose, also saying why, in words (for yadokari --terminal).
+func ChooseWhy(override string, getenv func(string) string, probe func() (Probed, error)) (Tier, string, error) {
 	t, ok, err := ParseTier(override)
 	if err != nil {
-		return t, err
+		return t, "", err
 	}
 	if getenv("NO_COLOR") != "" {
-		return Plain, nil
+		return Plain, "NO_COLOR is set", nil
 	}
 	if ok {
-		return t, nil
+		return t, "set by --gfx or display.gfx", nil
 	}
 	if getenv("TMUX") != "" {
-		return Plain, nil
+		return Plain, "inside tmux", nil
 	}
 	if Detect(getenv) == Kitty {
-		return Kitty, nil
+		return Kitty, "the environment names a kitty-graphics terminal", nil
 	}
-	if p, err := probe(); err == nil && p.Kitty {
-		return Kitty, nil
+	p, err := probe()
+	switch {
+	case err != nil:
+		return Plain, "the terminal didn't answer", nil
+	case p.Kitty:
+		return Kitty, "the terminal answered the graphics query", nil
 	}
-	return Plain, nil
+	return Plain, "the terminal has no kitty graphics", nil
 }
 
 // Source is something to draw: a mask producer plus a text fallback.

@@ -189,6 +189,11 @@ func TestParseProbe(t *testing.T) {
 				p.Palette[6] = color.RGBA{0x8a, 0xbe, 0xb7, 0xff}
 				return p
 			}(), true},
+		// Text and background colours (a light terminal), ended by ST or BEL.
+		{"\x1b]10;rgb:3b3b/3b3b/3b3b\x1b\\\x1b]11;rgb:fd/f6/e3\a" + da1,
+			Probed{Foreground: color.RGBA{0x3b, 0x3b, 0x3b, 0xff}, Background: color.RGBA{0xfd, 0xf6, 0xe3, 0xff}}, true},
+		// Only the background reported.
+		{"\x1b]11;rgb:0000/0000/0000\x1b\\" + da1, Probed{Background: color.RGBA{0, 0, 0, 0xff}}, true},
 	} {
 		got, done := parseProbe([]byte(tt.reply))
 		if got != tt.want || done != tt.done {
