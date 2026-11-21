@@ -34,8 +34,8 @@ someone else (after M4 and M5's packaging). `just build`/`just install` stamp
 The user's plan, in order:
 1. **Icon and README** (this step). Icon chosen 2026-11-21: 宀, the roof radical at
    the top of 宿, over a prompt and an orange block cursor, on a black tile
-   (`docs/images/icon.svg`; concepts on the icon canvas linked in CLAUDE.md's
-   neighbour, the design doc's artifacts). README has a centred icon header.
+   (`docs/images/icon.svg`; all the concepts are on the icon canvas,
+   https://claude.ai/artifact/FApsYBJ1jA7wugc6XjG6WV). README has a centred icon header.
    **Left:** a screenshot. The user takes it in Ghostty, since the browser previews
    can't show kitty glyphs: `just mock --demo` in one terminal, `just dev` in a
    Ghostty window of about 110×32, `r`, then a kanji question; save as
