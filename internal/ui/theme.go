@@ -22,8 +22,11 @@ type Theme struct {
 	// beside items and in mnemonics.
 	// A palette colour (lipgloss.Color("6")) paints the terminal's own shade.
 	Radical, Kanji, Vocabulary color.Color
-	// Ink is the glyph drawn on its field.
-	Ink color.RGBA
+	// Ink is the glyph drawn on a filled field (fieldFill). A framed
+	// field draws white on the terminal's background, unless the config
+	// file sets the ink (inkSet).
+	Ink    color.RGBA
+	inkSet bool
 	// Lessons and Reviews mark the dashboard's counts; Bar fills the
 	// review forecast.
 	Lessons, Reviews, Bar color.Color
@@ -126,6 +129,7 @@ func (t Theme) WithColours(c config.Colours) Theme {
 	if c.Ink != "" {
 		r, g, b, _ := lipgloss.Color(c.Ink).RGBA()
 		t.Ink = color.RGBA{uint8(r >> 8), uint8(g >> 8), uint8(b >> 8), 0xff}
+		t.inkSet = true
 	}
 	return t
 }
@@ -207,7 +211,8 @@ func ThemeNamed(name string) (Theme, bool) {
 // per process (cmd/preview switches between renders).
 var (
 	typeColour map[string]color.Color
-	glyphFG    color.RGBA
+	glyphFG    color.RGBA // ink on a filled field
+	frameFG    color.RGBA // ink inside a frame
 
 	boldSt    = lipgloss.NewStyle().Bold(true)
 	mutedSt   = lipgloss.NewStyle().Faint(true)
@@ -232,7 +237,10 @@ func SetTheme(t Theme) {
 		wk.ObjectVocabulary:     t.Vocabulary,
 		wk.ObjectKanaVocabulary: t.Vocabulary,
 	}
-	glyphFG = t.Ink
+	glyphFG, frameFG = t.Ink, rgb(0xffffff)
+	if t.inkSet {
+		frameFG = t.Ink
+	}
 	fg := func(c color.Color) lipgloss.Style { return lipgloss.NewStyle().Foreground(c) }
 	lineSt = fg(t.Line)
 	badgeSt = lipgloss.NewStyle().Background(t.Line).Foreground(lipgloss.Color("15")).Bold(true).Padding(0, 1)

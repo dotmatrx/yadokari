@@ -550,7 +550,7 @@ func TestResizeSendsGlyphUpload(t *testing.T) {
 		}
 	}
 	collect(cmd)
-	if !strings.Contains(raw.String(), "@120x19") {
+	if want := fmt.Sprintf("@%dx%d;", 120-2, 19-2); !strings.Contains(raw.String(), want) {
 		t.Errorf("resize: the new-size upload was not sent; got %q", raw.String())
 	}
 }

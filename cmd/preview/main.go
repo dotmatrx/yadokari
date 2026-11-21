@@ -57,6 +57,7 @@ func run() error {
 	fixtures := flag.String("fixtures", "", "recording directory to use instead of demo data (personal data: don't publish)")
 	htmlOut := flag.String("html", "", "write an HTML gallery to this file instead of drawing in the terminal")
 	gfxFlag := flag.String("gfx", "auto", "graphics tier in the terminal: auto, kitty or plain")
+	fieldFlag := flag.String("field", "", "glyph field style: "+strings.Join(ui.FieldStyles, ", ")+` (default: `+ui.DefaultFieldStyle+`)`)
 	themeFlag := flag.String("theme", "", `colour theme: a name (wanikani, yadokari), or "all" for each in turn (default: wanikani)`)
 	fontFlag := flag.String("font", "", `glyph font as the roulette would show it: a font file or installed family name, or "all" for each installed Japanese font in turn`)
 	screens, err := parseArgs(flag.CommandLine, os.Args[1:])
@@ -111,6 +112,9 @@ func run() error {
 		}
 	}
 
+	if *fieldFlag != "" && !ui.SetFieldStyle(*fieldFlag) {
+		return fmt.Errorf("no field style %q (want one of %s)", *fieldFlag, strings.Join(ui.FieldStyles, ", "))
+	}
 	themes := []ui.Theme{ui.DefaultTheme}
 	switch *themeFlag {
 	case "":

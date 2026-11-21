@@ -614,7 +614,7 @@ func (r *Review) View() string {
 	bg := typeColour[it.Subject.Object]
 	cells, err := r.drawGlyph(it, cols, rows, bg)
 	if err != nil {
-		cells, _ = gfx.New(gfx.Plain, 0, 0).Draw(r.source(it), cols, rows, glyphFG, bg)
+		cells, _ = plainGlyph(r.source(it), cols, rows, bg)
 	}
 	b = append(b, cells, r.fontLine(it, w))
 
@@ -736,12 +736,16 @@ func (r *Review) drawGlyph(it store.ReviewItem, cols, rows int, bg color.Color) 
 // caller falls back to plain text).
 func drawSubjectGlyph(rd gfx.Renderer, ready bool, src gfx.Source, missing bool, cols, rows int, bg color.Color) (string, error) {
 	if rd == nil || (rd.Tier() == gfx.Kitty && !ready) {
-		return strings.TrimSuffix(strings.Repeat(gfx.BgSGR(bg)+strings.Repeat(" ", cols)+"\x1b[m\n", rows), "\n"), nil
+		return framedGlyph(cols, rows, bg, func(cols, rows int, _, fill color.Color) (string, error) {
+			return strings.TrimSuffix(strings.Repeat(gfx.BgSGR(fill)+strings.Repeat(" ", cols)+"\x1b[m\n", rows), "\n"), nil
+		})
 	}
 	if missing {
 		return "", errors.New("image not loaded")
 	}
-	return rd.Draw(src, cols, rows, glyphFG, bg)
+	return framedGlyph(cols, rows, bg, func(c, r int, fg, fill color.Color) (string, error) {
+		return rd.Draw(src, c, r, fg, fill)
+	})
 }
 
 func (r *Review) uploadStatus() string {

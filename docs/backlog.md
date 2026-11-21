@@ -5,6 +5,7 @@ up; delete it when done or dropped.
 
 | Added | Item | Notes |
 |---|---|---|
+| 2026-11-21 | `display.field` setting: block (default), fill, thick, rails, corners | Styles exist in `ui/field.go` (`SetFieldStyle`, `just preview --field=`). Left: the config key + validation (`config.FieldNames`, kept in step like `ThemeNames`), `docs/config.example.toml`, one call in `cmd/yadokari`. Small: about an hour with tests. `fill` uses the theme's `Ink`; the frames draw white. The user liked all but a "neon" (coloured glyph) style, which was dropped |
 | 2026-11-11 | Audio progress bar (or spinner) next to the 🔊 badge | Players report no position: it would be wall-clock time over the clip length (needs mp3 parsing), off by the player's ~0.1–0.2 s start-up, and needs a redraw ticker, for 1–2 s clips. Revisit if the badge feels too static |
 | 2026-11-11 | Audio voice choice in the config file | Player override and autoplay overrides are config keys (2026-11-14); the voice still follows WaniKani's default voice |
 | 2026-11-14 | Linux packages (nfpm deb/rpm in GoReleaser), COPR/AUR | After the tar.gz release and Homebrew tap prove out |

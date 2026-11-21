@@ -18,12 +18,13 @@ package gfx
 
 import (
 	"fmt"
-	"github.com/charmbracelet/x/ansi"
 	"image"
 	"image/color"
 	"os"
 	"strings"
 
+	"charm.land/lipgloss/v2"
+	"github.com/charmbracelet/x/ansi"
 	"golang.org/x/sys/unix"
 )
 
@@ -148,6 +149,8 @@ func bgSGR(c color.Color) string { return BgSGR(c) }
 // paints its own shade; anything else as 24-bit RGB.
 func BgSGR(c color.Color) string {
 	switch c := c.(type) {
+	case nil, lipgloss.NoColor:
+		return "\x1b[49m"
 	case ansi.BasicColor:
 		if c < 8 {
 			return fmt.Sprintf("\x1b[%dm", 40+int(c))

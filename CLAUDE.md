@@ -28,7 +28,7 @@ Use `just` (no Makefile):
 - `just preview [screen...] [--size=WxH,...] [--html=FILE]` — render screens
   once from demo data (kitty glyphs in Ghostty); `--html` writes a gallery page. Screens:
   `dashboard`, `review`, `review-reading`, `review-wrong`, `summary`, `item`, `item-vocab`, `lesson`. Use it to iterate on
-  layout; `--font=NAME|all` draws glyphs in each roulette font; `--theme=NAME|all` each theme; `--fixtures=DIR` uses a recording (personal data: never publish that).
+  layout; `--font=NAME|all` draws glyphs in each roulette font; `--theme=NAME|all` each theme; `--field=STYLE` a glyph field style (`ui.FieldStyles`); `--fixtures=DIR` uses a recording (personal data: never publish that).
 - `just cross` — build every release target (linux/darwin × amd64/arm64), as CI does
 - `just release-check` — `goreleaser check` + a snapshot release into `dist/` (downloads
   GoReleaser; the user runs it: Claude's sandbox may refuse the toolchain download)
@@ -117,7 +117,9 @@ mock server (`internal/wkmock`, `just dev`).
   Bubble Tea screens under a root `App`, all in one frame (`layout.go`:
   header on the top row via `headerLine` (ranked segments, fits any width; the audio
   badge comes from App's `shared` state), key/status bar on the bottom, rounded `panel`s in ANSI 8
-  grey, no painted backgrounds except the review glyph field): dashboard (from the store, sync in
+  grey, no painted backgrounds; glyph fields are the terminal background in a half-block
+  frame of the type colour (`field.go`; `fill`, the old solid block, and other frames are
+  kept for a future `display.field`)): dashboard (from the store, sync in
   the background via a channel), review (session + IME + answer + gfx; snapshot saved
   after every answer; completions → outbox → `wksync.Uploader`), summary, and the
   first-run token form (Huh), and the item page (`item.go`: glyph + summary, tabs by

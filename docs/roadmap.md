@@ -280,6 +280,10 @@ radical ice `#5cd6ff`, kanji orange `#ff7b29`, vocabulary cobalt `#3b7bff`,
 near-black ink `#05070c`, navy borders `#163a5c`, blue-grey muted `#6d93b8`.
 Runner-up "blackbox" (deep fields, white ink: `#0a62e8` / `#d9530a` / `#6a2be0`)
 added as its own theme. Glow (a bloom shader) is the terminal's business: not documented.
+Then, in the app the bright fields glared; dimming them was tried, then frames: the
+user chose a half-block frame (▛▀▜) of the type colour around the terminal's own
+background, glyph white, for **every** theme (`ui/field.go`). Other frames and the old
+fill stay in code for a later `display.field` setting (backlog).
 
 **Done 2026-11-14:**
 - `ui/theme.go`: `Theme` roles → package styles (`SetTheme`); the refactor kept every

@@ -168,7 +168,7 @@ func TestLessonQuizSendsFirstGlyph(t *testing.T) {
 	if !ok {
 		t.Fatal("no first question")
 	}
-	cols, rows := h.app.review.glyphSize()
+	cols, rows := imageSize(h.app.review.glyphSize())
 	want := fmt.Sprintf("UPLOAD subject:%d@%dx%d;", it.Subject.ID, cols, rows)
 	if !strings.Contains(h.raw.String(), want) {
 		t.Errorf("first quiz glyph never sent: want %q in %q", want, h.raw.String())
@@ -181,7 +181,7 @@ func TestLessonResizeSendsGlyph(t *testing.T) {
 	h := newHarness(t)
 	h.key("l")
 	h.send(tea.WindowSizeMsg{Width: 120, Height: 40})
-	cols, rows := h.app.lesson.page.glyphSize()
+	cols, rows := imageSize(h.app.lesson.page.glyphSize())
 	want := fmt.Sprintf("UPLOAD subject:%d@%dx%d;", h.app.lesson.page.data.Subject.ID, cols, rows)
 	if !strings.Contains(h.raw.String(), want) {
 		t.Errorf("resized lesson glyph never sent: want %q in %q", want, h.raw.String())

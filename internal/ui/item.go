@@ -271,7 +271,7 @@ func (p *ItemPage) View() string {
 	bg := typeColour[subj.Object]
 	cells, err := p.drawGlyph(cols, rows)
 	if err != nil {
-		cells, _ = gfx.New(gfx.Plain, 0, 0).Draw(p.source(), cols, rows, glyphFG, bg)
+		cells, _ = plainGlyph(p.source(), cols, rows, bg)
 	}
 	sumW := max(w-cols-1, 10)
 	top := sideBySide(1, cells, panel("", p.summary(sumW-4), sumW, rows))
