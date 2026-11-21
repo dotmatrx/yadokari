@@ -153,7 +153,7 @@ var (
 	LessonOrders = []string{"wanikani", "ascending_level_then_subject", "ascending_level_then_shuffled", "shuffled"}
 	Strictnesses = []string{"wanikani", "strict", "lenient"}
 	GfxTiers     = []string{"auto", "kitty", "plain"}
-	ThemeNames   = []string{"wanikani", "yadokari", "terminal", "high-contrast"} // ui.Themes; a test keeps them in step
+	ThemeNames   = []string{"wanikani", "yadokari", "blackbox", "terminal", "high-contrast"} // ui.Themes; a test keeps them in step
 )
 
 // Load reads config.toml. A missing file gives the zero Config.

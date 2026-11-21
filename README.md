@@ -14,8 +14,8 @@ A terminal client for [WaniKani](https://www.wanikani.com) reviews and lessons.
 - Pronunciation audio, item pages with mnemonics, a dashboard with the review
   forecast.
 - Works offline: answers are queued and sent on the next sync.
-- Themes: WaniKani's colours, yadokari's own, your terminal's palette, or high
-  contrast. `NO_COLOR` is respected.
+- Themes: WaniKani's colours, yadokari's own (electric, or the calmer blackbox),
+  your terminal's palette, or high contrast. `NO_COLOR` is respected.
 
 yadokari (宿借り) is a hermit crab: it lives in a borrowed shell.
 

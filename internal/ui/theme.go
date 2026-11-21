@@ -66,6 +66,16 @@ var (
 		Correct: rgb(0x5cffc8), Wrong: rgb(0xff4a3d), Warn: rgb(0xffb347), Error: rgb(0xff5c4d),
 		Line: rgb(0x163a5c), Muted: rgb(0x6d93b8),
 	}
+	// blackbox: yadokari's restrained sibling. Deep saturated fields behind
+	// white ink (contrast 4.0–6.9); the electric colour is only in text.
+	themeBlackbox = Theme{
+		Name:    "blackbox",
+		Radical: rgb(0x0a62e8), Kanji: rgb(0xd9530a), Vocabulary: rgb(0x6a2be0),
+		Ink:     rgb(0xffffff),
+		Lessons: rgb(0xff8c42), Reviews: rgb(0x4da3ff), Bar: rgb(0x4da3ff),
+		Correct: rgb(0x4fd18b), Wrong: rgb(0xff4d5e), Warn: rgb(0xf5b942), Error: rgb(0xff5a67),
+		Line: rgb(0x2b3442), Muted: rgb(0x7c8798),
+	}
 	// terminal: the terminal's own palette (cyan radicals, magenta kanji,
 	// blue vocabulary), so the app follows its colour scheme. The ink is
 	// white unless the terminal's shades want dark ink (InkFor).
@@ -90,7 +100,7 @@ var (
 		Muted:  lipgloss.NoColor{},
 		Strong: true,
 	}
-	Themes       = []Theme{themeWaniKani, themeYadokari, themeTerminal, themeHighContrast}
+	Themes       = []Theme{themeWaniKani, themeYadokari, themeBlackbox, themeTerminal, themeHighContrast}
 	DefaultTheme = themeWaniKani
 )
 

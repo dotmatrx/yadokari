@@ -68,7 +68,8 @@ player = ""
 
 [display]
 # Colours: wanikani (WaniKani's type colours), yadokari (this app's own:
-# sea-green radicals, coral kanji, indigo vocabulary) or terminal (your
+# electric blues and orange, made for a black terminal), blackbox (a calmer
+# yadokari: deep colours behind white glyphs) or terminal (your
 # terminal's own palette: cyan radicals, magenta kanji, blue vocabulary, so it
 # follows your colour scheme) or high-contrast (deep type colours behind white
 # glyphs, bold marks, nothing faint). With NO_COLOR set, there is no colour at

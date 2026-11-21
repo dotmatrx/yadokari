@@ -278,7 +278,8 @@ deep-sea indigo `#4c4fae`, accent sand `#d8b27a`. All carry white glyphs (large 
 a palette gallery of six electric black-terminal palettes; the user chose "ion":
 radical ice `#5cd6ff`, kanji orange `#ff7b29`, vocabulary cobalt `#3b7bff`,
 near-black ink `#05070c`, navy borders `#163a5c`, blue-grey muted `#6d93b8`.
-Runner-up "blackbox" (deep fields, white ink): `#0a62e8` / `#d9530a` / `#6a2be0`.
+Runner-up "blackbox" (deep fields, white ink: `#0a62e8` / `#d9530a` / `#6a2be0`)
+added as its own theme. Glow (a bloom shader) is the terminal's business: not documented.
 
 **Done 2026-11-14:**
 - `ui/theme.go`: `Theme` roles → package styles (`SetTheme`); the refactor kept every
