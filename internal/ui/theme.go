@@ -39,6 +39,8 @@ type Theme struct {
 	Line color.Color
 	// Muted is secondary text (labels, hints); nil draws it faint.
 	Muted color.Color
+	// Light marks a theme's light-terminal version (see ForBackground).
+	Light bool
 	// Strong makes coloured text (right, wrong, warnings, errors) bold.
 	Strong bool
 }
@@ -105,7 +107,48 @@ var (
 	}
 	Themes       = []Theme{themeWaniKani, themeYadokari, themeBlackbox, themeTerminal, themeHighContrast}
 	DefaultTheme = themeWaniKani
+
+	// lightThemes are the themes' versions for a light terminal, by name:
+	// each colour keeps its hue, darkened to 4.5:1 or more on a light grey
+	// (#eeeeee) terminal (a test checks); borders are pale tints. terminal
+	// and high-contrast use the terminal's palette and need none.
+	lightThemes = map[string]Theme{
+		"wanikani": {
+			Name: "wanikani", Light: true,
+			Radical: rgb(0x0072ab), Kanji: rgb(0xcf008a), Vocabulary: rgb(0xa600f9),
+			Ink:     rgb(0xffffff),
+			Lessons: rgb(0xcf008a), Reviews: rgb(0x0072ab), Bar: rgb(0x0072ab),
+			Correct: rgb(0x507700), Wrong: rgb(0xda002c), Warn: rgb(0x846900), Error: rgb(0xdb0014),
+			Line: lipgloss.Color("8"),
+		},
+		"yadokari": {
+			Name: "yadokari", Light: true,
+			Radical: rgb(0x00749b), Kanji: rgb(0xba4700), Vocabulary: rgb(0x0d5cff),
+			Ink:     rgb(0xffffff),
+			Lessons: rgb(0xba4700), Reviews: rgb(0x00749b), Bar: rgb(0x0d5cff),
+			Correct: rgb(0x007c52), Wrong: rgb(0xd90f00), Warn: rgb(0x9e5c00), Error: rgb(0xd81200),
+			Line: rgb(0x95b1cc), Muted: rgb(0x486f95),
+		},
+		"blackbox": {
+			Name: "blackbox", Light: true,
+			Radical: rgb(0x0a62e8), Kanji: rgb(0xbb4709), Vocabulary: rgb(0x6a2be0),
+			Ink:     rgb(0xffffff),
+			Lessons: rgb(0xb94800), Reviews: rgb(0x0068d8), Bar: rgb(0x0068d8),
+			Correct: rgb(0x207b4a), Wrong: rgb(0xda0015), Warn: rgb(0x916308), Error: rgb(0xdb0011),
+			Line: rgb(0xa2afc3), Muted: rgb(0x636d7d),
+		},
+	}
 )
+
+// ForBackground is the theme's version for the terminal's background: its
+// light version on a light terminal, if it has one. The config file's
+// [theme] colours go on top (WithColours after this).
+func (t Theme) ForBackground(light bool) Theme {
+	if l, ok := lightThemes[t.Name]; ok && light {
+		return l
+	}
+	return t
+}
 
 // WithColours applies the config file's [theme] overrides (validated by
 // config.Load).
@@ -243,6 +286,10 @@ func SetTheme(t Theme) {
 	fg := func(c color.Color) lipgloss.Style { return lipgloss.NewStyle().Foreground(c) }
 	lineSt = fg(t.Line)
 	badgeSt = lipgloss.NewStyle().Background(t.Line).Foreground(lipgloss.Color("15")).Bold(true).Padding(0, 1)
+	if t.Light {
+		// White on a pale border is faint: the terminal's text colour.
+		badgeSt = lipgloss.NewStyle().Background(t.Line).Bold(true).Padding(0, 1)
+	}
 	if _, ok := t.Line.(lipgloss.NoColor); ok {
 		badgeSt = lipgloss.NewStyle().Reverse(true).Bold(true).Padding(0, 1)
 	}

@@ -71,3 +71,36 @@ func TestFrameInk(t *testing.T) {
 		}
 	}
 }
+
+func TestLightThemes(t *testing.T) {
+	grey := rgb(0xeeeeee) // the hardest of the light backgrounds checked
+	for name, l := range lightThemes {
+		if _, ok := ThemeNamed(name); !ok {
+			t.Errorf("light theme %q has no dark theme", name)
+		}
+		if !l.Light || l.Name != name {
+			t.Errorf("light theme %q: Light %v, Name %q", name, l.Light, l.Name)
+		}
+		roles := map[string]color.Color{
+			"radical": l.Radical, "kanji": l.Kanji, "vocabulary": l.Vocabulary,
+			"lessons": l.Lessons, "reviews": l.Reviews, "bar": l.Bar,
+			"correct": l.Correct, "wrong": l.Wrong, "warn": l.Warn, "error": l.Error, "muted": l.Muted,
+		}
+		for role, c := range roles {
+			if c, ok := c.(color.RGBA); ok {
+				if r := contrast(c, grey); r < 4.5 {
+					t.Errorf("%s light: %s %v is %.1f:1 on #eeeeee, want 4.5", name, role, c, r)
+				}
+			}
+		}
+	}
+	for _, th := range Themes {
+		l := th.ForBackground(true)
+		if _, has := lightThemes[th.Name]; has != l.Light {
+			t.Errorf("%s.ForBackground(true).Light = %v", th.Name, l.Light)
+		}
+		if d := th.ForBackground(false); d.Light {
+			t.Errorf("%s.ForBackground(false) is the light version", th.Name)
+		}
+	}
+}

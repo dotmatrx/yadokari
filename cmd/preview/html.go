@@ -26,10 +26,14 @@ func ttySize() ([2]int, error) {
 }
 
 // gallery lays the shots out as terminal panes, grouped by size. Panes are
-// always a dark terminal; the page around them follows the viewer's theme.
-func gallery(shots []shot) string {
+// a dark terminal, or a light one; the page around them follows the
+// viewer's theme.
+func gallery(shots []shot, light bool) string {
 	var b strings.Builder
 	b.WriteString(galleryHead)
+	if light {
+		b.WriteString(`<style>.term { background: #fafafa; color: #2b2f36; }</style>`)
+	}
 	b.WriteString(`<main><header><h1>yadokari screens</h1><p>Rendered from the real Lip Gloss output with demo data. Glyphs use the plain tier here; in Ghostty they are kitty graphics.</p></header>`)
 	var last size
 	for _, s := range shots {

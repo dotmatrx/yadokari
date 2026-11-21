@@ -269,8 +269,9 @@ func setupDisplay(cfg config.Config, gfxTier string) (display, error) {
 	if d.font, d.fontErr = glyph.FindFont(cfg.Display.Font); d.fontErr != nil {
 		d.tier, d.tierWhy = gfx.Plain, "no Japanese font found"
 	}
+	d.bg = ui.DetectBackground(cfg.Display.Background, os.Getenv, probe)
 	th, _ := ui.ThemeNamed(cmp.Or(cfg.Display.Theme, ui.DefaultTheme.Name))
-	th = th.WithColours(cfg.Theme)
+	th = th.ForBackground(d.bg.Light).WithColours(cfg.Theme)
 	if th.UsesPalette() {
 		// The glyph fields are the terminal's colours: ask for their shades
 		// to pick an ink that reads on them.
@@ -280,7 +281,6 @@ func setupDisplay(cfg config.Config, gfxTier string) (display, error) {
 	}
 	d.theme = th
 	ui.SetTheme(th)
-	d.bg = ui.DetectBackground(cfg.Display.Background, os.Getenv, probe)
 	ui.SetBackground(d.bg)
 	if d.tier == gfx.Kitty {
 		d.cellW, d.cellH = gfx.CellSize(probe)
@@ -334,7 +334,11 @@ func terminalReport(cfg config.Config, configPath, gfxTier string) error {
 		ink = "the terminal's own text colour"
 	}
 	row("glyph ink", ink)
-	row("theme", d.theme.Name)
+	if d.theme.Light {
+		row("theme", d.theme.Name+", light colours")
+	} else {
+		row("theme", d.theme.Name)
+	}
 	if d.bg.From == "not reported; assumed dark" {
 		fmt.Println("\nYour terminal didn't say what its background is. If it is light, add")
 		fmt.Println(`  [display]

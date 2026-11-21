@@ -286,9 +286,11 @@ background, glyph white, for **every** theme (`ui/field.go`). Other frames and t
 fill stay in code for a later `display.field` setting (backlog).
 Light terminals (2026-11-21): the probe also asks for the text and background
 colours (OSC 10/11); `display.background = auto|dark|light`; framed glyphs take the
-terminal's text colour; `yadokari --terminal` reports it all. **Next:** light
-variants of each theme's colours, chosen in the gallery (yadokari's ice and mint are
-under 2:1 on white; round two's "deep" colours are a start).
+terminal's text colour; `yadokari --terminal` reports it all. Then light versions of
+wanikani, yadokari and blackbox (`ui.lightThemes`, chosen in the gallery: each colour's
+hue darkened to 4.5:1 on `#eeeeee`, pale tinted borders; the input badge takes the
+terminal's text colour). Not yet seen in a real light terminal: check Ghostty with a
+light theme and Ptyxis in light mode.
 
 **Done 2026-11-14:**
 - `ui/theme.go`: `Theme` roles → package styles (`SetTheme`); the refactor kept every

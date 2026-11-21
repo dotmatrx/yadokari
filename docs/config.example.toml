@@ -77,7 +77,9 @@ player = ""
 theme = "wanikani"
 
 # Your terminal's background: auto (ask the terminal; most answer, and
-# COLORFGBG is checked if it doesn't), dark or light. Glyphs are drawn in the
+# COLORFGBG is checked if it doesn't), dark or light. On a light terminal the
+# wanikani, yadokari and blackbox themes use their light colours (terminal and
+# high-contrast follow the terminal's palette anyway). Glyphs are drawn in the
 # terminal's own text colour when it reports one, else white on dark and
 # near-black on light. Unknown means dark. `yadokari --terminal` shows what
 # was found.
