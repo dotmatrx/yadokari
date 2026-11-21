@@ -29,6 +29,8 @@ Use `just` (no Makefile):
   once from demo data (kitty glyphs in Ghostty); `--html` writes a gallery page. Screens:
   `dashboard`, `review`, `review-reading`, `review-wrong`, `summary`, `item`, `item-vocab`, `lesson`. Use it to iterate on
   layout; `--font=NAME|all` draws glyphs in each roulette font; `--theme=NAME|all` each theme; `--field=STYLE` a glyph field style (`ui.FieldStyles`); `--background=light` the light themes on a light pane; `--fixtures=DIR` uses a recording (personal data: never publish that).
+- `just icons` — render `docs/images/icon.svg` to PNGs in `docs/images/icons/` (16–1024 px;
+  needs `rsvg-convert`, from `librsvg2-tools`). Edit the SVG, then rerun it.
 - `just cross` — build every release target (linux/darwin × amd64/arm64), as CI does
 - `just release-check` — `goreleaser check` + a snapshot release into `dist/` (downloads
   GoReleaser; the user runs it: Claude's sandbox may refuse the toolchain download)

@@ -70,3 +70,8 @@ cross:
 release-check:
     GOTOOLCHAIN=auto go run github.com/goreleaser/goreleaser/v2@v2.20.2 check
     GOTOOLCHAIN=auto go run github.com/goreleaser/goreleaser/v2@v2.20.2 release --snapshot --clean
+
+# Render docs/images/icon.svg as PNGs (favicon, website, app icon sizes) into docs/images/icons/
+icons:
+    mkdir -p docs/images/icons
+    for s in 16 32 48 64 128 180 192 256 512 1024; do rsvg-convert -w $s -h $s docs/images/icon.svg -o docs/images/icons/icon-$s.png; done
