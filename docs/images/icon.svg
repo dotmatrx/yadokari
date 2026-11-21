@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="256" height="256" role="img" aria-labelledby="t">
+  <title id="t">yadokari: the roof radical 宀 over a terminal prompt</title>
+  <!-- The yadokari icon. 宀 (the roof at the top of 宿, yado) sheltering a
+       prompt and a block cursor, in the yadokari theme's colours: ice
+       #5cd6ff, orange #ff7b29, ink #05070c, navy edge #163a5c. -->
+  <rect x="0.75" y="0.75" width="62.5" height="62.5" rx="14" fill="#05070c" stroke="#163a5c" stroke-width="1.5"/>
+  <path d="M32 9 V15 M12 27 V20 H52 V27" fill="none" stroke="#5cd6ff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M19 33 L26 39 L19 45" fill="none" stroke="#ffffff" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="31" y="35" width="12" height="10" rx="1" fill="#ff7b29"/>
+</svg>

@@ -13,7 +13,7 @@ a milestone moves.
 | Phase 0: spikes and safety net | Done | API client + mock, kitty placeholders (pass), IME (pass); OSC 66 skipped; findings in the design doc |
 | M1: read-only dashboard | Done | Store, incremental sync, token (keyring works in the toolbox), dashboard; verified on the live account |
 | M2: reviews against the mock | Done | Session engine, answer checking, glyph/gfx (kitty + plain), outbox + uploader, review and summary screens |
-| M3: live reviews | Dogfooding | Built; the two weeks of daily use (to 2026-11-22) run alongside M4 |
+| M3: live reviews | Done | Two weeks of daily use to 2026-11-21: "no issues with the features or functionality" (the user) |
 | UI pass | Done | Panels frame on every screen; approved 2026-11-11 |
 | M4: lessons | Done (v0.4.0) | Item pages with mnemonic markup, lessons + quiz, `PUT /assignments/:id/start`, audio; live-verified 2026-11-11 |
 | M5: polish | v0.5.0 (2026-11-14); packaging built | Config file, font roulette, themes (yadokari palette on trial); packaging + CI built 2026-11-14, first release not cut yet; add synonym deferred to the distribution decision |
@@ -28,6 +28,28 @@ someone else (after M4 and M5's packaging). `just build`/`just install` stamp
 `git describe` (e.g. `v0.3.0-2-gabc1234-dirty` between tags) into the binary: shown by
 `--version`, in the dashboard header and in each `writes.log` entry. `go run` builds
 (`just run`, `just dev`) say `dev`.
+
+## Release prep (started 2026-11-21)
+
+The user's plan, in order:
+1. **Icon and README** (this step). Icon chosen 2026-11-21: 宀, the roof radical at
+   the top of 宿, over a prompt and an orange block cursor, on a black tile
+   (`docs/images/icon.svg`; concepts on the icon canvas linked in CLAUDE.md's
+   neighbour, the design doc's artifacts). README has a centred icon header.
+   **Left:** a screenshot. The user takes it in Ghostty, since the browser previews
+   can't show kitty glyphs: `just mock --demo` in one terminal, `just dev` in a
+   Ghostty window of about 110×32, `r`, then a kanji question; save as
+   `docs/images/review.png` and replace the screenshot comment in the README.
+   No raster icon yet (no rsvg-convert in the toolbox); the website and GitHub's
+   social preview will need PNGs.
+2. **Move the repo to the `dotmatrx` organization**, then make it public. Done
+   together with the user: rename the Go module path (`github.com/jtharris/yadokari`
+   → `github.com/dotmatrx/yadokari`) in one commit (every import, `go install` in the
+   README, `.goreleaser.yaml`, the Homebrew tap), before anyone `go install`s from the
+   new path. Check the git history for personal data first (backlog). CI badges in
+   the README once public.
+3. Installation: Homebrew (built), Linux packages (backlog), then a website, likely
+   on Cloudflare Pages.
 
 ## Where things were left (2026-11-11)
 

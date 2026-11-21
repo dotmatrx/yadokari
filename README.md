@@ -1,10 +1,21 @@
-# yadokari
+<p align="center">
+  <img src="docs/images/icon.svg" width="128" height="128" alt="The yadokari icon: the roof radical 宀 over a terminal prompt">
+</p>
 
-A terminal client for [WaniKani](https://www.wanikani.com) reviews and lessons.
+<h1 align="center">yadokari</h1>
+
+<p align="center">
+  <a href="https://www.wanikani.com">WaniKani</a> reviews and lessons in your terminal,<br>
+  with kanji drawn large.
+</p>
+
+<!-- Screenshot: docs/images/review.png, taken in Ghostty (see docs/roadmap.md). -->
 
 > yadokari is an **unofficial** WaniKani client, not affiliated with WaniKani or
 > Tofugu LLC. It talks to WaniKani's public API with your own token; the content it
 > shows is covered by [WaniKani's terms](https://www.wanikani.com/terms).
+
+## Features
 
 - Reviews and lessons in the terminal, with WaniKani's answer checking (typo
   tolerance, warnings for readings vs meanings), wrap-up and undo of a typo.
@@ -17,7 +28,9 @@ A terminal client for [WaniKani](https://www.wanikani.com) reviews and lessons.
 - Themes: WaniKani's colours, yadokari's own (electric, or the calmer blackbox),
   your terminal's palette, or high contrast. `NO_COLOR` is respected.
 
-yadokari (宿借り) is a hermit crab: it lives in a borrowed shell.
+yadokari (宿借り) is a hermit crab: it lives in a borrowed shell, as this app lives
+in your terminal. The icon is 宀, the roof radical at the top of 宿 (yado, lodging),
+sheltering a prompt.
 
 ## Install
 
