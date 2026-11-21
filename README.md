@@ -9,7 +9,9 @@
   with kanji drawn large.
 </p>
 
-<!-- Screenshot: docs/images/review.png, taken in Ghostty (see docs/roadmap.md). -->
+<p align="center">
+  <img src="docs/images/review.png" width="720" alt="A review in yadokari: the kanji 人 drawn large in an orange frame, with the answer box below">
+</p>
 
 > yadokari is an **unofficial** WaniKani client, not affiliated with WaniKani or
 > Tofugu LLC. It talks to WaniKani's public API with your own token; the content it

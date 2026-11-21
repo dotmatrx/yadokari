@@ -36,12 +36,11 @@ The user's plan, in order:
    the top of 宿, over a prompt and an orange block cursor, on a black tile
    (`docs/images/icon.svg`; all the concepts are on the icon canvas,
    https://claude.ai/artifact/FApsYBJ1jA7wugc6XjG6WV). README has a centred icon header.
-   **Left:** a screenshot. The user takes it in Ghostty, since the browser previews
-   can't show kitty glyphs: `just mock --demo` in one terminal, `just dev` in a
-   Ghostty window of about 110×32, `r`, then a kanji question; save as
-   `docs/images/review.png` and replace the screenshot comment in the README.
-   No raster icon yet (no rsvg-convert in the toolbox); the website and GitHub's
-   social preview will need PNGs.
+   Screenshot (`docs/images/review.png`, 2026-11-21): the review screen in Ghostty
+   with demo data (`just mock --demo`, `just dev`). Retake it the same way when the
+   screen changes; never from a recording (personal data). `just icons` renders the
+   icon as PNGs (`docs/images/icons/`). **Left:** a 1280×640 social preview card for
+   GitHub (icon, name, tagline), set by hand in the repo settings once public.
 2. **Move the repo to the `dotmatrx` organization**, then make it public. Done
    together with the user: rename the Go module path (`github.com/jtharris/yadokari`
    → `github.com/dotmatrx/yadokari`) in one commit (every import, `go install` in the
