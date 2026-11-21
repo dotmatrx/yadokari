@@ -54,16 +54,17 @@ var (
 		Correct: rgb(0x88cc00), Wrong: rgb(0xff0033), Warn: rgb(0xffcc00), Error: rgb(0xff4455),
 		Line: lipgloss.Color("8"),
 	}
-	// yadokari (宿借り, hermit crab): a tide pool, warm and sea-coloured
-	// where WaniKani is blue, pink and purple. White ink reads on every
-	// type colour (contrast 3.9–6.9).
+	// yadokari: electric colour on a black terminal, retro-future. Blues
+	// from ice to cobalt, with orange kanji the only warm colour; navy
+	// borders and blue-grey secondary text. The fields are bright, so the
+	// ink is near-black (contrast 5.2–12).
 	themeYadokari = Theme{
 		Name:    "yadokari",
-		Radical: rgb(0x2e8b57), Kanji: rgb(0xd9572b), Vocabulary: rgb(0x4c4fae),
-		Ink:     rgb(0xffffff),
-		Lessons: rgb(0xd9572b), Reviews: rgb(0x2e8b57), Bar: rgb(0xd8b27a),
-		Correct: rgb(0x6aa84f), Wrong: rgb(0xc8283c), Warn: rgb(0xe0b04a), Error: rgb(0xe0364a),
-		Line: lipgloss.Color("8"),
+		Radical: rgb(0x5cd6ff), Kanji: rgb(0xff7b29), Vocabulary: rgb(0x3b7bff),
+		Ink:     rgb(0x05070c),
+		Lessons: rgb(0xff7b29), Reviews: rgb(0x5cd6ff), Bar: rgb(0x3b7bff),
+		Correct: rgb(0x5cffc8), Wrong: rgb(0xff4a3d), Warn: rgb(0xffb347), Error: rgb(0xff5c4d),
+		Line: rgb(0x163a5c), Muted: rgb(0x6d93b8),
 	}
 	// terminal: the terminal's own palette (cyan radicals, magenta kanji,
 	// blue vocabulary), so the app follows its colour scheme. The ink is

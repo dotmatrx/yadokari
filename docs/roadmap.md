@@ -274,6 +274,11 @@ crab: a borrowed shell, a tide pool), warm and sea-coloured where WaniKani is
 blue/pink/purple: radical sea green `#2e8b57` (was teal `#1f8a7d`; greener per the user, 2026-11-14), kanji coral `#d9572b`, vocabulary
 deep-sea indigo `#4c4fae`, accent sand `#d8b27a`. All carry white glyphs (large text,
 ≥ 3:1). To be judged in the gallery. Open: which theme is the default at release.
+**Replaced 2026-11-21** (the user found the sea palette unappealing after two weeks):
+a palette gallery of six electric black-terminal palettes; the user chose "ion":
+radical ice `#5cd6ff`, kanji orange `#ff7b29`, vocabulary cobalt `#3b7bff`,
+near-black ink `#05070c`, navy borders `#163a5c`, blue-grey muted `#6d93b8`.
+Runner-up "blackbox" (deep fields, white ink): `#0a62e8` / `#d9530a` / `#6a2be0`.
 
 **Done 2026-11-14:**
 - `ui/theme.go`: `Theme` roles → package styles (`SetTheme`); the refactor kept every
