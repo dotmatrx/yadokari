@@ -107,8 +107,9 @@ Go 1.27 and [just](https://github.com/casey/just). `just` lists the recipes:
 (`just mock --demo`, then `just dev`). Submitting a review or starting a lesson can't
 be undone, so development builds (`go run`, `just run`, `just dev`, `just build`)
 never write to WaniKani; only installed builds (`just install`, releases,
-`go install …@vX.Y.Z`) do. See
-[`docs/roadmap.md`](docs/roadmap.md) for where things stand.
+`go install …@vX.Y.Z`) do. [`AGENTS.md`](AGENTS.md) describes the code layout and
+the rules for coding agents; planned work is in the
+[issues](https://github.com/dotmatrx/yadokari/issues).
 
 ## License
 
