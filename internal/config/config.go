@@ -139,7 +139,7 @@ type Audio struct {
 // Display is about drawing.
 type Display struct {
 	Gfx   string `toml:"gfx"`   // see GfxTiers; "" = "auto"
-	Theme string `toml:"theme"` // see ThemeNames; "" = "wanikani"
+	Theme string `toml:"theme"` // see ThemeNames; "" = "yadokari"
 	Font  string `toml:"font"`  // a font file; "" = discovered
 	// Background is the terminal's background: see Backgrounds; "" = "auto".
 	Background string `toml:"background"`
@@ -156,7 +156,7 @@ var (
 	Strictnesses = []string{"wanikani", "strict", "lenient"}
 	GfxTiers     = []string{"auto", "kitty", "plain"}
 	Backgrounds  = []string{"auto", "dark", "light"}
-	ThemeNames   = []string{"wanikani", "yadokari", "blackbox", "terminal", "high-contrast"} // ui.Themes; a test keeps them in step
+	ThemeNames   = []string{"yadokari", "wanikani", "blackbox", "terminal", "high-contrast"} // ui.Themes; a test keeps them in step
 )
 
 // Load reads config.toml. A missing file gives the zero Config.

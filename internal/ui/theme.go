@@ -105,8 +105,8 @@ var (
 		Muted:  lipgloss.NoColor{},
 		Strong: true,
 	}
-	Themes       = []Theme{themeWaniKani, themeYadokari, themeBlackbox, themeTerminal, themeHighContrast}
-	DefaultTheme = themeWaniKani
+	Themes       = []Theme{themeYadokari, themeWaniKani, themeBlackbox, themeTerminal, themeHighContrast}
+	DefaultTheme = themeYadokari
 
 	// lightThemes are the themes' versions for a light terminal, by name:
 	// each colour keeps its hue, darkened to 4.5:1 or more on a light grey
