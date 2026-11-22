@@ -46,12 +46,16 @@ The user's plan, in order:
    and the Homebrew tap is `dotmatrx/homebrew-tap` (`brew install dotmatrx/tap/yadokari`).
    **Left:** tag a release after the rename (v0.5.2 has the old module path, so
    `go install …@v0.5.2` fails from the new one; main also has the macOS font fix);
-   create the tap repo and the `HOMEBREW_TAP_TOKEN` secret under `dotmatrx`; check the
-   git history for personal data (backlog; a quick scan on 2026-11-22 found no
-   committed `.env`, recordings, databases or logs); decide on the commit email
+   create the tap repo and the `HOMEBREW_TAP_TOKEN` secret under `dotmatrx`; decide on the commit email
    (every commit has the personal address) and the private claude.ai links in the
    docs; `SECURITY.md`/`CONTRIBUTING.md`. Once public: macOS CI on every push, CI
    badges in the README, repo description/topics/social card, pkg.go.dev.
+   **History pass done 2026-11-22** (all 83 commits, deleted files included): no
+   token, no recording, database or log ever committed; none of the account's
+   username, user ID, assignment/review-statistic/study-material IDs or synonyms
+   appear anywhere. Left as known: the author email on every commit, the
+   screenshot's PNG metadata (creation time with time zone), the dogfooding notes
+   in the docs (environment, live review counts), and the private claude.ai links.
 3. Installation: Homebrew (built), Linux packages (backlog), then a website, likely
    on Cloudflare Pages.
 
