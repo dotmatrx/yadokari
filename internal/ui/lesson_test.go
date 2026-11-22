@@ -9,9 +9,9 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
-	"github.com/jtharris/yadokari/internal/session"
-	"github.com/jtharris/yadokari/internal/store"
-	"github.com/jtharris/yadokari/internal/wk"
+	"github.com/dotmatrx/yadokari/internal/session"
+	"github.com/dotmatrx/yadokari/internal/store"
+	"github.com/dotmatrx/yadokari/internal/wk"
 )
 
 // learn steps through every lesson page into the quiz.

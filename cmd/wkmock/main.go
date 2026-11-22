@@ -9,7 +9,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/jtharris/yadokari/internal/wkmock"
+	"github.com/dotmatrx/yadokari/internal/wkmock"
 )
 
 func main() {

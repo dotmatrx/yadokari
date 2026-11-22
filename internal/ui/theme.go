@@ -8,9 +8,9 @@ import (
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
 
-	"github.com/jtharris/yadokari/internal/config"
-	"github.com/jtharris/yadokari/internal/markup"
-	"github.com/jtharris/yadokari/internal/wk"
+	"github.com/dotmatrx/yadokari/internal/config"
+	"github.com/dotmatrx/yadokari/internal/markup"
+	"github.com/dotmatrx/yadokari/internal/wk"
 )
 
 // Theme is every colour the UI uses, by role. Colour only marks meaning

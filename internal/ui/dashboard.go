@@ -11,9 +11,9 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 
-	"github.com/jtharris/yadokari/internal/store"
-	"github.com/jtharris/yadokari/internal/wk"
-	"github.com/jtharris/yadokari/internal/wksync"
+	"github.com/dotmatrx/yadokari/internal/store"
+	"github.com/dotmatrx/yadokari/internal/wk"
+	"github.com/dotmatrx/yadokari/internal/wksync"
 )
 
 // Deps are what the dashboard needs.

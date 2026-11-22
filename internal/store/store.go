@@ -20,7 +20,7 @@ import (
 
 	_ "modernc.org/sqlite" // registers the "sqlite" driver
 
-	"github.com/jtharris/yadokari/internal/wk"
+	"github.com/dotmatrx/yadokari/internal/wk"
 )
 
 //go:embed migrations/*.sql

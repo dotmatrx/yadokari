@@ -10,7 +10,7 @@ import (
 	"slices"
 	"time"
 
-	"github.com/jtharris/yadokari/internal/wk"
+	"github.com/dotmatrx/yadokari/internal/wk"
 )
 
 // Data is everything the mock serves.

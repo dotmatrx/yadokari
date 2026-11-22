@@ -7,8 +7,8 @@ import (
 
 	"charm.land/lipgloss/v2"
 
-	"github.com/jtharris/yadokari/internal/config"
-	"github.com/jtharris/yadokari/internal/gfx"
+	"github.com/dotmatrx/yadokari/internal/config"
+	"github.com/dotmatrx/yadokari/internal/gfx"
 )
 
 func TestDetectBackground(t *testing.T) {

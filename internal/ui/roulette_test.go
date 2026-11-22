@@ -4,8 +4,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/jtharris/yadokari/internal/glyph"
-	"github.com/jtharris/yadokari/internal/session"
+	"github.com/dotmatrx/yadokari/internal/glyph"
+	"github.com/dotmatrx/yadokari/internal/session"
 )
 
 func TestRouletteFontPerQuestion(t *testing.T) {

@@ -12,10 +12,10 @@ import (
 	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
 
-	"github.com/jtharris/yadokari/internal/gfx"
-	"github.com/jtharris/yadokari/internal/store"
-	"github.com/jtharris/yadokari/internal/wk"
-	"github.com/jtharris/yadokari/internal/wkmock"
+	"github.com/dotmatrx/yadokari/internal/gfx"
+	"github.com/dotmatrx/yadokari/internal/store"
+	"github.com/dotmatrx/yadokari/internal/wk"
+	"github.com/dotmatrx/yadokari/internal/wkmock"
 )
 
 var now = time.Date(2026, 11, 7, 12, 30, 0, 0, time.UTC)

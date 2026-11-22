@@ -13,14 +13,14 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 
-	"github.com/jtharris/yadokari/internal/answer"
-	"github.com/jtharris/yadokari/internal/gfx"
-	"github.com/jtharris/yadokari/internal/glyph"
-	"github.com/jtharris/yadokari/internal/ime"
-	"github.com/jtharris/yadokari/internal/session"
-	"github.com/jtharris/yadokari/internal/store"
-	"github.com/jtharris/yadokari/internal/wk"
-	"github.com/jtharris/yadokari/internal/wksync"
+	"github.com/dotmatrx/yadokari/internal/answer"
+	"github.com/dotmatrx/yadokari/internal/gfx"
+	"github.com/dotmatrx/yadokari/internal/glyph"
+	"github.com/dotmatrx/yadokari/internal/ime"
+	"github.com/dotmatrx/yadokari/internal/session"
+	"github.com/dotmatrx/yadokari/internal/store"
+	"github.com/dotmatrx/yadokari/internal/wk"
+	"github.com/dotmatrx/yadokari/internal/wksync"
 )
 
 // sessionName keys the persisted review session in the store.

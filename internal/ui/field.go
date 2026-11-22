@@ -7,7 +7,7 @@ import (
 
 	"charm.land/lipgloss/v2"
 
-	"github.com/jtharris/yadokari/internal/gfx"
+	"github.com/dotmatrx/yadokari/internal/gfx"
 )
 
 // How a glyph field shows its subject type's colour, for every theme:

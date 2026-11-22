@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/jtharris/yadokari/internal/store"
+	"github.com/dotmatrx/yadokari/internal/store"
 )
 
 // The dashboard view: thin rounded panels on a grid that fills the

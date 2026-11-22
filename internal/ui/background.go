@@ -7,7 +7,7 @@ import (
 
 	"charm.land/lipgloss/v2"
 
-	"github.com/jtharris/yadokari/internal/gfx"
+	"github.com/dotmatrx/yadokari/internal/gfx"
 )
 
 // Background is what yadokari knows of the terminal's background.

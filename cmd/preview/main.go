@@ -19,12 +19,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jtharris/yadokari/internal/gfx"
-	"github.com/jtharris/yadokari/internal/glyph"
-	"github.com/jtharris/yadokari/internal/store"
-	"github.com/jtharris/yadokari/internal/ui"
-	"github.com/jtharris/yadokari/internal/wk"
-	"github.com/jtharris/yadokari/internal/wkmock"
+	"github.com/dotmatrx/yadokari/internal/gfx"
+	"github.com/dotmatrx/yadokari/internal/glyph"
+	"github.com/dotmatrx/yadokari/internal/store"
+	"github.com/dotmatrx/yadokari/internal/ui"
+	"github.com/dotmatrx/yadokari/internal/wk"
+	"github.com/dotmatrx/yadokari/internal/wkmock"
 )
 
 func main() {

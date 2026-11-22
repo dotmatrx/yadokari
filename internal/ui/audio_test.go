@@ -8,9 +8,9 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
-	"github.com/jtharris/yadokari/internal/audio"
-	"github.com/jtharris/yadokari/internal/session"
-	"github.com/jtharris/yadokari/internal/wk"
+	"github.com/dotmatrx/yadokari/internal/audio"
+	"github.com/dotmatrx/yadokari/internal/session"
+	"github.com/dotmatrx/yadokari/internal/wk"
 )
 
 // fakeAudio is both the download cache (a URL is its own path) and the

@@ -1,4 +1,4 @@
-module github.com/jtharris/yadokari
+module github.com/dotmatrx/yadokari
 
 go 1.27.3
 

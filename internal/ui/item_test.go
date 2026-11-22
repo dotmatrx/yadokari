@@ -7,8 +7,8 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
 
-	"github.com/jtharris/yadokari/internal/session"
-	"github.com/jtharris/yadokari/internal/wk"
+	"github.com/dotmatrx/yadokari/internal/session"
+	"github.com/dotmatrx/yadokari/internal/wk"
 )
 
 func TestItemPageFromReview(t *testing.T) {

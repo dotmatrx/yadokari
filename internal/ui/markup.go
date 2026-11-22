@@ -5,7 +5,7 @@ import (
 
 	"charm.land/lipgloss/v2"
 
-	"github.com/jtharris/yadokari/internal/markup"
+	"github.com/dotmatrx/yadokari/internal/markup"
 )
 
 // renderMarkup renders WaniKani markup wrapped to width, paragraphs separated

@@ -20,14 +20,14 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
-	"github.com/jtharris/yadokari/internal/audio"
-	"github.com/jtharris/yadokari/internal/config"
-	"github.com/jtharris/yadokari/internal/gfx"
-	"github.com/jtharris/yadokari/internal/glyph"
-	"github.com/jtharris/yadokari/internal/store"
-	"github.com/jtharris/yadokari/internal/ui"
-	"github.com/jtharris/yadokari/internal/wk"
-	"github.com/jtharris/yadokari/internal/wksync"
+	"github.com/dotmatrx/yadokari/internal/audio"
+	"github.com/dotmatrx/yadokari/internal/config"
+	"github.com/dotmatrx/yadokari/internal/gfx"
+	"github.com/dotmatrx/yadokari/internal/glyph"
+	"github.com/dotmatrx/yadokari/internal/store"
+	"github.com/dotmatrx/yadokari/internal/ui"
+	"github.com/dotmatrx/yadokari/internal/wk"
+	"github.com/dotmatrx/yadokari/internal/wksync"
 )
 
 // version is stamped at build time (`just install`, the release builds).
@@ -94,7 +94,7 @@ func run() error {
 		out := flag.CommandLine.Output()
 		fmt.Fprintf(out, "Usage: yadokari [flags]\n\n%s\n\nFlags:\n", disclaimer)
 		flag.PrintDefaults()
-		fmt.Fprintf(out, "\nSettings: ~/.config/yadokari/config.toml (every key is documented in\ndocs/config.example.toml, https://github.com/jtharris/yadokari).\n")
+		fmt.Fprintf(out, "\nSettings: ~/.config/yadokari/config.toml (every key is documented in\ndocs/config.example.toml, https://github.com/dotmatrx/yadokari).\n")
 	}
 	flag.Parse()
 

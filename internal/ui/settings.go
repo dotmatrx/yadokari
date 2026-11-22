@@ -1,10 +1,10 @@
 package ui
 
 import (
-	"github.com/jtharris/yadokari/internal/answer"
-	"github.com/jtharris/yadokari/internal/config"
-	"github.com/jtharris/yadokari/internal/session"
-	"github.com/jtharris/yadokari/internal/wk"
+	"github.com/dotmatrx/yadokari/internal/answer"
+	"github.com/dotmatrx/yadokari/internal/config"
+	"github.com/dotmatrx/yadokari/internal/session"
+	"github.com/dotmatrx/yadokari/internal/wk"
 )
 
 // Settings are the config file's review and lesson settings. The zero

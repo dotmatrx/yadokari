@@ -4,7 +4,7 @@ Where the project stands and what comes next. The design rationale lives in the 
 doc (link in CLAUDE.md); deferred ideas live in `docs/backlog.md`. Update this file when
 a milestone moves.
 
-**Last updated:** 2026-11-14 (v0.5.0).
+**Last updated:** 2026-11-22 (moved to `dotmatrx`).
 
 ## Milestones
 
@@ -41,12 +41,17 @@ The user's plan, in order:
    screen changes; never from a recording (personal data). `just icons` renders the
    icon as PNGs (`docs/images/icons/`). **Left:** a 1280×640 social preview card for
    GitHub (icon, name, tagline), set by hand in the repo settings once public.
-2. **Move the repo to the `dotmatrx` organization**, then make it public. Done
-   together with the user: rename the Go module path (`github.com/jtharris/yadokari`
-   → `github.com/dotmatrx/yadokari`) in one commit (every import, `go install` in the
-   README, `.goreleaser.yaml`, the Homebrew tap), before anyone `go install`s from the
-   new path. Check the git history for personal data first (backlog). CI badges in
-   the README once public.
+2. **Move the repo to the `dotmatrx` organization**, then make it public. Moved
+   2026-11-22 (still private); the Go module path is now `github.com/dotmatrx/yadokari`
+   and the Homebrew tap is `dotmatrx/homebrew-tap` (`brew install dotmatrx/tap/yadokari`).
+   **Left:** tag a release after the rename (v0.5.2 has the old module path, so
+   `go install …@v0.5.2` fails from the new one; main also has the macOS font fix);
+   create the tap repo and the `HOMEBREW_TAP_TOKEN` secret under `dotmatrx`; check the
+   git history for personal data (backlog; a quick scan on 2026-11-22 found no
+   committed `.env`, recordings, databases or logs); decide on the commit email
+   (every commit has the personal address) and the private claude.ai links in the
+   docs; `SECURITY.md`/`CONTRIBUTING.md`. Once public: macOS CI on every push, CI
+   badges in the README, repo description/topics/social card, pkg.go.dev.
 3. Installation: Homebrew (built), Linux packages (backlog), then a website, likely
    on Cloudflare Pages.
 
@@ -372,7 +377,7 @@ Not verified yet:
 - The first macOS CI run (v0.5.2 tag) failed on font discovery: Homebrew fontconfig on
   macOS lists hidden and pan-CJK fonts and Hiragino as eight families. Fixed on main
   (macOS CI green); not in a release yet.
-- Homebrew: create the public repo `jtharris/homebrew-tap` and a fine-grained token
+- Homebrew: create the public repo `dotmatrx/homebrew-tap` and a fine-grained token
   with contents:write on it as the `HOMEBREW_TAP_TOKEN` secret. While yadokari's repo
   is private, the cask can't download the release, so the tap waits for going public;
   until then the user's Mac takes the release tar.gz (via the GitHub site or `gh`).

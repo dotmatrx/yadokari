@@ -14,8 +14,8 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/jtharris/yadokari/internal/ime"
-	"github.com/jtharris/yadokari/internal/wk"
+	"github.com/dotmatrx/yadokari/internal/ime"
+	"github.com/dotmatrx/yadokari/internal/wk"
 )
 
 // Verdict is the outcome of a check.

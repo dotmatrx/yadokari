@@ -47,7 +47,7 @@ Use `just` (no Makefile):
 - `.github/workflows/release.yml`: on a `v*` tag push, tests then GoReleaser
   (`.goreleaser.yaml`): static binaries for linux/darwin × amd64/arm64, tar.gz with
   README, LICENSE and the example config, checksums, a GitHub release, and a Homebrew
-  cask in `jtharris/homebrew-tap` (skipped without the `HOMEBREW_TAP_TOKEN` secret; the
+  cask in `dotmatrx/homebrew-tap` (skipped without the `HOMEBREW_TAP_TOKEN` secret; the
   cask clears the quarantine flag since the binary is unsigned).
 - macOS: terminal ioctls by build tag (`gfx/termios_*.go`), `afplay` for audio, and
   font discovery by folder scan when there's no fontconfig (`glyph/fontscan.go`).

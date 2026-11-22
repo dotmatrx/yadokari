@@ -8,8 +8,8 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
-	"github.com/jtharris/yadokari/internal/session"
-	"github.com/jtharris/yadokari/internal/store"
+	"github.com/dotmatrx/yadokari/internal/session"
+	"github.com/dotmatrx/yadokari/internal/store"
 )
 
 // PreviewScreens are the screens and states Preview can render.

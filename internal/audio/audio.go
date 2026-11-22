@@ -16,7 +16,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/jtharris/yadokari/internal/wk"
+	"github.com/dotmatrx/yadokari/internal/wk"
 )
 
 // Content types WaniKani serves (no ogg).

@@ -14,13 +14,13 @@ import (
 	"github.com/charmbracelet/x/ansi"
 	"github.com/charmbracelet/x/ansi/kitty"
 
-	"github.com/jtharris/yadokari/internal/gfx"
-	"github.com/jtharris/yadokari/internal/glyph"
-	"github.com/jtharris/yadokari/internal/session"
-	"github.com/jtharris/yadokari/internal/store"
-	"github.com/jtharris/yadokari/internal/wk"
-	"github.com/jtharris/yadokari/internal/wkmock"
-	"github.com/jtharris/yadokari/internal/wksync"
+	"github.com/dotmatrx/yadokari/internal/gfx"
+	"github.com/dotmatrx/yadokari/internal/glyph"
+	"github.com/dotmatrx/yadokari/internal/session"
+	"github.com/dotmatrx/yadokari/internal/store"
+	"github.com/dotmatrx/yadokari/internal/wk"
+	"github.com/dotmatrx/yadokari/internal/wkmock"
+	"github.com/dotmatrx/yadokari/internal/wksync"
 )
 
 type harness struct {

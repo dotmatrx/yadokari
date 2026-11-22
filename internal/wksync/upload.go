@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/jtharris/yadokari/internal/store"
-	"github.com/jtharris/yadokari/internal/wk"
+	"github.com/dotmatrx/yadokari/internal/store"
+	"github.com/dotmatrx/yadokari/internal/wk"
 )
 
 // Uploader sends queued writes from the store's outbox, oldest first: reviews

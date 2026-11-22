@@ -13,8 +13,8 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/jtharris/yadokari/internal/store"
-	"github.com/jtharris/yadokari/internal/wk"
+	"github.com/dotmatrx/yadokari/internal/store"
+	"github.com/dotmatrx/yadokari/internal/wk"
 )
 
 // Foreground collections are needed before the dashboard is accurate.

@@ -31,17 +31,17 @@ changelog:
 release:
   prerelease: auto # v1.0.0-rc.1 and the like
 
-# Homebrew: `brew install jtharris/tap/yadokari`. Publishes to the public repo
-# jtharris/homebrew-tap with the HOMEBREW_TAP_TOKEN secret; skipped without
+# Homebrew: `brew install dotmatrx/tap/yadokari`. Publishes to the public repo
+# dotmatrx/homebrew-tap with the HOMEBREW_TAP_TOKEN secret; skipped without
 # it. The binary isn't signed, so the cask clears macOS's quarantine flag.
 homebrew_casks:
   - name: yadokari
     repository:
-      owner: jtharris
+      owner: dotmatrx
       name: homebrew-tap
       token: '{{ envOrDefault "HOMEBREW_TAP_TOKEN" "" }}'
     skip_upload: '{{ if envOrDefault "HOMEBREW_TAP_TOKEN" "" }}false{{ else }}true{{ end }}'
-    homepage: https://github.com/jtharris/yadokari
+    homepage: https://github.com/dotmatrx/yadokari
     description: Unofficial terminal client for WaniKani reviews and lessons
     license: MIT
     hooks:

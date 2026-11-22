@@ -7,8 +7,8 @@ import (
 	"net"
 	"os"
 
-	"github.com/jtharris/yadokari/internal/audio"
-	"github.com/jtharris/yadokari/internal/wk"
+	"github.com/dotmatrx/yadokari/internal/audio"
+	"github.com/dotmatrx/yadokari/internal/wk"
 )
 
 // userError is a message written for the user, shown as is.

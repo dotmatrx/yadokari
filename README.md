@@ -39,18 +39,18 @@ sheltering a prompt.
 **macOS (Homebrew):**
 
 ```sh
-brew install jtharris/tap/yadokari
+brew install dotmatrx/tap/yadokari
 ```
 
 **Linux and macOS (download):** take the archive for your system from
-[Releases](https://github.com/jtharris/yadokari/releases), unpack it and put
+[Releases](https://github.com/dotmatrx/yadokari/releases), unpack it and put
 `yadokari` on your `PATH`. On macOS, a downloaded binary is unsigned: clear the
 quarantine flag once with `xattr -d com.apple.quarantine yadokari`.
 
 **With Go 1.27+:**
 
 ```sh
-go install github.com/jtharris/yadokari/cmd/yadokari@latest
+go install github.com/dotmatrx/yadokari/cmd/yadokari@latest
 ```
 
 Windows isn't supported.

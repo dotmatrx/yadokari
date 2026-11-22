@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jtharris/yadokari/internal/wk"
+	"github.com/dotmatrx/yadokari/internal/wk"
 )
 
 func rec(typ, reading string, voice int) wk.PronunciationAudio {

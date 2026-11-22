@@ -8,7 +8,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 
-	"github.com/jtharris/yadokari/internal/store"
+	"github.com/dotmatrx/yadokari/internal/store"
 )
 
 // SummaryItem is one reviewed item in the summary.

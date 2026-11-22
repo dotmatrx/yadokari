@@ -19,8 +19,8 @@ import (
 	"sort"
 	"time"
 
-	"github.com/jtharris/yadokari/internal/wk"
-	"github.com/jtharris/yadokari/internal/wkmock"
+	"github.com/dotmatrx/yadokari/internal/wk"
+	"github.com/dotmatrx/yadokari/internal/wkmock"
 )
 
 func main() {

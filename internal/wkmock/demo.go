@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jtharris/yadokari/internal/wk"
+	"github.com/dotmatrx/yadokari/internal/wk"
 )
 
 // demoKanji and demoVocab are common words with their meaning and one

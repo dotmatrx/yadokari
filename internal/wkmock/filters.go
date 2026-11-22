@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jtharris/yadokari/internal/wk"
+	"github.com/dotmatrx/yadokari/internal/wk"
 )
 
 func intSet(q url.Values, key string) (map[int]bool, error) {

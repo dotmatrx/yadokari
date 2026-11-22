@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/jtharris/yadokari/internal/wk"
+	"github.com/dotmatrx/yadokari/internal/wk"
 )
 
 // ReviewItem is a due review with everything needed to ask and check it.
