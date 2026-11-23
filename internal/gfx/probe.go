@@ -6,32 +6,53 @@ import (
 	"image/color"
 	"os"
 	"regexp"
+	"slices"
 	"strconv"
+	"strings"
 	"time"
 
 	"golang.org/x/sys/unix"
 )
 
 // probeQuery asks for kitty graphics support (a 1×1 RGB query that the
-// terminal must not store) and the cell size in pixels (CSI 16 t), then
+// terminal must not store) and, by a feature query (kitty 0.50), for Unicode
+// placeholders (e=T,U=1), then the cell size in pixels (CSI 16 t), then
 // asks for palette colours 4–6 (OSC 4; the glyph fields of the "terminal"
-// theme) and the text and background colours (OSC 10, 11), then sends DA1. Every terminal answers DA1, so its reply arriving
-// means every answer that is coming has come.
-const probeQuery = "\x1b_Gi=31,s=1,v=1,a=q,t=d,f=24;AAAA\x1b\\" + "\x1b[16t" +
+// theme) and the text and background colours (OSC 10, 11), then the
+// terminal's name and version (XTVERSION, CSI > q), then sends DA1. Every
+// terminal answers DA1, so its reply arriving means every answer that is
+// coming has come.
+const probeQuery = "\x1b_Gi=31,s=1,v=1,a=q,t=d,f=24;AAAA\x1b\\" +
+	"\x1b_Ga=q,i=32,e=T,U=1\x1b\\" + "\x1b[16t" +
 	"\x1b]4;4;?\x1b\\\x1b]4;5;?\x1b\\\x1b]4;6;?\x1b\\" +
-	"\x1b]10;?\x1b\\\x1b]11;?\x1b\\" + "\x1b[c"
+	"\x1b]10;?\x1b\\\x1b]11;?\x1b\\" + "\x1b[>0q" + "\x1b[c"
 
 // Probed is what the terminal said.
 type Probed struct {
-	Kitty        bool // kitty graphics supported
-	CellW, CellH int  // cell size in pixels; 0 if not reported
+	Kitty bool // kitty graphics supported
+	// Placeholders is the answer to the feature query for Unicode
+	// placeholders; Unknown from terminals without feature queries.
+	Placeholders Support
+	CellW, CellH int // cell size in pixels; 0 if not reported
 	// Palette holds the colours the terminal reported for palette
 	// entries 0–15 (only 4–6 are asked); alpha 0 means unknown.
 	Palette [16]color.RGBA
 	// Foreground and Background are the terminal's text and background
 	// colours; alpha 0 means not reported.
 	Foreground, Background color.RGBA
+	// Terminal is the terminal's name and version from XTVERSION (e.g.
+	// "WezTerm 20240203-110809-5046fc22"); "" if it didn't say.
+	Terminal string
 }
+
+// Support is a terminal's answer to a kitty graphics feature query.
+type Support uint8
+
+const (
+	Unknown     Support = iota // no feature queries: the terminal didn't say
+	Supported                  // the reply named the feature
+	Unsupported                // feature queries understood, the feature not
+)
 
 // Probe asks the terminal on /dev/tty about kitty graphics and its cell
 // size. It must run before Bubble Tea takes over the terminal. This is more
@@ -94,6 +115,8 @@ func Probe(timeout time.Duration) (Probed, error) {
 var (
 	cellReply    = regexp.MustCompile(`\x1b\[6;(\d+);(\d+)t`)
 	paletteReply = regexp.MustCompile(`\x1b\]4;(\d+);rgb:([0-9a-fA-F]{1,4})/([0-9a-fA-F]{1,4})/([0-9a-fA-F]{1,4})`)
+	featureReply = regexp.MustCompile(`\x1b_G([^;\x1b]*);`)
+	versionReply = regexp.MustCompile(`\x1bP>\|([^\x1b\a]*)(?:\x1b\\|\a)`)
 	textReply    = regexp.MustCompile(`\x1b\](1[01]);rgb:([0-9a-fA-F]{1,4})/([0-9a-fA-F]{1,4})/([0-9a-fA-F]{1,4})`)
 )
 
@@ -124,6 +147,18 @@ func parseProbe(b []byte) (p Probed, done bool) {
 		} else {
 			p.Background = c
 		}
+	}
+	for _, m := range featureReply.FindAllSubmatch(b, -1) {
+		keys := strings.Split(string(m[1]), ",")
+		if slices.Contains(keys, "i=32") && slices.Contains(keys, "e=T") {
+			p.Placeholders = Unsupported
+			if slices.Contains(keys, "U=1") {
+				p.Placeholders = Supported
+			}
+		}
+	}
+	if m := versionReply.FindSubmatch(b); m != nil {
+		p.Terminal = string(m[1])
 	}
 	if i := bytes.Index(b, []byte("\x1b[?")); i >= 0 {
 		done = bytes.IndexByte(b[i:], 'c') >= 0

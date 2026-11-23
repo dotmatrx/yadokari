@@ -192,6 +192,20 @@ func TestParseProbe(t *testing.T) {
 		// Text and background colours (a light terminal), ended by ST or BEL.
 		{"\x1b]10;rgb:3b3b/3b3b/3b3b\x1b\\\x1b]11;rgb:fd/f6/e3\a" + da1,
 			Probed{Foreground: color.RGBA{0x3b, 0x3b, 0x3b, 0xff}, Background: color.RGBA{0xfd, 0xf6, 0xe3, 0xff}}, true},
+		// Feature query for placeholders: supported, refused, and a terminal
+		// without feature queries treating it as a bad ordinary query.
+		{"\x1b_Gi=31;OK\x1b\\\x1b_Gi=32,e=T,U=1;OK\x1b\\" + da1, Probed{Kitty: true, Placeholders: Supported}, true},
+		{"\x1b_Gi=31;OK\x1b\\\x1b_Ge=T,i=32;OK\x1b\\" + da1, Probed{Kitty: true, Placeholders: Unsupported}, true},
+		{"\x1b_Gi=31;OK\x1b\\\x1b_Gi=32;EINVAL:bad\x1b\\" + da1, Probed{Kitty: true}, true},
+		// Real replies to the graphics and feature queries (2026-11-23): none
+		// of these terminals has feature queries yet.
+		{"\x1b_Gi=31;OK\x1b\\\x1b_Gi=32;OK\x1b\\\x1b[?65;4;6;18;22c", Probed{Kitty: true}, true},                          // WezTerm
+		{"\x1b_Gi=31;OK\x1b\\\x1b_Gi=32;EINVAL: dimensions required\x1b\\\x1b[?62;4;6;22;52c", Probed{Kitty: true}, true}, // Rio
+		{"\x1b_Gi=31;OK\x1b\\\x1b_Gi=32;EINVAL: dimensions required\x1b\\\x1b[?62;22;52c", Probed{Kitty: true}, true},     // Ghostty
+		// XTVERSION, ended by ST or BEL.
+		{"\x1b_Gi=31;OK\x1b\\\x1bP>|WezTerm 20240203-110809-5046fc22\x1b\\" + da1,
+			Probed{Kitty: true, Terminal: "WezTerm 20240203-110809-5046fc22"}, true},
+		{"\x1bP>|kitty(0.44.0)\a" + da1, Probed{Terminal: "kitty(0.44.0)"}, true},
 		// Only the background reported.
 		{"\x1b]11;rgb:0000/0000/0000\x1b\\" + da1, Probed{Background: color.RGBA{0, 0, 0, 0xff}}, true},
 	} {
@@ -212,6 +226,11 @@ func TestChoose(t *testing.T) {
 	}
 	yes := func() (Probed, error) { return Probed{Kitty: true}, nil }
 	no := func() (Probed, error) { return Probed{}, nil }
+	wezterm := func() (Probed, error) { return Probed{Kitty: true, Terminal: "WezTerm 20240203-110809-5046fc22"}, nil }
+	says := func(s Support, term string) func() (Probed, error) {
+		return func() (Probed, error) { return Probed{Kitty: true, Placeholders: s, Terminal: term}, nil }
+	}
+	rio := func() (Probed, error) { return Probed{Kitty: true, Terminal: "Rio 0.2.30"}, nil }
 	fails := func() (Probed, error) { return Probed{}, errors.New("no tty") }
 	mustNot := func() (Probed, error) { t.Error("probe should not run"); return Probed{}, nil }
 	for _, tt := range []struct {
@@ -226,6 +245,13 @@ func TestChoose(t *testing.T) {
 		{"tmux", "auto", env("TMUX", "1", "TERM", "xterm-ghostty"), mustNot, Plain},
 		{"env ghostty", "", env("TERM", "xterm-ghostty"), mustNot, Kitty},
 		{"toolbox hides ghostty; probe says yes", "auto", env("TERM", "xterm-256color"), yes, Kitty},
+		{"wezterm by XTVERSION", "auto", env("TERM", "xterm-256color"), wezterm, Plain},
+		{"wezterm by env", "auto", env("TERM_PROGRAM", "WezTerm"), mustNot, Plain},
+		{"wezterm forced", "kitty", env("TERM_PROGRAM", "WezTerm"), mustNot, Kitty},
+		{"feature query: yes", "auto", env(), says(Supported, ""), Kitty},
+		{"feature query: no", "auto", env(), says(Unsupported, "kitty(0.50.1)"), Plain},
+		{"feature query beats the list", "auto", env(), says(Supported, "WezTerm 2027"), Kitty},
+		{"rio", "auto", env("TERM", "xterm-256color"), rio, Kitty},
 		{"ptyxis", "auto", env("TERM", "xterm-256color"), no, Plain},
 		{"no tty", "auto", env(), fails, Plain},
 		{"NO_COLOR", "auto", env("NO_COLOR", "1", "TERM", "xterm-ghostty"), mustNot, Plain},

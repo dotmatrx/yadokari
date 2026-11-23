@@ -217,7 +217,7 @@ func reviewDeps(client *wk.Client, st *store.Store, cfg config.Config, gfxTier s
 	if err != nil {
 		return rd, "", err
 	}
-	slog.Info("terminal", "tier", d.tier, "why", d.tierWhy, "light", d.bg.Light, "background", hexOr(d.bg.Colour, "unknown"),
+	slog.Info("terminal", "terminal", cmp.Or(d.terminal, "unknown"), "tier", d.tier, "why", d.tierWhy, "light", d.bg.Light, "background", hexOr(d.bg.Colour, "unknown"),
 		"text", hexOr(d.bg.Text, "unknown"), "from", d.bg.From)
 	warning := ""
 	if d.fontErr != nil {
@@ -241,6 +241,7 @@ func reviewDeps(client *wk.Client, st *store.Store, cfg config.Config, gfxTier s
 type display struct {
 	tier         gfx.Tier
 	tierWhy      string
+	terminal     string // name and version, if the terminal said (XTVERSION)
 	cellW, cellH int
 	font         *glyph.Font
 	fontErr      error
@@ -265,6 +266,9 @@ func setupDisplay(cfg config.Config, gfxTier string) (display, error) {
 	var err error
 	if d.tier, d.tierWhy, err = gfx.ChooseWhy(gfxTier, os.Getenv, probe); err != nil {
 		return d, err
+	}
+	if probed != nil {
+		d.terminal = probed.Terminal
 	}
 	if d.font, d.fontErr = glyph.FindFont(cfg.Display.Font); d.fontErr != nil {
 		d.tier, d.tierWhy = gfx.Plain, "no Japanese font found"
@@ -303,6 +307,9 @@ func terminalReport(cfg config.Config, configPath, gfxTier string) error {
 		return err
 	}
 	row := func(k, v string) { fmt.Printf("%-11s %s\n", k, v) }
+	if d.terminal != "" {
+		row("terminal", d.terminal)
+	}
 	row("graphics", fmt.Sprintf("%s (%s)", d.tier, d.tierWhy))
 	if d.tier == gfx.Kitty {
 		row("cell size", fmt.Sprintf("%d×%d px", d.cellW, d.cellH))

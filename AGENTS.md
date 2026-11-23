@@ -183,10 +183,16 @@ mock server (`internal/wkmock`, `just dev`).
   that path. Inside such a container `TERM` may be rewritten (e.g. to `xterm-256color`)
   and the terminal's own variables dropped, so the graphics tier comes from a terminal
   probe, not the environment.
-- Terminals: Ghostty and kitty get the kitty tier (Ghostty is the main one tested).
-  VTE terminals (Ptyxis, GNOME Terminal) support neither the kitty graphics/text
-  sizing protocols nor sixel, so they get the plain tier. WezTerm and Rio are
-  unchecked.
+- Terminals: Ghostty, kitty and Rio get the kitty tier (Ghostty is the main one
+  tested). VTE terminals (Ptyxis, GNOME Terminal) support neither the kitty
+  graphics/text sizing protocols nor sixel, and foot has no kitty graphics, so they
+  get the plain tier. WezTerm
+  answers the kitty graphics query but has no Unicode placeholders (boxes where the
+  glyph should be, the image at the cursor, then a hang), so it gets plain too.
+  `gfx.ChooseWhy` asks about placeholders with a kitty feature query (`e=T,U=1`,
+  kitty 0.50+); a terminal that doesn't answer one is checked against
+  `withoutPlaceholders` by `TERM_PROGRAM` or XTVERSION. Windows Terminal has no kitty
+  graphics either, so native Windows would only get the plain tier.
 - Sixel is deliberately out of scope for v1: it draws outside the cell grid, which fights
   Bubble Tea's diffing renderer.
 - Agent-specific or machine-specific notes (your OS, terminals, containers) belong in

@@ -1,7 +1,7 @@
 // Package gfx draws a large glyph into a block of terminal cells using the
 // best tier the terminal supports:
 //
-//	Kitty  kitty graphics via Unicode placeholders (kitty, Ghostty): the
+//	Kitty  kitty graphics via Unicode placeholders (kitty, Ghostty, Rio): the
 //	       glyph rasterized at full size
 //	Plain  the characters in the terminal's own font, centred in a coloured
 //	       box (every other terminal)
@@ -89,14 +89,42 @@ func ChooseWhy(override string, getenv func(string) string, probe func() (Probed
 	if Detect(getenv) == Kitty {
 		return Kitty, "the environment names a kitty-graphics terminal", nil
 	}
+	if name := noPlaceholders(getenv("TERM_PROGRAM")); name != "" {
+		return Plain, name + " can't show images through placeholders", nil
+	}
 	p, err := probe()
 	switch {
 	case err != nil:
 		return Plain, "the terminal didn't answer", nil
-	case p.Kitty:
-		return Kitty, "the terminal answered the graphics query", nil
+	case !p.Kitty:
+		return Plain, "the terminal has no kitty graphics", nil
+	case p.Placeholders == Supported:
+		return Kitty, "the terminal supports kitty graphics placeholders", nil
+	case p.Placeholders == Unsupported:
+		return Plain, "the terminal can't show images through placeholders", nil
 	}
-	return Plain, "the terminal has no kitty graphics", nil
+	if name := noPlaceholders(p.Terminal); name != "" {
+		return Plain, name + " can't show images through placeholders", nil
+	}
+	return Kitty, "the terminal answered the graphics query", nil
+}
+
+// withoutPlaceholders are terminals that answer the kitty graphics query
+// but don't support Unicode placeholders, which the kitty tier depends on,
+// and don't answer feature queries, which would say so: they draw the
+// placeholder grid as missing-glyph boxes and the image at the cursor.
+// Checked: WezTerm 20240203 (2026-11-23).
+var withoutPlaceholders = []string{"WezTerm"}
+
+// noPlaceholders returns the terminal's name if term (TERM_PROGRAM or an
+// XTVERSION reply) names one of withoutPlaceholders, else "".
+func noPlaceholders(term string) string {
+	for _, name := range withoutPlaceholders {
+		if strings.HasPrefix(strings.ToLower(term), strings.ToLower(name)) {
+			return name
+		}
+	}
+	return ""
 }
 
 // Source is something to draw: a mask producer plus a text fallback.

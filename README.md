@@ -28,7 +28,7 @@
 
 - Reviews and lessons in the terminal, with WaniKani's answer checking (typo
   tolerance, warnings for readings vs meanings), wrap-up and undo of a typo.
-- Large kanji drawn as images in terminals with kitty graphics (Ghostty, kitty),
+- Large kanji drawn as images in terminals with kitty graphics (Ghostty, kitty, Rio),
   plain text elsewhere. Optional **font roulette**: each question in a different
   Japanese typeface (gothic, mincho, textbook, handwritten).
 - Pronunciation audio, item pages with mnemonics, a dashboard with the review
@@ -91,8 +91,9 @@ Unset settings follow your preferences on the WaniKani website.
 
 ## Requirements
 
-- **A terminal with kitty graphics** for large kanji: [Ghostty](https://ghostty.org)
-  or [kitty](https://sw.kovidgoyal.net/kitty/). Other terminals get the plain tier
+- **A terminal with kitty graphics** for large kanji: [Ghostty](https://ghostty.org),
+  [kitty](https://sw.kovidgoyal.net/kitty/) or [Rio](https://rioterm.com). Other
+  terminals, WezTerm included, get the plain tier
   (kanji in the terminal's own font). Force either with `--gfx kitty|plain`.
   Light and dark terminals both work: yadokari asks the terminal for its
   background and text colours. `yadokari --terminal` shows what it found.
