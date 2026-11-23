@@ -58,10 +58,8 @@ Use `just` (no Makefile):
 - macOS: terminal ioctls by build tag (`gfx/termios_*.go`), `afplay` for audio, and
   font discovery by folder scan when there's no fontconfig (`glyph/fontscan.go`).
   Windows isn't supported. MIT license.
-- Versions: annotated semver tags (`vMAJOR.MINOR.PATCH`) on `main`. On 0.x the minor
-  version follows a milestone and patches are fixes found while using it; tag when
-  installing a build you'll use for a while, not on every commit. v1.0.0 is the first
-  release ready for other people. `just build` leaves `bin/yadokari` unstamped (a
+- Versions: annotated semver tags on `main`; the policy is in `CONTRIBUTING.md`
+  ("Versions and releases"). `just build` leaves `bin/yadokari` unstamped (a
   development build); `just install` and releases stamp `git describe`, which shows in
   `--version`, the dashboard header and each `writes.log` entry. `go run` builds say
   `dev`.

@@ -116,7 +116,9 @@ be undone, so development builds (`go run`, `just run`, `just dev`, `just build`
 never write to WaniKani; only installed builds (`just install`, releases,
 `go install …@vX.Y.Z`) do. [`AGENTS.md`](AGENTS.md) describes the code layout and
 the rules for coding agents; planned work is in the
-[issues](https://github.com/dotmatrx/yadokari/issues).
+[issues](https://github.com/dotmatrx/yadokari/issues). See
+[CONTRIBUTING.md](CONTRIBUTING.md) to help, and [SECURITY.md](SECURITY.md) to report
+a vulnerability.
 
 ## License
 
