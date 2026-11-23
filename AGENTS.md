@@ -102,7 +102,7 @@ mock server (`internal/wkmock`, `just dev`).
 - `internal/markup` — WaniKani mnemonic/hint markup (`<radical>`, `<kanji>`, `<reading>`,
   `<ja>`, `<a href>`…) → paragraphs of typed spans. Tolerant of malformed input (a close
   tag closes the innermost open tag). Pure; `ui.renderMarkup` styles and wraps it.
-- `internal/audio` — picks a pronunciation recording (default voice, primary reading,
+- `internal/audio` — picks a pronunciation recording (`audio.voice` by name, else the WaniKani default voice; primary reading;
   a format the player handles) and plays it with the first external player found
   (`pw-play`, `paplay`, `ffplay`, `mpv`, `afplay`; the static binary can't open a sound device),
   detached from the terminal. In the UI only `App` plays (`playAudioMsg`), showing

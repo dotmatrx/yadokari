@@ -47,7 +47,7 @@ func hasAudio(s wk.Resource[wk.Subject]) bool { return len(s.Data.PronunciationA
 var errNoRecording error = userError("no pronunciation audio for this item")
 
 // play fetches and plays the subject's recording in the background: the
-// user's default voice, the primary reading, a format the player handles.
+// voice from the config file or the user's default, the primary reading, a format the player handles.
 // The header badge shows "loading" until the player runs, then "playing"
 // until it ends (audioStartedMsg, audioDoneMsg).
 func (a *App) play(s wk.Resource[wk.Subject]) tea.Cmd {
@@ -67,6 +67,7 @@ func (a *App) play(s wk.Resource[wk.Subject]) tea.Cmd {
 	if a.dash.user != nil {
 		voice = a.dash.user.Data.Preferences.DefaultVoiceActorID
 	}
+	voice = a.rdeps.Settings.voice(s.Data.PronunciationAudios, voice)
 	reading := primaryReading(s.Data)
 	if reading == "" && s.Data.Characters != nil {
 		reading = *s.Data.Characters // kana vocabulary is its own reading

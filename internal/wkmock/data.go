@@ -266,12 +266,15 @@ func SampleData(now time.Time) Data {
 // mpeg and webm for each of two voices. The URLs don't resolve.
 func recordings(subject int, reading string) []wk.PronunciationAudio {
 	var out []wk.PronunciationAudio
-	for _, voice := range []int{2, 1} {
+	for _, voice := range []wk.AudioMetadata{
+		{VoiceActorID: 2, VoiceActorName: "Kenichi", Gender: "male", VoiceDescription: "Tokyo accent"},
+		{VoiceActorID: 1, VoiceActorName: "Kyoko", Gender: "female", VoiceDescription: "Tokyo accent"},
+	} {
 		for _, f := range []struct{ typ, ext string }{{"audio/webm", "webm"}, {"audio/mpeg", "mp3"}} {
 			out = append(out, wk.PronunciationAudio{
-				URL:         fmt.Sprintf("https://files.example.invalid/audio/%d-%d.%s", subject, voice, f.ext),
+				URL:         fmt.Sprintf("https://files.example.invalid/audio/%d-%d.%s", subject, voice.VoiceActorID, f.ext),
 				ContentType: f.typ,
-				Metadata:    wk.AudioMetadata{Pronunciation: reading, VoiceActorID: voice},
+				Metadata:    wk.AudioMetadata{Pronunciation: reading, VoiceActorID: voice.VoiceActorID, VoiceActorName: voice.VoiceActorName, Gender: voice.Gender, VoiceDescription: voice.VoiceDescription},
 			})
 		}
 	}

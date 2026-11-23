@@ -211,6 +211,7 @@ func TestConfigRejectsBadValues(t *testing.T) {
 		{"[display]\ngfx = \"sixel\"", "display.gfx"},
 		{"[display]\nfield = \"neon\"", `display.field = "neon": use one of block, fill`},
 		{"[audio]\nplayer = \"  \"", "audio.player is blank"},
+		{"[audio]\nvoice = \" \"", "audio.voice is blank"},
 		{"[reviews]\nordr = \"shuffled\"", `unknown setting "reviews.ordr"`},
 		{"[theme]\nkanji = \"pink\"", `theme.kanji = "pink": use "#rrggbb" or a palette number`},
 		{"[theme]\nline = \"256\"", "theme.line"},

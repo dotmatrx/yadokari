@@ -131,9 +131,10 @@ type Lessons struct {
 	AutoplayAudio *bool  `toml:"autoplay_audio"`
 }
 
-// Audio picks the player.
+// Audio picks the player and the voice.
 type Audio struct {
 	Player string `toml:"player"` // a command line; "" = the first one found
+	Voice  string `toml:"voice"`  // a voice actor's name, any case; "" = the WaniKani default voice
 }
 
 // Display is about drawing.
@@ -229,6 +230,9 @@ func (c Config) validate() error {
 	}
 	if c.Audio.Player != "" && len(strings.Fields(c.Audio.Player)) == 0 {
 		return fmt.Errorf("audio.player is blank")
+	}
+	if c.Audio.Voice != "" && strings.TrimSpace(c.Audio.Voice) == "" {
+		return fmt.Errorf("audio.voice is blank")
 	}
 	return nil
 }

@@ -133,6 +133,30 @@ func TestThemeNamesMatchConfig(t *testing.T) {
 	}
 }
 
+func TestSettingsVoice(t *testing.T) {
+	rec := func(id int, name string) wk.PronunciationAudio {
+		return wk.PronunciationAudio{Metadata: wk.AudioMetadata{VoiceActorID: id, VoiceActorName: name}}
+	}
+	audios := []wk.PronunciationAudio{rec(1, "Kyoko"), rec(2, "Kenichi")}
+	for _, tt := range []struct {
+		setting string
+		audios  []wk.PronunciationAudio
+		want    int
+	}{
+		{"", audios, 1},          // the WaniKani default
+		{"Kenichi", audios, 2},   // named
+		{" kenichi ", audios, 2}, // any case, spaces trimmed
+		{"Miyuki", audios, 1},    // no recording by Miyuki: the default
+		{"Kenichi", nil, 1},      // no recordings at all
+		{"Kyoko", []wk.PronunciationAudio{rec(2, "Kenichi"), rec(1, "Kyoko")}, 1},
+	} {
+		s := Settings{Audio: config.Audio{Voice: tt.setting}}
+		if got := s.voice(tt.audios, 1); got != tt.want {
+			t.Errorf("voice %q: got %d, want %d", tt.setting, got, tt.want)
+		}
+	}
+}
+
 func TestFieldNamesMatchConfig(t *testing.T) {
 	if strings.Join(FieldStyles, ",") != strings.Join(config.FieldNames, ",") {
 		t.Errorf("ui.FieldStyles %v, config.FieldNames %v", FieldStyles, config.FieldNames)

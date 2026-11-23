@@ -197,7 +197,7 @@ func run() error {
 func reviewDeps(client *wk.Client, st *store.Store, cfg config.Config, gfxTier string) (ui.ReviewDeps, string, error) {
 	rd := ui.ReviewDeps{
 		Uploader: &wksync.Uploader{Client: client, Store: st},
-		Settings: ui.Settings{Reviews: cfg.Reviews, Lessons: cfg.Lessons},
+		Settings: ui.Settings{Reviews: cfg.Reviews, Lessons: cfg.Lessons, Audio: cfg.Audio},
 	}
 	cacheDir, err := os.UserCacheDir()
 	if err != nil {

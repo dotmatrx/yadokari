@@ -66,6 +66,12 @@ order = "wanikani"
 # Examples: "mpv --no-terminal --no-video", "ffplay -nodisp -autoexit -loglevel error"
 player = ""
 
+# The voice to play: a WaniKani voice actor's name, e.g. "Kyoko" (female),
+# "Kenichi" (male) or "Miyuki" (female, on a few items only). Empty: your
+# WaniKani default voice, which is also used for items without a recording by
+# the voice named here.
+voice = ""
+
 [display]
 # Colours: yadokari (this app's own: electric blues and orange, made for a
 # black terminal), wanikani (WaniKani's type colours), blackbox (a calmer

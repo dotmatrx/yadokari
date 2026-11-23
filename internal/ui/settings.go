@@ -1,6 +1,8 @@
 package ui
 
 import (
+	"strings"
+
 	"github.com/dotmatrx/yadokari/internal/answer"
 	"github.com/dotmatrx/yadokari/internal/config"
 	"github.com/dotmatrx/yadokari/internal/session"
@@ -12,6 +14,21 @@ import (
 type Settings struct {
 	Reviews config.Reviews
 	Lessons config.Lessons
+	Audio   config.Audio
+}
+
+// voice returns the voice actor to play from audios: the one audio.voice
+// names, if the subject has a recording by them, else preferred (the
+// WaniKani default voice).
+func (s Settings) voice(audios []wk.PronunciationAudio, preferred int) int {
+	if name := strings.TrimSpace(s.Audio.Voice); name != "" {
+		for _, a := range audios {
+			if strings.EqualFold(a.Metadata.VoiceActorName, name) {
+				return a.Metadata.VoiceActorID
+			}
+		}
+	}
+	return preferred
 }
 
 // prefs returns the WaniKani preferences with the config file's overrides
