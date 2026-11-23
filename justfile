@@ -75,3 +75,7 @@ release-check:
 icons:
     mkdir -p docs/images/icons
     for s in 16 32 48 64 128 180 192 256 512 1024; do rsvg-convert -w $s -h $s docs/images/icon.svg -o docs/images/icons/icon-$s.png; done
+
+# Render docs/images/social-card.svg as the 1280×640 GitHub social preview PNG (upload it by hand in the repo settings)
+social-card:
+    rsvg-convert -w 1280 -h 640 docs/images/social-card.svg -o docs/images/social-card.png

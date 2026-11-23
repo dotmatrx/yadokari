@@ -31,6 +31,9 @@ Use `just` (no Makefile):
   layout; `--font=NAME|all` draws glyphs in each roulette font; `--theme=NAME|all` each theme; `--field=STYLE` a glyph field style (`ui.FieldStyles`); `--background=light` the light themes on a light pane; `--fixtures=DIR` uses a recording (personal data: never publish that).
 - `just icons` — render `docs/images/icon.svg` to PNGs in `docs/images/icons/` (16–1024 px;
   needs `rsvg-convert`, from `librsvg2-tools`). Edit the SVG, then rerun it.
+- `just social-card` — render `docs/images/social-card.svg` to the 1280×640 GitHub social
+  preview PNG (Inter, JetBrainsMono Nerd Font and Noto Serif CJK JP via fontconfig).
+  GitHub has no API for it: upload the PNG by hand in the repo settings.
 - `just cross` — build every release target (linux/darwin × amd64/arm64), as CI does
 - `just release-check` — `goreleaser check` + a snapshot release into `dist/` (downloads
   GoReleaser; an agent's sandbox may refuse the toolchain download)

@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640" width="1280" height="640" role="img" aria-labelledby="t">
+  <title id="t">yadokari: WaniKani reviews and lessons in your terminal, with kanji drawn large</title>
+  <!-- GitHub social preview card (1280×640), uploaded by hand in the repo
+       settings. `just social-card` renders it to social-card.png. Text uses
+       Inter, JetBrainsMono Nerd Font and Noto Serif CJK JP from fontconfig;
+       colours are the icon's (yadokari theme). -->
+  <rect width="1280" height="640" fill="#05070c"/>
+  <rect x="24" y="24" width="1232" height="592" rx="28" fill="none" stroke="#163a5c" stroke-width="2"/>
+
+  <!-- The icon (docs/images/icon.svg) at 288 px. -->
+  <svg x="112" y="176" width="288" height="288" viewBox="0 0 64 64">
+    <rect x="0.75" y="0.75" width="62.5" height="62.5" rx="14" fill="#05070c" stroke="#163a5c" stroke-width="1.5"/>
+    <path d="M32 9 V15 M12 27 V20 H52 V27" fill="none" stroke="#5cd6ff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M19 33 L26 39 L19 45" fill="none" stroke="#ffffff" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round"/>
+    <rect x="31" y="35" width="12" height="10" rx="1" fill="#ff7b29"/>
+  </svg>
+
+  <g font-family="Inter, sans-serif">
+    <text x="464" y="276" font-size="112" font-weight="700" fill="#ffffff" letter-spacing="-2">yadokari</text>
+    <text x="920" y="276" font-family="Noto Serif CJK JP, serif" font-size="44" fill="#5cd6ff">宿借り</text>
+    <text x="466" y="346" font-size="34" fill="#c4d2e0">WaniKani reviews and lessons</text>
+    <text x="466" y="392" font-size="34" fill="#c4d2e0">in your terminal, with kanji drawn large.</text>
+    <text x="466" y="464" font-family="JetBrainsMono Nerd Font, monospace" font-size="24" fill="#5cd6ff"><tspan fill="#ff7b29">$</tspan> brew install dotmatrx/tap/yadokari</text>
+    <text x="466" y="560" font-size="20" fill="#6f8296">Unofficial client, not affiliated with WaniKani · MIT</text>
+  </g>
+</svg>
