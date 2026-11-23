@@ -10,6 +10,13 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/dotmatrx/yadokari/actions/workflows/ci.yml"><img src="https://github.com/dotmatrx/yadokari/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI"></a>
+  <a href="https://github.com/dotmatrx/yadokari/releases/latest"><img src="https://img.shields.io/github/v/release/dotmatrx/yadokari" alt="Latest release"></a>
+  <a href="https://pkg.go.dev/github.com/dotmatrx/yadokari"><img src="https://pkg.go.dev/badge/github.com/dotmatrx/yadokari.svg" alt="Go Reference"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/dotmatrx/yadokari" alt="MIT license"></a>
+</p>
+
+<p align="center">
   <img src="docs/images/review.png" width="720" alt="A review in yadokari: the kanji 人 drawn large in an orange frame, with the answer box below">
 </p>
 
