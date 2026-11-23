@@ -76,6 +76,13 @@ player = ""
 # all and glyphs are drawn as text.
 theme = "yadokari"
 
+# How the glyph field shows the subject type's colour: block (a frame of half
+# blocks), thick (a frame of heavy lines), rails (a bar down each side),
+# corners (brackets at the corners) or fill (a solid block of the colour, the
+# glyph in the theme's ink). The frames leave the terminal's background inside,
+# with the glyph in its text colour.
+field = "block"
+
 # Your terminal's background: auto (ask the terminal; most answer, and
 # COLORFGBG is checked if it doesn't), dark or light. On a light terminal the
 # yadokari, wanikani and blackbox themes use their light colours (terminal and

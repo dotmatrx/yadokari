@@ -209,6 +209,7 @@ func TestConfigRejectsBadValues(t *testing.T) {
 		{"[reviews]\nstrictness = \"loose\"", "reviews.strictness"},
 		{"[lessons]\nbatch_size = -1", "lessons.batch_size = -1: must be 0 or more"},
 		{"[display]\ngfx = \"sixel\"", "display.gfx"},
+		{"[display]\nfield = \"neon\"", `display.field = "neon": use one of block, fill`},
 		{"[audio]\nplayer = \"  \"", "audio.player is blank"},
 		{"[reviews]\nordr = \"shuffled\"", `unknown setting "reviews.ordr"`},
 		{"[theme]\nkanji = \"pink\"", `theme.kanji = "pink": use "#rrggbb" or a palette number`},

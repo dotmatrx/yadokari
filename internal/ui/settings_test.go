@@ -133,6 +133,12 @@ func TestThemeNamesMatchConfig(t *testing.T) {
 	}
 }
 
+func TestFieldNamesMatchConfig(t *testing.T) {
+	if strings.Join(FieldStyles, ",") != strings.Join(config.FieldNames, ",") {
+		t.Errorf("ui.FieldStyles %v, config.FieldNames %v", FieldStyles, config.FieldNames)
+	}
+}
+
 func TestThemeWithColours(t *testing.T) {
 	th := themeYadokari.WithColours(config.Colours{Kanji: "#112233", Line: "7", Ink: "#000000"})
 	if r, g, b, _ := th.Kanji.RGBA(); r>>8 != 0x11 || g>>8 != 0x22 || b>>8 != 0x33 {

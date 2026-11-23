@@ -140,6 +140,7 @@ type Audio struct {
 type Display struct {
 	Gfx   string `toml:"gfx"`   // see GfxTiers; "" = "auto"
 	Theme string `toml:"theme"` // see ThemeNames; "" = "yadokari"
+	Field string `toml:"field"` // glyph field style, see FieldNames; "" = "block"
 	Font  string `toml:"font"`  // a font file; "" = discovered
 	// Background is the terminal's background: see Backgrounds; "" = "auto".
 	Background string `toml:"background"`
@@ -157,6 +158,7 @@ var (
 	GfxTiers     = []string{"auto", "kitty", "plain"}
 	Backgrounds  = []string{"auto", "dark", "light"}
 	ThemeNames   = []string{"yadokari", "wanikani", "blackbox", "terminal", "high-contrast"} // ui.Themes; a test keeps them in step
+	FieldNames   = []string{"block", "fill", "thick", "rails", "corners"}                    // ui.FieldStyles; a test keeps them in step
 )
 
 // Load reads config.toml. A missing file gives the zero Config.
@@ -188,6 +190,7 @@ func (c Config) validate() error {
 		{"lessons.order", c.Lessons.Order, LessonOrders},
 		{"display.gfx", c.Display.Gfx, GfxTiers},
 		{"display.theme", c.Display.Theme, ThemeNames},
+		{"display.field", c.Display.Field, FieldNames},
 		{"display.background", c.Display.Background, Backgrounds},
 	} {
 		if e.val != "" && !slices.Contains(e.allowed, e.val) {

@@ -134,8 +134,8 @@ mock server (`internal/wkmock`, `just dev`).
   header on the top row via `headerLine` (ranked segments, fits any width; the audio
   badge comes from App's `shared` state), key/status bar on the bottom, rounded `panel`s in ANSI 8
   grey, no painted backgrounds; glyph fields are the terminal background in a half-block
-  frame of the type colour (`field.go`; `fill`, the old solid block, and other frames are
-  kept for a future `display.field`)): dashboard (from the store, sync in
+  frame of the type colour by default (`field.go`; `display.field` picks `fill`, the old
+  solid block, or another frame)): dashboard (from the store, sync in
   the background via a channel), review (session + IME + answer + gfx; snapshot saved
   after every answer; completions → outbox → `wksync.Uploader`), summary, and the
   first-run token form (Huh), and the item page (`item.go`: glyph + summary, tabs by

@@ -286,6 +286,7 @@ func setupDisplay(cfg config.Config, gfxTier string) (display, error) {
 	d.theme = th
 	ui.SetTheme(th)
 	ui.SetBackground(d.bg)
+	ui.SetFieldStyle(cmp.Or(cfg.Display.Field, ui.DefaultFieldStyle)) // validated on load
 	if d.tier == gfx.Kitty {
 		d.cellW, d.cellH = gfx.CellSize(probe)
 	}
@@ -346,6 +347,7 @@ func terminalReport(cfg config.Config, configPath, gfxTier string) error {
 	} else {
 		row("theme", d.theme.Name)
 	}
+	row("field", cmp.Or(cfg.Display.Field, ui.DefaultFieldStyle))
 	if d.bg.From == "not reported; assumed dark" {
 		fmt.Println("\nYour terminal didn't say what its background is. If it is light, add")
 		fmt.Println(`  [display]
