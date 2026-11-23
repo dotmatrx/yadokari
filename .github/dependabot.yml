@@ -1,0 +1,14 @@
+# Version updates for GitHub Actions only: one grouped PR a month.
+# Go modules are updated by hand (`go get -u`); Dependabot security updates
+# (repo setting) still open PRs for vulnerable Go modules.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      actions:
+        patterns: ["*"]
+    commit-message:
+      prefix: ci

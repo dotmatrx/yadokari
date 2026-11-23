@@ -45,6 +45,8 @@ Use `just` (no Makefile):
 - `.github/workflows/ci.yml`: gofmt, vet, `go test -race` and the cross-build on
   Linux (with `fonts-noto-cjk`); macOS tests on tags and by hand while the repo is
   private (10× minutes), on every push once public.
+- `.github/dependabot.yml`: one grouped GitHub Actions update PR a month. Go modules
+  are updated by hand; Dependabot security updates (a repo setting) cover vulnerable ones.
 - `.github/workflows/release.yml`: on a `v*` tag push, tests then GoReleaser
   (`.goreleaser.yaml`): static binaries for linux/darwin × amd64/arm64, tar.gz with
   README, LICENSE and the example config, checksums, a GitHub release, and a Homebrew
