@@ -62,7 +62,9 @@ CI runs the same on Linux and macOS, with `-race`, and cross-builds every releas
 
 - Releases are annotated semver tags (`vMAJOR.MINOR.PATCH`) on `main`. Pushing one runs
   GoReleaser, which publishes the GitHub release and updates the Homebrew cask.
-- On 0.x, the minor version follows a milestone and patch versions are fixes found while
-  using it. A release is tagged when there's a build worth using for a while, not on
-  every commit.
-- v1.0.0 is the first release meant for other people.
+- From v1.0.0: a patch release (`1.0.x`) is fixes only; a minor release (`1.x.0`) adds
+  features and settings; a major release is the only one that may break something people
+  rely on: a setting, a key binding, a file's place or format. Settings are never renamed
+  or removed outright (see above).
+- A release is tagged when there's a build worth using for a while, not on every commit.
+  Release notes on GitHub say what changed for people using yadokari.
