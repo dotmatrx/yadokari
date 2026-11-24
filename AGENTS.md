@@ -52,7 +52,9 @@ Use `just` (no Makefile):
   are updated by hand; Dependabot security updates (a repo setting) cover vulnerable ones.
 - `.github/workflows/release.yml`: on a `v*` tag push, tests then GoReleaser
   (`.goreleaser.yaml`): static binaries for linux/darwin × amd64/arm64, tar.gz with
-  README, LICENSE and the example config, checksums, a GitHub release, and a Homebrew
+  README, LICENSE and the example config, `.deb`/`.rpm` packages (`nfpms`: no package
+  repository; fonts recommended, audio players suggested, by each distro's names),
+  checksums, a GitHub release, and a Homebrew
   cask in `dotmatrx/homebrew-tap` (skipped without the `HOMEBREW_TAP_TOKEN` secret; the
   cask clears the quarantine flag since the binary is unsigned).
 - macOS: terminal ioctls by build tag (`gfx/termios_*.go`), `afplay` for audio, and

@@ -51,6 +51,12 @@ brew install dotmatrx/tap/yadokari
 
 `brew upgrade` keeps it up to date.
 
+**Linux packages:** each release has a `.deb` and an `.rpm` for amd64 and arm64.
+Install the one for your system, e.g. `sudo apt install ./yadokari_…_amd64.deb` or
+`sudo dnf install ./yadokari-…x86_64.rpm`. They don't update themselves: install the
+next release the same way. A CJK font (`fonts-noto-cjk`, `google-noto-sans-cjk-fonts`)
+is recommended and an audio player suggested.
+
 **Linux and macOS (download):** take the archive for your system from
 [Releases](https://github.com/dotmatrx/yadokari/releases), unpack it and put
 `yadokari` on your `PATH`. On macOS, a downloaded binary is unsigned: clear the

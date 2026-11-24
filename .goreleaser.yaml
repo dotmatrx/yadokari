@@ -19,6 +19,47 @@ archives:
     name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
     files: [README.md, LICENSE, docs/config.example.toml]
 
+# Linux packages, attached to the release: one .deb and one .rpm per
+# architecture serve every distro and version, since the binary is static.
+# Installed by hand (`sudo dnf install ./yadokari-….rpm`, `sudo apt install
+# ./yadokari_….deb`); there's no package repository, so no updates through
+# dnf or apt. Nothing is required: fontconfig and a static (not variable) CJK
+# font are recommended for drawing kanji, an audio player is suggested.
+nfpms:
+  - id: packages
+    ids: [yadokari]
+    package_name: yadokari
+    file_name_template: "{{ .ConventionalFileName }}"
+    formats: [deb, rpm]
+    vendor: dotmatrx
+    homepage: https://github.com/dotmatrx/yadokari
+    maintainer: Justin Harris <justin@dotmatrx.com>
+    description: |-
+      Unofficial terminal client for WaniKani reviews and lessons.
+      Not affiliated with WaniKani or Tofugu LLC.
+    license: MIT
+    section: education
+    bindir: /usr/bin
+    contents:
+      - src: README.md
+        dst: /usr/share/doc/yadokari/README.md
+      - src: docs/config.example.toml
+        dst: /usr/share/doc/yadokari/config.example.toml
+      - src: LICENSE
+        dst: /usr/share/doc/yadokari/LICENSE
+        packager: deb
+      - src: LICENSE
+        dst: /usr/share/licenses/yadokari/LICENSE
+        packager: rpm
+        type: license
+    overrides:
+      deb:
+        recommends: [fontconfig, fonts-noto-cjk]
+        suggests: [pipewire-bin | pulseaudio-utils | ffmpeg | mpv]
+      rpm:
+        recommends: [fontconfig, google-noto-sans-cjk-fonts]
+        suggests: [pipewire-utils]
+
 checksum:
   name_template: checksums.txt
 
