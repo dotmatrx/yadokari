@@ -64,3 +64,20 @@ func TestAnsiToHTMLPlain(t *testing.T) {
 		t.Errorf("unexpected image: %s", out)
 	}
 }
+
+// Runs of narrow non-ASCII characters (box drawing, blocks) are boxed at
+// exactly their cell count, so fallback fonts can't shift the row; styles
+// split the runs, and ASCII and wide characters stay outside them.
+func TestAnsiToHTMLNarrowRuns(t *testing.T) {
+	out := ansiToHTML("╭──\x1b[1m─╮\x1b[m ab ▌人▐")
+	for _, want := range []string{
+		`<span class="n" style="width:3ch">╭──</span>`,
+		`<span class="n" style="width:2ch">─╮</span>`,
+		`<span class="n" style="width:1ch">▌</span><span class="w">人</span><span class="n" style="width:1ch">▐</span>`,
+		` ab `,
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("missing %q in\n%s", want, out)
+		}
+	}
+}

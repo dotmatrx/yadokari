@@ -84,6 +84,7 @@ figcaption { font-family: var(--mono); font-size: .8rem; color: var(--muted); }
 .term { margin: 0; background: var(--term); color: var(--term-ink); border: 1px solid var(--term-edge); border-radius: 6px;
   padding: 10px 12px; box-sizing: content-box; font-family: var(--mono); font-size: 13px; line-height: 1.25; white-space: pre; }
 .term .w { display: inline-block; width: 2ch; text-align: center; }
+.term .n { display: inline-block; white-space: pre; }
 .term .g { position: relative; } .term .g img { position: absolute; left: 0; top: 0; }
 .term .b { font-weight: 700; } .term .f { opacity: .55; } .term .u { text-decoration: underline; }
 </style>
@@ -99,8 +100,19 @@ func ansiToHTML(s string) string {
 	var st sgr
 	images := map[int]*kittyImage{}
 	var cur *kittyImage // the upload whose chunks are arriving
+	// run holds narrow non-ASCII characters (box drawing, blocks): written
+	// as one box exactly len(run) ch wide, so a fallback font whose glyphs
+	// aren't 1ch can't push the rest of the row out of line.
+	var run []rune
+	endRun := func() {
+		if len(run) > 0 {
+			fmt.Fprintf(&out, `<span class="n" style="width:%dch">%s</span>`, len(run), html.EscapeString(string(run)))
+			run = run[:0]
+		}
+	}
 	open := false
 	flush := func() {
+		endRun()
 		if open {
 			out.WriteString("</span>")
 			open = false
@@ -113,6 +125,11 @@ func ansiToHTML(s string) string {
 	rs := []rune(s)
 	for i := 0; i < len(rs); i++ {
 		r := rs[i]
+		narrow := r > 0x7f && r != kitty.Placeholder && ansi.StringWidth(string(r)) == 1
+		if narrow && r != 0x1b {
+			run = append(run, r)
+			continue
+		}
 		if r == 0x1b && i+1 < len(rs) {
 			switch rs[i+1] {
 			case '[': // CSI: params then a final byte in @–~
@@ -142,6 +159,7 @@ func ansiToHTML(s string) string {
 			}
 			continue
 		}
+		endRun()
 		if r == kitty.Placeholder {
 			// The cell's row and column ride on two diacritics.
 			row, col := -1, -1
@@ -164,6 +182,7 @@ func ansiToHTML(s string) string {
 		}
 		out.WriteString(text)
 	}
+	endRun()
 	if open {
 		out.WriteString("</span>")
 	}
