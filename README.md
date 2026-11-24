@@ -43,11 +43,13 @@ sheltering a prompt.
 
 ## Install
 
-**macOS (Homebrew):**
+**Homebrew (macOS and Linux):**
 
 ```sh
 brew install dotmatrx/tap/yadokari
 ```
+
+`brew upgrade` keeps it up to date.
 
 **Linux and macOS (download):** take the archive for your system from
 [Releases](https://github.com/dotmatrx/yadokari/releases), unpack it and put
