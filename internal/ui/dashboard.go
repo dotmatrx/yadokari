@@ -25,6 +25,9 @@ type Deps struct {
 	Location *time.Location
 	Endpoint string // shown in the header, e.g. "live API" or "mock"
 	Version  string // shown after the name in the header, e.g. "v0.3.0"
+	// Seed, when not 0, fixes the review order and questions (previews
+	// that must come out the same every time); 0 seeds from the clock.
+	Seed uint64
 }
 
 // Dashboard is the home screen: counts, forecast and level progress, drawn

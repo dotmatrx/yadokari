@@ -141,7 +141,11 @@ func LoadReview(ctx context.Context, deps Deps, rdeps ReviewDeps, user wk.User) 
 	for _, it := range items {
 		byAssignment[it.Assignment.ID] = it
 	}
-	rng := rand.New(rand.NewPCG(uint64(time.Now().UnixNano()), 0x9e3779b97f4a7c15))
+	seed := deps.Seed
+	if seed == 0 {
+		seed = uint64(time.Now().UnixNano())
+	}
+	rng := rand.New(rand.NewPCG(seed, 0x9e3779b97f4a7c15))
 	r := newReview(deps, rdeps, sessionName)
 	r.prefs = rdeps.Settings.prefs(user.Preferences)
 

@@ -56,21 +56,24 @@ func run() error {
 	sizesFlag := flag.String("size", "", "comma-separated WxH sizes (default: the terminal's size; 120x36,80x24 for --html)")
 	fixtures := flag.String("fixtures", "", "recording directory to use instead of demo data (personal data: don't publish)")
 	htmlOut := flag.String("html", "", "write an HTML gallery to this file instead of drawing in the terminal")
+	seedFlag := flag.Uint64("seed", 1, "with --html-dir: the review session's seed, which picks the questions shown")
+	htmlDir := flag.String("html-dir", "", "write each screen as an HTML fragment (a <pre>) into this directory, from fixed demo data (same output every run): for the product site")
 	gfxFlag := flag.String("gfx", "auto", "graphics tier in the terminal: auto, kitty or plain")
 	bgFlag := flag.String("background", "dark", "the terminal background to draw for: dark or light (light themes; a light gallery)")
 	fieldFlag := flag.String("field", "", "glyph field style: "+strings.Join(ui.FieldStyles, ", ")+` (default: `+ui.DefaultFieldStyle+`)`)
 	themeFlag := flag.String("theme", "", `colour theme: a name (wanikani, yadokari), or "all" for each in turn (default: wanikani)`)
-	fontFlag := flag.String("font", "", `glyph font as the roulette would show it: a font file or installed family name, or "all" for each installed Japanese font in turn`)
+	fontFlag := flag.String("font", "", `glyph font as the roulette would show it: font files or installed family names, comma-separated, or "all" for each installed Japanese font in turn`)
 	screens, err := parseArgs(flag.CommandLine, os.Args[1:])
 	if err != nil {
 		return err
 	}
+	asHTML := *htmlOut != "" || *htmlDir != "" // a page or fragments, not the terminal
 	if len(screens) == 0 {
 		screens = ui.PreviewScreens
 	}
 	spec := *sizesFlag
 	if spec == "" {
-		if *htmlOut != "" {
+		if asHTML {
 			spec = "120x36,80x24"
 		} else {
 			spec = terminalSize()
@@ -81,7 +84,11 @@ func run() error {
 		return err
 	}
 
-	now := time.Now()
+	now, loc, seed := time.Now(), time.Local, uint64(0)
+	if *htmlDir != "" {
+		// Fixed inputs: regenerating changes the files only if the UI did.
+		now, loc, seed = time.Date(2026, 11, 24, 9, 0, 0, 0, time.UTC), time.UTC, *seedFlag
+	}
 	data := wkmock.DemoData(now)
 	if *fixtures != "" {
 		if data, err = wkmock.LoadDir(*fixtures); err != nil {
@@ -103,8 +110,8 @@ func run() error {
 	renderer := gfx.New(gfx.Plain, 0, 0)
 	// The gallery draws glyphs as the kitty tier does, as images, unless
 	// --gfx plain asks for the plain tier.
-	htmlImages := *htmlOut != "" && font != nil && *gfxFlag != "plain"
-	if *htmlOut == "" {
+	htmlImages := asHTML && font != nil && *gfxFlag != "plain"
+	if !asHTML {
 		probe := func() (gfx.Probed, error) { return gfx.Probe(time.Second) }
 		tier, err := gfx.Choose(*gfxFlag, os.Getenv, probe)
 		if err != nil {
@@ -144,7 +151,7 @@ func run() error {
 			for _, th := range themes {
 				th = th.ForBackground(light)
 				if th.UsesPalette() {
-					th = th.InkFor(previewPalette(*htmlOut != ""), false)
+					th = th.InkFor(previewPalette(asHTML), false)
 				}
 				ui.SetTheme(th)
 				for _, f := range fonts {
@@ -153,7 +160,7 @@ func run() error {
 					if err != nil {
 						return err
 					}
-					deps := ui.Deps{Store: st, Now: func() time.Time { return now }, Location: time.Local, Endpoint: "mock demo"}
+					deps := ui.Deps{Store: st, Now: func() time.Time { return now }, Location: loc, Endpoint: "mock demo", Seed: seed}
 					if htmlImages {
 						// Each screen carries its own images (kitty uploads,
 						// which the gallery turns into <img>).
@@ -175,14 +182,24 @@ func run() error {
 					if htmlImages {
 						out = renderer.Flush() + out
 					}
-					shots = append(shots, shot{screen: label, size: sz, ansi: out})
-					if *htmlOut == "" {
+					name := screen
+					if *fontFlag != "" && f != nil {
+						name += "-" + slug(f.Family)
+					}
+					if len(themes) > 1 {
+						name += "-" + th.Name
+					}
+					shots = append(shots, shot{screen: label, name: name, size: sz, ansi: out})
+					if !asHTML {
 						fmt.Print(renderer.Flush())
 						fmt.Printf("\x1b[2m── %s %s %s\x1b[m\n%s\n", label, sz, strings.Repeat("─", max(sz.w-len(label)-len(sz.String())-5, 0)), out)
 					}
 				}
 			}
 		}
+	}
+	if *htmlDir != "" {
+		return writeFragments(*htmlDir, shots, len(sizes) > 1)
 	}
 	if *htmlOut != "" {
 		if err := os.WriteFile(*htmlOut, []byte(gallery(shots, *bgFlag == "light")), 0o644); err != nil {
@@ -293,7 +310,7 @@ func previewFonts(name string) ([]*glyph.Font, error) {
 	}
 	refs := installed
 	if name != "all" {
-		if refs, err = glyph.SelectFonts(installed, []string{name}); err != nil {
+		if refs, err = glyph.SelectFonts(installed, strings.Split(name, ",")); err != nil {
 			return nil, err
 		}
 	}

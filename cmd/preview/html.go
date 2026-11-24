@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"html"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -13,9 +14,45 @@ import (
 )
 
 type shot struct {
-	screen string
+	screen string // the label: screen, theme
+	name   string // the fragment's file name: screen[-font][-theme]
 	size   size
 	ansi   string
+}
+
+// writeFragments writes each shot as dir/NAME.html: one <pre class="screen">
+// cols ch wide, with no page around it, for a site to include and style
+// (the .w, .n, .g, .b, .f and .u classes below). withSize adds -WxH to names.
+func writeFragments(dir string, shots []shot, withSize bool) error {
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return err
+	}
+	for _, s := range shots {
+		name := s.name
+		if withSize {
+			name += "-" + s.size.String()
+		}
+		frag := fmt.Sprintf("<pre class=\"screen\" style=\"width:%dch\">%s</pre>\n", s.size.w, ansiToHTML(s.ansi))
+		if err := os.WriteFile(filepath.Join(dir, name+".html"), []byte(frag), 0o644); err != nil {
+			return err
+		}
+	}
+	fmt.Fprintf(os.Stderr, "wrote %d screens to %s\n", len(shots), dir)
+	return nil
+}
+
+// slug makes a font family a file-name part: "Noto Serif CJK JP" →
+// "noto-serif-cjk-jp".
+func slug(s string) string {
+	return strings.Trim(strings.Map(func(r rune) rune {
+		switch {
+		case r >= 'a' && r <= 'z', r >= '0' && r <= '9':
+			return r
+		case r >= 'A' && r <= 'Z':
+			return r + 'a' - 'A'
+		}
+		return '-'
+	}, s), "-")
 }
 
 func ttySize() ([2]int, error) {
