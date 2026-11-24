@@ -48,6 +48,12 @@
 # edit, and the miss isn't counted. WaniKani has no such key; it's off by default.
 # allow_undo = false
 
+# Lightning mode: a correct answer goes straight to the next question, with a
+# ✓ line under the answer box for the one just answered. A wrong answer, or a
+# meaning accepted only as "a bit off", still stops so you can read it. Lesson
+# quizzes always stop.
+# lightning = false
+
 # Play the reading after a correct reading answer. Unset: your WaniKani
 # preference ("Autoplay audio in reviews").
 # autoplay_audio = true

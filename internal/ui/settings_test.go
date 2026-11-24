@@ -62,6 +62,70 @@ func TestSettingsPrecedence(t *testing.T) {
 	}
 }
 
+func TestLightning(t *testing.T) {
+	h := newHarness(t)
+	h.app.rdeps.Settings.Reviews.Lightning = true
+	h.key("r")
+	r := h.app.review
+	// A correct answer goes straight on, with a ✓ line for it.
+	q, it, _ := r.current()
+	h.key(h.answerFor())
+	h.key("enter")
+	if r.state != answering {
+		t.Fatalf("lightning should skip the graded screen:\n%s", h.screen())
+	}
+	if !strings.Contains(h.screen(), "✓ "+*it.Subject.Data.Characters) {
+		t.Errorf("no ✓ line for %s:\n%s", *it.Subject.Data.Characters, h.screen())
+	}
+	if next, _, _ := r.current(); next == q {
+		t.Errorf("still on the same question %+v", q)
+	}
+	// Typing clears it.
+	h.key("x")
+	if strings.Contains(h.screen(), "✓ "+*it.Subject.Data.Characters) {
+		t.Errorf("the ✓ line should clear on typing:\n%s", h.screen())
+	}
+	h.key("backspace")
+	// A wrong answer still stops (in kana for a reading, or it's a retry).
+	wrong := "zzzz"
+	if q, _, _ := r.current(); q.Kind == session.Reading {
+		wrong = "nunu"
+	}
+	h.key(wrong)
+	h.key("enter")
+	if r.state != graded {
+		t.Fatalf("a wrong answer should stop:\n%s", h.screen())
+	}
+}
+
+// Autoplay (the sample user has it on) skips items without recordings, so
+// a correct kanji reading shows no "can't play audio" warning.
+func TestAutoplaySkipsKanji(t *testing.T) {
+	h := newHarness(t)
+	h.key("r")
+	for n := 0; h.app.screen == reviewScreen; n++ {
+		if n > 20 {
+			t.Fatal("session did not end")
+		}
+		h.key(h.answerFor())
+		h.key("enter")
+		if strings.Contains(h.screen(), "can't play audio") {
+			t.Fatalf("autoplay warned:\n%s", h.screen())
+		}
+		h.key("enter")
+	}
+}
+
+func TestLightningOffByDefault(t *testing.T) {
+	h := newHarness(t)
+	h.key("r")
+	h.key(h.answerFor())
+	h.key("enter")
+	if h.app.review.state != graded {
+		t.Fatalf("a correct answer should stop without lightning:\n%s", h.screen())
+	}
+}
+
 func TestUndoWrongAnswer(t *testing.T) {
 	h := newHarness(t)
 	h.app.rdeps.Settings.Reviews.AllowUndo = true

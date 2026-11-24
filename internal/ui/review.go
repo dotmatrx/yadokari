@@ -91,6 +91,7 @@ type Review struct {
 	answeredIt store.ReviewItem
 	result     answer.Result
 	warn       string
+	flash      string // lightning: the last correct answer, until typing starts
 	info       bool
 	item       *ItemPage // open over the review after an answer (i)
 	correct    int
@@ -382,7 +383,7 @@ func (r *Review) insert(s string) {
 	if r.state != answering {
 		return
 	}
-	r.warn = ""
+	r.warn, r.flash = "", ""
 	if q, _, ok := r.current(); ok && q.Kind == session.Reading {
 		r.conv.TypeString(s)
 	} else {
@@ -390,16 +391,28 @@ func (r *Review) insert(s string) {
 	}
 }
 
+// next leaves a graded question for the next one, or the summary.
+func (r *Review) next() tea.Cmd {
+	r.state, r.info, r.warn = answering, false, ""
+	r.qfont = nil // the next question draws its own
+	r.conv.Reset()
+	r.plain = nil
+	if r.sess.Done() {
+		return r.finish()
+	}
+	return r.fetchImage()
+}
+
+// lightning reports whether a correct answer skips its graded screen:
+// reviews only, and only for an exact answer (a "bit off" one stops).
+func (r *Review) lightning(res answer.Result) bool {
+	return r.rdeps.Settings.Reviews.Lightning && !r.lessons() &&
+		res.Verdict == answer.Correct && !res.Inexact
+}
+
 func (r *Review) enter() tea.Cmd {
 	if r.state == graded {
-		r.state, r.info, r.warn = answering, false, ""
-		r.qfont = nil // the next question draws its own
-		r.conv.Reset()
-		r.plain = nil
-		if r.sess.Done() {
-			return r.finish()
-		}
-		return r.fetchImage()
+		return r.next()
 	}
 
 	q, it, ok := r.current()
@@ -417,7 +430,7 @@ func (r *Review) enter() tea.Cmd {
 		return nil
 	}
 
-	r.result, r.state = res, graded
+	r.result, r.state, r.flash = res, graded, ""
 	r.answered, r.answeredIt = q, it
 	correct := res.Verdict == answer.Correct
 	if correct {
@@ -451,8 +464,21 @@ func (r *Review) enter() tea.Cmd {
 		cmd = r.upload()
 	}
 	r.save()
-	if correct && q.Kind == session.Reading && r.autoplay() {
+	// Kanji have no recordings: autoplay is for the words.
+	if correct && q.Kind == session.Reading && r.autoplay() && hasAudio(it.Subject) {
 		cmd = tea.Batch(cmd, playAudio(it.Subject))
+	}
+	if r.lightning(res) {
+		typed := string(r.plain)
+		if q.Kind == session.Reading {
+			typed = r.conv.String()
+		}
+		chars := ""
+		if it.Subject.Data.Characters != nil {
+			chars = *it.Subject.Data.Characters + " · "
+		}
+		r.flash = "✓ " + chars + typed
+		cmd = tea.Batch(cmd, r.next())
 	}
 	return cmd
 }
@@ -628,6 +654,8 @@ func (r *Review) View() string {
 		b = append(b, lipgloss.PlaceHorizontal(w, lipgloss.Center, warnSt.Render("⚠ "+r.warn)))
 	case r.state == graded && r.result.Inexact:
 		b = append(b, lipgloss.PlaceHorizontal(w, lipgloss.Center, warnSt.Render(r.result.Message)))
+	case r.state == answering && r.flash != "":
+		b = append(b, lipgloss.PlaceHorizontal(w, lipgloss.Center, correctSt.Render(r.flash)))
 	default:
 		b = append(b, "")
 	}

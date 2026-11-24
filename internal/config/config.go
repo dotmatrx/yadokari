@@ -128,6 +128,7 @@ type Reviews struct {
 	Strictness    string `toml:"strictness"` // see Strictnesses; "" = "wanikani"
 	AllowUndo     bool   `toml:"allow_undo"`
 	AutoplayAudio *bool  `toml:"autoplay_audio"` // nil = WaniKani's preference
+	Lightning     bool   `toml:"lightning"`      // a correct answer goes straight to the next question
 }
 
 // Lessons are the lesson settings.

@@ -143,7 +143,9 @@ mock server (`internal/wkmock`, `just dev`).
   frame of the type colour by default (`field.go`; `display.field` picks `fill`, the old
   solid block, or another frame)): dashboard (from the store, sync in
   the background via a channel), review (session + IME + answer + gfx; snapshot saved
-  after every answer; completions → outbox → `wksync.Uploader`), summary, and the
+  after every answer; completions → outbox → `wksync.Uploader`; `reviews.lightning`
+  skips the graded screen after an exact correct answer, with a ✓ line instead;
+  autoplay only for items with recordings, i.e. not kanji), summary, and the
   first-run token form (Huh), and the item page (`item.go`: glyph + summary, tabs by
   subject type, mnemonics via `renderMarkup`; `i` opens it after a review answer, hiding
   the part not yet asked; lessons reuse it). Review sessions are refused against
