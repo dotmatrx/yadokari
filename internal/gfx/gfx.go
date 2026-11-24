@@ -1,8 +1,8 @@
 // Package gfx draws a large glyph into a block of terminal cells using the
 // best tier the terminal supports:
 //
-//	Kitty  kitty graphics via Unicode placeholders (kitty, Ghostty, Rio): the
-//	       glyph rasterized at full size
+//	Kitty  kitty graphics via Unicode placeholders (kitty, Ghostty, Rio,
+//	       iTerm2): the glyph rasterized at full size
 //	Plain  the characters in the terminal's own font, centred in a coloured
 //	       box (every other terminal)
 //
@@ -106,6 +106,12 @@ func ChooseWhy(override string, getenv func(string) string, probe func() (Probed
 	if name := noPlaceholders(p.Terminal); name != "" {
 		return Plain, name + " can't show images through placeholders", nil
 	}
+	// Konsole sets KONSOLE_VERSION, also for programs started from its
+	// shell, hence only after the probe: a terminal that says it supports
+	// placeholders has already won.
+	if getenv("KONSOLE_VERSION") != "" {
+		return Plain, "Konsole can't show images through placeholders", nil
+	}
 	return Kitty, "the terminal answered the graphics query", nil
 }
 
@@ -113,8 +119,8 @@ func ChooseWhy(override string, getenv func(string) string, probe func() (Probed
 // but don't support Unicode placeholders, which the kitty tier depends on,
 // and don't answer feature queries, which would say so: they draw the
 // placeholder grid as missing-glyph boxes and the image at the cursor.
-// Checked: WezTerm 20240203 (2026-11-23).
-var withoutPlaceholders = []string{"WezTerm"}
+// Checked: WezTerm 20240203 (2026-11-23), Konsole 26.08.3 (Flatpak, 2026-11-24).
+var withoutPlaceholders = []string{"WezTerm", "Konsole"}
 
 // noPlaceholders returns the terminal's name if term (TERM_PROGRAM or an
 // XTVERSION reply) names one of withoutPlaceholders, else "".

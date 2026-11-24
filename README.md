@@ -114,8 +114,9 @@ a command-line flag, your config file, your WaniKani preference, or the default.
 ## Requirements
 
 - **A terminal with kitty graphics** for large kanji: [Ghostty](https://ghostty.org),
-  [kitty](https://sw.kovidgoyal.net/kitty/) or [Rio](https://rioterm.com). Other
-  terminals, WezTerm included, get the plain tier
+  [kitty](https://sw.kovidgoyal.net/kitty/), [Rio](https://rioterm.com) or
+  [iTerm2](https://iterm2.com). Other terminals, WezTerm and Konsole included, get
+  the plain tier
   (kanji in the terminal's own font). Force either with `--gfx kitty|plain`.
   Light and dark terminals both work: yadokari asks the terminal for its
   background and text colours. `yadokari --terminal` shows what it found.
