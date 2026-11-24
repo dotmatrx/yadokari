@@ -1,15 +1,20 @@
 # yadokari settings: ~/.config/yadokari/config.toml (or $XDG_CONFIG_HOME/yadokari/).
 #
-# Every key is optional; an empty or missing file is the same as the defaults
-# below. Settings that mirror a WaniKani preference ("wanikani", or a commented
-# autoplay key) follow your preference on the WaniKani website unless set here.
-# A changed setting applies from the next session; a resumed session keeps the
-# settings it started with. Precedence: command-line flag → this file →
-# WaniKani preference → built-in default.
+# Every key is optional and shown with its default, commented out: uncomment
+# a line to change it. An empty or missing file is the same as the defaults.
+# Settings that mirror a WaniKani preference ("wanikani", 0, or an
+# autoplay_audio key left commented out) follow your preference on the
+# WaniKani website unless set here. A changed setting applies from the next
+# session; a resumed session keeps the settings it started with. Precedence:
+# command-line flag → this file → WaniKani preference → built-in default.
+#
+# `yadokari --default-config` prints this file for the version you run. To see
+# what's new since you wrote yours:
+#   diff <(yadokari --default-config) ~/.config/yadokari/config.toml
 
 # The API endpoint. Empty: the live WaniKani API. The local mock is
 # "http://127.0.0.1:8642/v2/". --base overrides it.
-api_base_url = ""
+# api_base_url = ""
 
 [reviews]
 # The order items come up in:
@@ -18,29 +23,29 @@ api_base_url = ""
 #   lower_levels_first  lower levels first, shuffled within a level
 #   lower_stages_first  lower SRS stages (Apprentice) first
 #   by_type             radicals, then kanji, then vocabulary
-order = "wanikani"
+# order = "wanikani"
 
 # How many items are in play at once. Questions are drawn from these; a new
 # item comes in as each one is finished. 0: the default, 10.
-active_size = 10
+# active_size = 10
 
 # The most items in one session. 0: all that are due.
-limit = 0
+# limit = 0
 
 # Ask an item's meaning and reading one right after the other.
-back_to_back = false
+# back_to_back = false
 # With back_to_back: the reading first.
-reading_first = false
+# reading_first = false
 
 # How many typos a meaning may have:
 #   wanikani  like WaniKani (none for short words, more for longer ones)
 #   strict    exact answers only
 #   lenient   one more than WaniKani allows
-strictness = "wanikani"
+# strictness = "wanikani"
 
 # After a wrong answer, Backspace puts the question back with your answer to
 # edit, and the miss isn't counted. WaniKani has no such key; it's off by default.
-allow_undo = false
+# allow_undo = false
 
 # Play the reading after a correct reading answer. Unset: your WaniKani
 # preference ("Autoplay audio in reviews").
@@ -48,14 +53,14 @@ allow_undo = false
 
 [lessons]
 # Items per lesson batch. 0: your WaniKani preference.
-batch_size = 0
+# batch_size = 0
 
 # The order lessons come in:
 #   wanikani                       your WaniKani preference
 #   ascending_level_then_subject   by level, then WaniKani's order (radicals, kanji, vocabulary)
 #   ascending_level_then_shuffled  by level, shuffled within a level
 #   shuffled                       random
-order = "wanikani"
+# order = "wanikani"
 
 # Play the reading when a lesson reaches it. Unset: your WaniKani preference.
 # autoplay_audio = true
@@ -64,13 +69,13 @@ order = "wanikani"
 # The command that plays pronunciations; the file path is added at the end.
 # Empty: the first of pw-play, paplay, ffplay, mpv or afplay (macOS) that is installed.
 # Examples: "mpv --no-terminal --no-video", "ffplay -nodisp -autoexit -loglevel error"
-player = ""
+# player = ""
 
 # The voice to play: a WaniKani voice actor's name, e.g. "Kyoko" (female),
 # "Kenichi" (male) or "Miyuki" (female, on a few items only). Empty: your
 # WaniKani default voice, which is also used for items without a recording by
 # the voice named here.
-voice = ""
+# voice = ""
 
 [display]
 # Colours: yadokari (this app's own: electric blues and orange, made for a
@@ -80,14 +85,14 @@ voice = ""
 # follows your colour scheme) or high-contrast (type colours at 7:1 or more
 # against the terminal's background, bold marks, nothing faint). With NO_COLOR set, there is no colour at
 # all and glyphs are drawn as text.
-theme = "yadokari"
+# theme = "yadokari"
 
 # How the glyph field shows the subject type's colour: block (a frame of half
 # blocks), thick (a frame of heavy lines), rails (a bar down each side),
 # corners (brackets at the corners) or fill (a solid block of the colour, the
 # glyph in the theme's ink). The frames leave the terminal's background inside,
 # with the glyph in its text colour.
-field = "block"
+# field = "block"
 
 # Your terminal's background: auto (ask the terminal; most answer, and
 # COLORFGBG is checked if it doesn't), dark or light. On a light terminal the
@@ -98,22 +103,22 @@ field = "block"
 # terminal's own text colour when it reports one, else white on dark and
 # near-black on light. Unknown means dark. `yadokari --terminal` shows what
 # was found.
-background = "auto"
+# background = "auto"
 
 # How glyphs are drawn: auto (ask the terminal), kitty (kitty graphics, e.g.
 # Ghostty, kitty) or plain (the terminal's own font). --gfx overrides it.
-gfx = "auto"
+# gfx = "auto"
 
 # A font file (.ttf, .otf, .ttc) with kanji and kana for the glyphs. Empty: ask
 # fontconfig for a Japanese font, then try well-known paths.
-font = ""
+# font = ""
 
 # Font roulette: draw each review question (and lesson quiz question) in a
 # random Japanese font, never the same one twice in a row, so you learn to read
 # kanji in more than one typeface. The font's name shows under the glyph after
 # you answer. Item and lesson pages keep the font above. Needs the kitty
 # graphics tier; in the plain tier the terminal draws in its own font.
-roulette = false
+# roulette = false
 
 # The fonts to choose from: font files, or the family names of installed
 # fonts (as `fc-list :lang=ja family` prints them), e.g.
@@ -121,21 +126,21 @@ roulette = false
 # Empty: every installed Japanese font, one per family. Variable fonts
 # (*-VF.ttc) can't be drawn, so install static ones (on Fedora:
 # google-noto-serif-cjk-fonts, ipa-exmincho-fonts, ipa-exgothic-fonts).
-roulette_fonts = []
+# roulette_fonts = []
 
 [theme]
 # Change single colours of the theme above. Each takes "#rrggbb", or a number
 # "0"–"255" for a colour of your terminal's palette (e.g. "4" is its blue),
 # which then follows your terminal's colour scheme. Empty: the theme's colour.
-radical = ""     # radicals: the glyph field, marks and mnemonic text
-kanji = ""
-vocabulary = ""
-ink = ""         # the glyph inside its frame (default: your terminal's text colour): "#rrggbb" only
-lessons = ""     # the dashboard's lesson count
-reviews = ""     # the dashboard's review count
-bar = ""         # the review forecast bars
-correct = ""     # the answer box after a right answer
-wrong = ""       # the answer box after a wrong answer
-warn = ""        # nudges: wrapping up, a near miss
-error = ""       # failures: sync, upload, a rejected review
-line = ""        # panel borders (default: the terminal's grey, "8")
+# radical = ""     # radicals: the glyph field, marks and mnemonic text
+# kanji = ""
+# vocabulary = ""
+# ink = ""         # the glyph inside its frame (default: your terminal's text colour): "#rrggbb" only
+# lessons = ""     # the dashboard's lesson count
+# reviews = ""     # the dashboard's review count
+# bar = ""         # the review forecast bars
+# correct = ""     # the answer box after a right answer
+# wrong = ""       # the answer box after a wrong answer
+# warn = ""        # nudges: wrapping up, a near miss
+# error = ""       # failures: sync, upload, a rejected review
+# line = ""        # panel borders (default: the terminal's grey, "8")

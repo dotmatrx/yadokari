@@ -5,8 +5,11 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"regexp"
 	"strings"
 	"testing"
+
+	"github.com/dotmatrx/yadokari/docs"
 )
 
 type fakeKeyring struct {
@@ -171,36 +174,47 @@ func TestLoadConfig(t *testing.T) {
 	}
 }
 
-// The example file documents every key: it must load, and every key in
-// Config must appear in it (commented or not).
+// The example file documents every key, commented out with its default:
+// as shipped it loads as the defaults, every key in Config appears as a
+// "# key =" line, and uncommenting them all still loads (the documented
+// values are valid).
 func TestExampleConfig(t *testing.T) {
-	const path = "../../docs/config.example.toml"
-	if _, err := Load(path); err != nil {
-		t.Fatal(err)
+	load := func(text string) (Config, error) {
+		path := filepath.Join(t.TempDir(), "config.toml")
+		if err := os.WriteFile(path, []byte(text), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		return Load(path)
 	}
-	raw, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatal(err)
+	example := docs.DefaultConfig
+	if c, err := load(example); err != nil || !reflect.DeepEqual(c, Config{}) {
+		t.Errorf("as shipped: %+v, %v; want the defaults", c, err)
 	}
-	var keys func(typ reflect.Type) []string
-	keys = func(typ reflect.Type) []string {
-		var out []string
+	key := regexp.MustCompile(`(?m)^# ([a-z_]+) = `)
+	if _, err := load(key.ReplaceAllString(example, "$1 = ")); err != nil {
+		t.Errorf("uncommented: %v", err)
+	}
+	documented := map[string]bool{}
+	for _, m := range key.FindAllStringSubmatch(example, -1) {
+		documented[m[1]] = true
+	}
+	var check func(typ reflect.Type)
+	check = func(typ reflect.Type) {
 		for f := range typ.Fields() {
 			tag := f.Tag.Get("toml")
 			if f.Type.Kind() == reflect.Struct {
-				out = append(out, "["+tag+"]")
-				out = append(out, keys(f.Type)...)
+				if !strings.Contains(example, "\n["+tag+"]\n") {
+					t.Errorf("[%s] is not in the example config", tag)
+				}
+				check(f.Type)
 				continue
 			}
-			out = append(out, tag)
-		}
-		return out
-	}
-	for _, k := range keys(reflect.TypeFor[Config]()) {
-		if !strings.Contains(string(raw), k) {
-			t.Errorf("%s is not in the example config", k)
+			if !documented[tag] {
+				t.Errorf("%s is not in the example config as a commented-out line", tag)
+			}
 		}
 	}
+	check(reflect.TypeFor[Config]())
 }
 
 func TestConfigRejectsBadValues(t *testing.T) {

@@ -20,6 +20,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 
+	"github.com/dotmatrx/yadokari/docs"
 	"github.com/dotmatrx/yadokari/internal/audio"
 	"github.com/dotmatrx/yadokari/internal/config"
 	"github.com/dotmatrx/yadokari/internal/gfx"
@@ -89,15 +90,20 @@ func run() error {
 	syncOnly := flag.Bool("sync", false, "sync, print a summary and exit (no TUI)")
 	logout := flag.Bool("logout", false, "remove the stored API token and exit")
 	terminal := flag.Bool("terminal", false, "show what yadokari found out about the terminal (graphics, background, font) and exit")
+	defaultConfig := flag.Bool("default-config", false, "print the documented config file, every setting at its default (commented out), and exit")
 	gfxFlag := flag.String("gfx", "", "graphics tier: auto, kitty or plain (default: config display.gfx, else auto)")
 	flag.Usage = func() {
 		out := flag.CommandLine.Output()
 		fmt.Fprintf(out, "Usage: yadokari [flags]\n\n%s\n\nFlags:\n", disclaimer)
 		flag.PrintDefaults()
-		fmt.Fprintf(out, "\nSettings: ~/.config/yadokari/config.toml (every key is documented in\ndocs/config.example.toml, https://github.com/dotmatrx/yadokari).\n")
+		fmt.Fprintf(out, "\nSettings: ~/.config/yadokari/config.toml; yadokari --default-config prints every\nkey, documented, at its default.\n")
 	}
 	flag.Parse()
 
+	if *defaultConfig {
+		fmt.Print(docs.DefaultConfig)
+		return nil
+	}
 	if *showVersion {
 		fmt.Println("yadokari", version)
 		fmt.Println(disclaimer)

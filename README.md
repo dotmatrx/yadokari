@@ -88,8 +88,17 @@ Readings are typed in romaji and converted to kana as you type, as on WaniKani.
 Optional, in `~/.config/yadokari/config.toml`. Every key is described in
 [`docs/config.example.toml`](docs/config.example.toml): review order and session
 size, answer strictness, undo (Backspace after a typo), lesson batch size, autoplay,
-audio player, graphics, fonts and font roulette, themes and single colours.
-Unset settings follow your preferences on the WaniKani website.
+audio player and voice, graphics, fonts and font roulette, themes, glyph field
+styles and single colours. Unset settings follow your preferences on the WaniKani
+website.
+
+`yadokari --default-config` prints that file for the version you have, every
+setting at its default and commented out. Start a config with it, or compare:
+
+```sh
+yadokari --default-config > ~/.config/yadokari/config.toml   # a new config
+diff <(yadokari --default-config) ~/.config/yadokari/config.toml   # what's new
+```
 
 ## Requirements
 

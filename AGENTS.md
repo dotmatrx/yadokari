@@ -86,7 +86,8 @@ mock server (`internal/wkmock`, `just dev`).
 
 - `cmd/preview` — screen previews and the HTML gallery (`ui.Preview` does the work).
 - `cmd/yadokari` — entry point. Flags: `--base`, `--db`, `--sync` (no TUI), `--logout`,
-  `--gfx auto|kitty|plain`, `--terminal` (what the probe found and what was chosen: tier
+  `--gfx auto|kitty|plain`, `--default-config` (prints `docs/config.example.toml`,
+  embedded by the `docs` package), `--terminal` (what the probe found and what was chosen: tier
   and why, cell size, font, background, glyph ink, theme; `setupDisplay` serves both it
   and the app), `--version`. Logs problems to `yadokari.log` next to the
   database (`log/slog`); the UI shows them in plain words via `ui.problem` (no Go
@@ -122,7 +123,7 @@ mock server (`internal/wkmock`, `just dev`).
 - `internal/config` — XDG paths (config `~/.config/yadokari/config.toml`, database
   `~/.local/share/yadokari/yadokari.db`), settings (`[reviews]`, `[lessons]`, `[audio]`,
   `[display]`, validated on load; every key documented in `docs/config.example.toml`,
-  which a test keeps in step; `ui.Settings` applies them over the WaniKani preferences;
+  commented out at its default, which a test keeps in step; `ui.Settings` applies them over the WaniKani preferences;
   precedence flag → file → WaniKani preference → default), and the token store: env
   `WANIKANI_API_TOKEN` → OS keyring → `0600` file fallback. Tests use a fake keyring;
   don't touch the real keyring from tests or tooling without asking the user.

@@ -50,6 +50,10 @@ CI runs the same on Linux and macOS, with `-race`, and cross-builds every releas
 - Keep `internal/session`, `internal/answer`, `internal/markup` and `internal/ime` free of
   I/O and UI code, and add table tests for changes there.
 - Colours come from the theme (`internal/ui/theme.go`), never hard-coded in a screen.
+- A new setting goes in `docs/config.example.toml`, documented and commented out at
+  its default (a test checks). Don't rename or remove a setting outright: unknown
+  keys are rejected on load, so that breaks people's configs. Keep accepting the old
+  name, with a warning, for at least one release.
 - Messages on screen are plain words. Go errors, URLs and IDs go to `yadokari.log`.
 - [`AGENTS.md`](AGENTS.md) is the map of the code: what each package does and where
   things live. It's written for coding agents but reads fine for people.
