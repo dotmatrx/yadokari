@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/x/ansi"
+	"github.com/charmbracelet/x/ansi/kitty"
 	"golang.org/x/sys/unix"
 )
 
@@ -34,7 +35,7 @@ func gallery(shots []shot, light bool) string {
 	if light {
 		b.WriteString(`<style>.term { background: #fafafa; color: #2b2f36; }</style>`)
 	}
-	b.WriteString(`<main><header><h1>yadokari screens</h1><p>Rendered from the real Lip Gloss output with demo data. Glyphs use the plain tier here; in Ghostty they are kitty graphics.</p></header>`)
+	b.WriteString(`<main><header><h1>yadokari screens</h1><p>Rendered from the real Lip Gloss output with demo data. Glyphs are the kitty tier's images (the plain tier with --gfx plain).</p></header>`)
 	var last size
 	for _, s := range shots {
 		if s.size != last {
@@ -83,16 +84,21 @@ figcaption { font-family: var(--mono); font-size: .8rem; color: var(--muted); }
 .term { margin: 0; background: var(--term); color: var(--term-ink); border: 1px solid var(--term-edge); border-radius: 6px;
   padding: 10px 12px; box-sizing: content-box; font-family: var(--mono); font-size: 13px; line-height: 1.25; white-space: pre; }
 .term .w { display: inline-block; width: 2ch; text-align: center; }
+.term .g { position: relative; } .term .g img { position: absolute; left: 0; top: 0; }
 .term .b { font-weight: 700; } .term .f { opacity: .55; } .term .u { text-decoration: underline; }
 </style>
 `
 
 // ansiToHTML converts the SGR styling Lip Gloss emits into spans; other
 // escape sequences are dropped. Wide characters get a 2ch box so columns
-// line up in the browser as they do in the terminal.
+// line up in the browser as they do in the terminal. Kitty graphics become
+// images: uploads (APC) are collected by ID, and each placeholder grid
+// shows its image over its cells, from the top-left one.
 func ansiToHTML(s string) string {
 	var out strings.Builder
 	var st sgr
+	images := map[int]*kittyImage{}
+	var cur *kittyImage // the upload whose chunks are arriving
 	open := false
 	flush := func() {
 		if open {
@@ -124,12 +130,31 @@ func ansiToHTML(s string) string {
 				for j < len(rs) && rs[j] != 0x07 && !(rs[j] == 0x1b && j+1 < len(rs) && rs[j+1] == '\\') {
 					j++
 				}
+				if rs[i+1] == '_' && i+2 < len(rs) && rs[i+2] == 'G' {
+					cur = kittyChunk(string(rs[i+3:j]), images, cur)
+				}
 				if j < len(rs) && rs[j] == 0x1b {
 					j++
 				}
 				i = j
 			default:
 				i++
+			}
+			continue
+		}
+		if r == kitty.Placeholder {
+			// The cell's row and column ride on two diacritics.
+			row, col := -1, -1
+			if i+2 < len(rs) {
+				row, col = diacritic[rs[i+1]], diacritic[rs[i+2]]
+				i += 2
+			}
+			img := images[st.index]
+			if row == 0 && col == 0 && img != nil {
+				fmt.Fprintf(&out, `<span class="g"> <img alt="" src="data:image/png;base64,%s" style="width:%dch;height:%dlh"></span>`,
+					img.data.String(), img.cols, img.rows)
+			} else {
+				out.WriteByte(' ')
 			}
 			continue
 		}
@@ -148,7 +173,56 @@ func ansiToHTML(s string) string {
 type sgr struct {
 	bold, faint, under bool
 	fg, bg             string
+	index              int // the last 38;5 colour: a kitty placeholder's image ID
 }
+
+// kittyImage is one kitty upload: a PNG in base64, for cols×rows cells.
+type kittyImage struct {
+	cols, rows int
+	data       strings.Builder
+	done       bool
+}
+
+// kittyChunk reads one kitty graphics command ("keys;payload"): an upload's
+// first chunk (with i=, c=, r=) starts an image, later chunks (keys m= only)
+// add to cur. Deletes and other commands are ignored. It returns the image
+// still expecting chunks, if any.
+func kittyChunk(cmd string, images map[int]*kittyImage, cur *kittyImage) *kittyImage {
+	keys, payload, _ := strings.Cut(cmd, ";")
+	kv := map[string]string{}
+	for _, f := range strings.Split(keys, ",") {
+		if k, v, ok := strings.Cut(f, "="); ok {
+			kv[k] = v
+		}
+	}
+	if kv["a"] == "d" {
+		return cur
+	}
+	if id, err := strconv.Atoi(kv["i"]); err == nil {
+		cols, _ := strconv.Atoi(kv["c"])
+		rows, _ := strconv.Atoi(kv["r"])
+		cur = &kittyImage{cols: cols, rows: rows}
+		images[id] = cur
+	}
+	if cur == nil || cur.done {
+		return nil
+	}
+	cur.data.WriteString(payload)
+	if kv["m"] != "1" {
+		cur.done = true
+		return nil
+	}
+	return cur
+}
+
+// diacritic maps kitty's row/column diacritics back to their numbers.
+var diacritic = func() map[rune]int {
+	m := map[rune]int{}
+	for i := 0; i < 297; i++ {
+		m[kitty.Diacritic(i)] = i
+	}
+	return m
+}()
 
 func (s sgr) css() (cls, style string) {
 	var c []string
@@ -214,11 +288,13 @@ func (s *sgr) apply(params string) {
 			s.bg = basic[n-100+8]
 		case n == 38 || n == 48:
 			var col string
+			index := -1
 			switch num(i + 1) {
 			case 2:
 				col = fmt.Sprintf("rgb(%d,%d,%d)", num(i+2), num(i+3), num(i+4))
 				i += 4
 			case 5:
+				index = num(i + 2)
 				if c := num(i + 2); c < 16 {
 					col = basic[c]
 				} else {
@@ -227,7 +303,7 @@ func (s *sgr) apply(params string) {
 				i += 2
 			}
 			if n == 38 {
-				s.fg = col
+				s.fg, s.index = col, index
 			} else {
 				s.bg = col
 			}

@@ -101,6 +101,9 @@ func run() error {
 		font = fonts[0]
 	}
 	renderer := gfx.New(gfx.Plain, 0, 0)
+	// The gallery draws glyphs as the kitty tier does, as images, unless
+	// --gfx plain asks for the plain tier.
+	htmlImages := *htmlOut != "" && font != nil && *gfxFlag != "plain"
 	if *htmlOut == "" {
 		probe := func() (gfx.Probed, error) { return gfx.Probe(time.Second) }
 		tier, err := gfx.Choose(*gfxFlag, os.Getenv, probe)
@@ -151,6 +154,11 @@ func run() error {
 						return err
 					}
 					deps := ui.Deps{Store: st, Now: func() time.Time { return now }, Location: time.Local, Endpoint: "mock demo"}
+					if htmlImages {
+						// Each screen carries its own images (kitty uploads,
+						// which the gallery turns into <img>).
+						renderer = gfx.New(gfx.Kitty, htmlCellW, htmlCellH)
+					}
 					rd := ui.ReviewDeps{Renderer: renderer, Font: f}
 					if *fontFlag != "" {
 						rd.Roulette = glyph.PoolOf(f)
@@ -163,6 +171,9 @@ func run() error {
 					label := screen
 					if len(themes) > 1 || *themeFlag != "" {
 						label += " · " + th.Name
+					}
+					if htmlImages {
+						out = renderer.Flush() + out
 					}
 					shots = append(shots, shot{screen: label, size: sz, ansi: out})
 					if *htmlOut == "" {
@@ -181,6 +192,11 @@ func run() error {
 	}
 	return nil
 }
+
+// htmlCellW and htmlCellH are the pixels per cell the gallery's glyph
+// images are drawn at: about twice a 13px monospace cell, for sharp
+// glyphs on high-density screens.
+const htmlCellW, htmlCellH = 16, 34
 
 func terminalSize() string {
 	cw, ch := 0, 0

@@ -26,7 +26,8 @@ Use `just` (no Makefile):
 - `just mock [--fixtures=DIR] [--demo] [--per-page=N]` — fake API on `http://127.0.0.1:8642/v2/`
   (`--demo`: a believable level 8 account, `wkmock.DemoData`)
 - `just preview [screen...] [--size=WxH,...] [--html=FILE]` — render screens
-  once from demo data (kitty glyphs in a kitty-graphics terminal); `--html` writes a gallery page. Screens:
+  once from demo data (kitty glyphs in a kitty-graphics terminal); `--html` writes a gallery page,
+  glyphs as the kitty tier's images (`ansiToHTML` reads the uploads; `--gfx plain` for text). Screens:
   `dashboard`, `review`, `review-reading`, `review-wrong`, `summary`, `item`, `item-vocab`, `lesson`. Use it to iterate on
   layout; `--font=NAME|all` draws glyphs in each roulette font; `--theme=NAME|all` each theme; `--field=STYLE` a glyph field style (`ui.FieldStyles`); `--background=light` the light themes on a light pane; `--fixtures=DIR` uses a recording (personal data: never publish that).
 - `just icons` — render `docs/images/icon.svg` to PNGs in `docs/images/icons/` (16–1024 px;
