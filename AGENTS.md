@@ -116,7 +116,8 @@ mock server (`internal/wkmock`, `just dev`).
   from the download cache (`~/.cache/yadokari/audio`). A dev container may have no
   player installed (e.g. `pipewire-utils` for `pw-play`).
 - `internal/ime` — incremental romaji→kana converter (WanaKana IME-mode behaviour) and
-  kana helpers. Pure.
+  kana helpers; `RelaxedN` (`reviews.relaxed_n`) reads "nn" before a vowel or y as
+  ん + na-row. Pure.
 - `internal/store` — SQLite cache: raw API JSON + indexed columns, timestamps as Unix
   microseconds, embedded migrations (`internal/store/migrations/NNN_*.sql`, tracked
   by `PRAGMA user_version`). Dashboard queries live here.

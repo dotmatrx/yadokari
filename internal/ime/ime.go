@@ -7,6 +7,8 @@
 //   - "nn" and "n'" produce ん immediately, so こんにちは is typed
 //     "kon'nichiha" or "konnnichiha" (as on WaniKani). n before a consonant
 //     other than y also becomes ん; a trailing n becomes ん on Finish.
+//     With RelaxedN, "nn" before a vowel or y is ん + a na-row syllable, so
+//     "konnichiha" is こんにちは too; ん + vowel is then typed "n'" (kan'i).
 //   - A doubled consonant (kk, tt, pp…, not nn) or Hepburn "tch" produces っ.
 //   - x/l prefixes give small kana (xtu, lya); "-" gives ー.
 //   - Romaji typed with a leading uppercase letter produces katakana.
@@ -22,6 +24,10 @@ import (
 
 // Converter holds the state of one input line.
 type Converter struct {
+	// RelaxedN reads "nn" before a vowel or y as ん + na-row: konnichiha →
+	// こんにちは, not こんいちは. Off is WaniKani's behaviour.
+	RelaxedN bool
+
 	committed []rune
 	pending   []rune // ASCII, original case
 }
@@ -117,6 +123,22 @@ func (c *Converter) resolve(final bool) {
 				continue
 			}
 			switch n1 := lower[1]; {
+			case n1 == 'n' && c.RelaxedN:
+				// ん, and the second n starts the next syllable if a vowel
+				// or y follows: wait to see which.
+				if len(lower) == 2 {
+					if !final {
+						return
+					}
+					c.emit("ん", katakana, 2)
+					continue
+				}
+				if n2 := lower[2]; isVowel(n2) || n2 == 'y' {
+					c.emit("ん", katakana, 1)
+				} else {
+					c.emit("ん", katakana, 2)
+				}
+				continue
 			case n1 == 'n' || n1 == '\'':
 				c.emit("ん", katakana, 2)
 				continue

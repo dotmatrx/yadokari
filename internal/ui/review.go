@@ -171,6 +171,7 @@ func LoadReview(ctx context.Context, deps Deps, rdeps ReviewDeps, user wk.User) 
 
 func newReview(deps Deps, rdeps ReviewDeps, name string) *Review {
 	return &Review{name: name, deps: deps, rdeps: rdeps, images: map[int][]byte{}, loading: map[int]bool{}, imgErr: map[int]error{},
+		conv:    ime.Converter{RelaxedN: rdeps.Settings.Reviews.RelaxedN},
 		fontRng: rand.New(rand.NewPCG(uint64(time.Now().UnixNano()), 0x2545f4914f6cdd1d))}
 }
 

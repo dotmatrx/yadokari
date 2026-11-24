@@ -88,6 +88,7 @@ func settingsRows(cfg config.Config, flags settingFlags, prefs *wk.Preferences, 
 	file("reviews.reading_first", btoa(r.ReadingFirst), "false", false)
 	file("reviews.strictness", r.Strictness, "wanikani", r.Strictness == "")
 	file("reviews.allow_undo", btoa(r.AllowUndo), "false", false)
+	file("reviews.relaxed_n", btoa(r.RelaxedN), "false", false)
 	file("reviews.lightning", btoa(r.Lightning), "false", false)
 	wanikani("reviews.autoplay_audio", ptr(r.AutoplayAudio), r.AutoplayAudio == nil,
 		func(p wk.Preferences) string { return btoa(p.ReviewsAutoplayAudio) })

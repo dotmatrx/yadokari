@@ -81,6 +81,48 @@ func TestIncremental(t *testing.T) {
 	}
 }
 
+func TestRelaxedN(t *testing.T) {
+	for _, tt := range []struct {
+		keys            string
+		committed, pend string // before Finish
+		finished        string
+	}{
+		{"konnichiha", "こんにちは", "", "こんにちは"},
+		{"konnnichiha", "こんにちは", "", "こんにちは"}, // WaniKani's spelling still works
+		{"kon'nichiha", "こんにちは", "", "こんにちは"},
+		{"konnyaku", "こんにゃく", "", "こんにゃく"},
+		{"konn", "こ", "nn", "こん"}, // waits: a vowel would make it ん + な-row
+		{"sannkaku", "さんかく", "", "さんかく"},
+		{"honn", "ほ", "nn", "ほん"},
+		{"kanni", "かんに", "", "かんに"}, // the trade-off: ん + vowel is…
+		{"kan'i", "かんい", "", "かんい"}, // …typed with an apostrophe
+		{"kanji", "かんじ", "", "かんじ"},
+	} {
+		c := Converter{RelaxedN: true}
+		c.TypeString(tt.keys)
+		if c.Committed() != tt.committed || c.Pending() != tt.pend {
+			t.Errorf("%q: %q + %q, want %q + %q", tt.keys, c.Committed(), c.Pending(), tt.committed, tt.pend)
+		}
+		if got := c.Finish(); got != tt.finished {
+			t.Errorf("%q finished: %q, want %q", tt.keys, got, tt.finished)
+		}
+	}
+	// Backspace in the middle of "nn" leaves one n to type on.
+	c := Converter{RelaxedN: true}
+	c.TypeString("konn")
+	c.Backspace()
+	c.TypeString("i")
+	if got := c.Finish(); got != "こに" {
+		t.Errorf("konn⌫i: %q, want こに", got)
+	}
+	// Reset keeps the setting.
+	c.Reset()
+	c.TypeString("konnichiha")
+	if got := c.Finish(); got != "こんにちは" {
+		t.Errorf("after Reset: %q", got)
+	}
+}
+
 func TestOnnaAndMatcha(t *testing.T) {
 	if got := ToKana("onna"); got != "おんあ" {
 		t.Errorf("onna → %q, want おんあ (WK behaviour; type onnna for おんな)", got)

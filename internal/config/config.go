@@ -129,6 +129,7 @@ type Reviews struct {
 	AllowUndo     bool   `toml:"allow_undo"`
 	AutoplayAudio *bool  `toml:"autoplay_audio"` // nil = WaniKani's preference
 	Lightning     bool   `toml:"lightning"`      // a correct answer goes straight to the next question
+	RelaxedN      bool   `toml:"relaxed_n"`      // "nn" before a vowel or y is ん + na-row (also lesson quizzes)
 }
 
 // Lessons are the lesson settings.

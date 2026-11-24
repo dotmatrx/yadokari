@@ -44,6 +44,13 @@
 #   lenient   one more than WaniKani allows
 # strictness = "wanikani"
 
+# How "nn" is typed in readings (lesson quizzes too). Off, as on WaniKani:
+# "nn" is always ん, so こんにちは is "konnnichiha" or "kon'nichiha", and
+# "konnichiha" gives こんいちは. On: "nn" before a vowel or y is ん + a
+# na-row kana, so "konnichiha" gives こんにちは (and "konnyaku" こんにゃく);
+# ん followed by a vowel is then typed with an apostrophe, "kan'i" for かんい.
+# relaxed_n = false
+
 # After a wrong answer, Backspace puts the question back with your answer to
 # edit, and the miss isn't counted. WaniKani has no such key; it's off by default.
 # allow_undo = false

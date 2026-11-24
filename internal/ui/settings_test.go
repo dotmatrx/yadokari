@@ -116,6 +116,30 @@ func TestAutoplaySkipsKanji(t *testing.T) {
 	}
 }
 
+// relaxed_n reaches the review's IME, and survives moving to the next
+// question.
+func TestRelaxedN(t *testing.T) {
+	h := newHarness(t)
+	h.app.rdeps.Settings.Reviews.RelaxedN = true
+	h.key("r")
+	r := h.app.review
+	for n := 0; ; n++ {
+		if n > 20 {
+			t.Fatal("no reading question came up")
+		}
+		if q, _, _ := r.current(); q.Kind == session.Reading {
+			break
+		}
+		h.key(h.answerFor())
+		h.key("enter")
+		h.key("enter")
+	}
+	h.key("konnichiha")
+	if got := r.conv.String(); got != "こんにちは" {
+		t.Errorf("typed %q, want こんにちは", got)
+	}
+}
+
 func TestLightningOffByDefault(t *testing.T) {
 	h := newHarness(t)
 	h.key("r")
