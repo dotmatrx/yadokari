@@ -32,7 +32,7 @@ nfpms:
     file_name_template: "{{ .ConventionalFileName }}"
     formats: [deb, rpm]
     vendor: dotmatrx
-    homepage: https://github.com/dotmatrx/yadokari
+    homepage: https://yadokari.dotmatrx.com
     maintainer: Justin Harris <justin@dotmatrx.com>
     description: |-
       Unofficial terminal client for WaniKani reviews and lessons.
@@ -85,7 +85,7 @@ homebrew_casks:
       # is never read when the secret is unset.
       token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
     skip_upload: '{{ if envOrDefault "HOMEBREW_TAP_TOKEN" "" }}false{{ else }}true{{ end }}'
-    homepage: https://github.com/dotmatrx/yadokari
+    homepage: https://yadokari.dotmatrx.com
     description: Unofficial terminal client for WaniKani reviews and lessons
     license: MIT
     hooks:

@@ -16,6 +16,8 @@
   <a href="LICENSE"><img src="https://img.shields.io/github/license/dotmatrx/yadokari" alt="MIT license"></a>
 </p>
 
+<p align="center"><a href="https://yadokari.dotmatrx.com"><b>yadokari.dotmatrx.com</b></a>: screens, install and docs</p>
+
 <p align="center">
   <img src="docs/images/review.png" width="720" alt="A review in yadokari: the kanji 人 drawn large in an orange frame, with the answer box below">
 </p>
