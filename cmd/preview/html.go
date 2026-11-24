@@ -57,16 +57,16 @@ func gallery(shots []shot, light bool) string {
 
 const galleryHead = `<title>yadokari Screens</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Noto+Sans+JP:wght@400;700&family=IBM+Plex+Sans:wght@400;600&display=swap">
 <style>
 /* Layout: a quiet page of terminal panes, one section per terminal size. */
 :root {
   --page: #f3f4f6; --ink: #1d2128; --muted: #5d6573; --line: #d5d9e0;
   --term: #15171c; --term-ink: #d7dae0; --term-edge: #2a2e36;
-  --mono: "JetBrains Mono", "DejaVu Sans Mono", "Noto Sans JP", monospace;
-  --sans: "IBM Plex Sans", system-ui, sans-serif;
+  /* Installed fonts only. JetBrains Mono (or its Nerd Font build) has box
+     drawing and block characters a cell wide that join at its line height,
+     1.32; the product site self-hosts it. Other fonts may leave gaps. */
+  --mono: "JetBrains Mono", "JetBrainsMono Nerd Font Mono", "JetBrainsMono NFM", "DejaVu Sans Mono", "Noto Sans Mono CJK JP", monospace;
+  --sans: system-ui, sans-serif;
 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
   --page: #0e1014; --ink: #e3e6eb; --muted: #9098a6; --line: #262a32; --term-edge: #30353e; color-scheme: dark } }
@@ -82,7 +82,7 @@ figure { margin: 0; display: grid; gap: 6px; min-width: 0; }
 figcaption { font-family: var(--mono); font-size: .8rem; color: var(--muted); }
 .scroll { overflow-x: auto; max-width: 100%; }
 .term { margin: 0; background: var(--term); color: var(--term-ink); border: 1px solid var(--term-edge); border-radius: 6px;
-  padding: 10px 12px; box-sizing: content-box; font-family: var(--mono); font-size: 13px; line-height: 1.25; white-space: pre; }
+  padding: 10px 12px; box-sizing: content-box; font-family: var(--mono); font-size: 13px; line-height: 1.32; white-space: pre; }
 .term .w { display: inline-block; width: 2ch; text-align: center; }
 .term .n { display: inline-block; white-space: pre; }
 .term .g { position: relative; } .term .g img { position: absolute; left: 0; top: 0; }
