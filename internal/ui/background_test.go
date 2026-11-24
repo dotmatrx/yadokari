@@ -72,6 +72,50 @@ func TestFrameInk(t *testing.T) {
 	}
 }
 
+func TestHighContrast(t *testing.T) {
+	black, white := rgb(0x000000), rgb(0xffffff)
+	for _, tt := range []struct {
+		th       Theme
+		terminal color.RGBA
+	}{{themeHighContrast, black}, {themeHighContrast.ForBackground(true), white}} {
+		for _, c := range []color.Color{tt.th.Radical, tt.th.Kanji, tt.th.Vocabulary} {
+			field := c.(color.RGBA)
+			if r := contrast(field, tt.terminal); r < 7 {
+				t.Errorf("light %v: field %v is %.1f:1 on the terminal, want 7", tt.th.Light, field, r)
+			}
+			if r := contrast(field, tt.th.Ink); r < 7 {
+				t.Errorf("light %v: ink on %v is %.1f:1, want 7", tt.th.Light, field, r)
+			}
+		}
+	}
+}
+
+func TestReadableOn(t *testing.T) {
+	light := lightThemes["yadokari"]
+	for _, tt := range []struct {
+		name string
+		th   Theme
+		bg   color.RGBA
+		keep bool
+	}{
+		{"near-white", light, rgb(0xeeeeee), true},
+		{"mid-grey (Ptyxis Jup)", light, rgb(0x758480), false},
+		{"background unknown", light, color.RGBA{}, true},
+		{"dark theme on black", themeYadokari, rgb(0x000000), true},
+		{"faint muted stays faint", themeWaniKani, rgb(0x758480), true},
+	} {
+		got := tt.th.ReadableOn(tt.bg).Muted
+		if kept := got == tt.th.Muted; kept != tt.keep {
+			t.Errorf("%s: muted %v → %v, keep %v", tt.name, tt.th.Muted, got, tt.keep)
+		}
+		if !tt.keep {
+			if _, ok := got.(lipgloss.NoColor); !ok {
+				t.Errorf("%s: muted %v, want the terminal's text colour", tt.name, got)
+			}
+		}
+	}
+}
+
 func TestLightThemes(t *testing.T) {
 	grey := rgb(0xeeeeee) // the hardest of the light backgrounds checked
 	for name, l := range lightThemes {

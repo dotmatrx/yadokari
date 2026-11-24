@@ -275,7 +275,7 @@ func setupDisplay(cfg config.Config, gfxTier string) (display, error) {
 	}
 	d.bg = ui.DetectBackground(cfg.Display.Background, os.Getenv, probe)
 	th, _ := ui.ThemeNamed(cmp.Or(cfg.Display.Theme, ui.DefaultTheme.Name))
-	th = th.ForBackground(d.bg.Light).WithColours(cfg.Theme)
+	th = th.ForBackground(d.bg.Light).ReadableOn(d.bg.Colour).WithColours(cfg.Theme)
 	if th.UsesPalette() {
 		// The glyph fields are the terminal's colours: ask for their shades
 		// to pick an ink that reads on them.

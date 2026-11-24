@@ -92,13 +92,15 @@ var (
 		Correct: lipgloss.Color("2"), Wrong: lipgloss.Color("1"), Warn: lipgloss.Color("3"), Error: lipgloss.Color("1"),
 		Line: lipgloss.Color("8"),
 	}
-	// high-contrast: WaniKani's hues, deep enough for white ink at 7:1 or
-	// more; text in the terminal's own palette (made for its background),
-	// bold; borders and secondary text in the full text colour, never faint.
+	// high-contrast: WaniKani's hues, bright enough for 7:1 or more on a
+	// black terminal (the frames) and under black ink (fill); its light
+	// version deepens them. Text in the terminal's own palette (made for
+	// its background), bold; borders and secondary text in the full text
+	// colour, never faint.
 	themeHighContrast = Theme{
 		Name:    "high-contrast",
-		Radical: rgb(0x005a9e), Kanji: rgb(0xa3005c), Vocabulary: rgb(0x5c00a3),
-		Ink:     rgb(0xffffff),
+		Radical: rgb(0x4dc3ff), Kanji: rgb(0xff66c4), Vocabulary: rgb(0xc78cff),
+		Ink:     rgb(0x000000),
 		Lessons: lipgloss.Color("5"), Reviews: lipgloss.Color("6"), Bar: lipgloss.Color("6"),
 		Correct: lipgloss.Color("2"), Wrong: lipgloss.Color("1"), Warn: lipgloss.Color("3"), Error: lipgloss.Color("1"),
 		Line:   lipgloss.NoColor{},
@@ -111,7 +113,7 @@ var (
 	// lightThemes are the themes' versions for a light terminal, by name:
 	// each colour keeps its hue, darkened to 4.5:1 or more on a light grey
 	// (#eeeeee) terminal (a test checks); borders are pale tints. terminal
-	// and high-contrast use the terminal's palette and need none.
+	// uses the terminal's palette and needs none.
 	lightThemes = map[string]Theme{
 		"wanikani": {
 			Name: "wanikani", Light: true,
@@ -136,6 +138,17 @@ var (
 			Lessons: rgb(0xb94800), Reviews: rgb(0x0068d8), Bar: rgb(0x0068d8),
 			Correct: rgb(0x207b4a), Wrong: rgb(0xda0015), Warn: rgb(0x916308), Error: rgb(0xdb0011),
 			Line: rgb(0xa2afc3), Muted: rgb(0x636d7d),
+		},
+		// Deep enough for 7:1 or more under white ink, and on white.
+		"high-contrast": {
+			Name: "high-contrast", Light: true,
+			Radical: rgb(0x005a9e), Kanji: rgb(0xa3005c), Vocabulary: rgb(0x5c00a3),
+			Ink:     rgb(0xffffff),
+			Lessons: lipgloss.Color("5"), Reviews: lipgloss.Color("6"), Bar: lipgloss.Color("6"),
+			Correct: lipgloss.Color("2"), Wrong: lipgloss.Color("1"), Warn: lipgloss.Color("3"), Error: lipgloss.Color("1"),
+			Line:   lipgloss.NoColor{},
+			Muted:  lipgloss.NoColor{},
+			Strong: true,
 		},
 	}
 )
@@ -173,6 +186,18 @@ func (t Theme) WithColours(c config.Colours) Theme {
 		r, g, b, _ := lipgloss.Color(c.Ink).RGBA()
 		t.Ink = color.RGBA{uint8(r >> 8), uint8(g >> 8), uint8(b >> 8), 0xff}
 		t.inkSet = true
+	}
+	return t
+}
+
+// ReadableOn drops a fixed secondary-text colour that reads at less than
+// 4.5:1 on the terminal's reported background (alpha 0: unknown, nothing
+// changes), for the terminal's own text colour, which the terminal's scheme
+// made for that background: e.g. a mid-grey "light" background, where the
+// light themes' blue-greys made for a near-white one disappear.
+func (t Theme) ReadableOn(bg color.RGBA) Theme {
+	if m, ok := t.Muted.(color.RGBA); ok && bg.A != 0 && contrast(m, bg) < 4.5 {
+		t.Muted = lipgloss.NoColor{}
 	}
 	return t
 }

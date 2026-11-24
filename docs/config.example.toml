@@ -77,8 +77,8 @@ voice = ""
 # black terminal), wanikani (WaniKani's type colours), blackbox (a calmer
 # yadokari: deep colours behind white glyphs) or terminal (your
 # terminal's own palette: cyan radicals, magenta kanji, blue vocabulary, so it
-# follows your colour scheme) or high-contrast (deep type colours behind white
-# glyphs, bold marks, nothing faint). With NO_COLOR set, there is no colour at
+# follows your colour scheme) or high-contrast (type colours at 7:1 or more
+# against the terminal's background, bold marks, nothing faint). With NO_COLOR set, there is no colour at
 # all and glyphs are drawn as text.
 theme = "yadokari"
 
@@ -91,8 +91,10 @@ field = "block"
 
 # Your terminal's background: auto (ask the terminal; most answer, and
 # COLORFGBG is checked if it doesn't), dark or light. On a light terminal the
-# yadokari, wanikani and blackbox themes use their light colours (terminal and
-# high-contrast follow the terminal's palette anyway). Glyphs are drawn in the
+# yadokari, wanikani, blackbox and high-contrast themes use their light
+# colours (terminal follows the terminal's palette anyway). Secondary text
+# that would be hard to read on the background the terminal reports (a
+# mid-grey one, say) is drawn in the terminal's text colour. Glyphs are drawn in the
 # terminal's own text colour when it reports one, else white on dark and
 # near-black on light. Unknown means dark. `yadokari --terminal` shows what
 # was found.
