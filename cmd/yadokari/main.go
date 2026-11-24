@@ -90,6 +90,7 @@ func run() error {
 	syncOnly := flag.Bool("sync", false, "sync, print a summary and exit (no TUI)")
 	logout := flag.Bool("logout", false, "remove the stored API token and exit")
 	terminal := flag.Bool("terminal", false, "show what yadokari found out about the terminal (graphics, background, font) and exit")
+	settings := flag.Bool("settings", false, "show every setting's value and where it comes from (flag, config file, WaniKani preference, default) and exit")
 	defaultConfig := flag.Bool("default-config", false, "print the documented config file, every setting at its default (commented out), and exit")
 	gfxFlag := flag.String("gfx", "", "graphics tier: auto, kitty or plain (default: config display.gfx, else auto)")
 	flag.Usage = func() {
@@ -117,6 +118,9 @@ func run() error {
 	cfg, err := config.Load(paths.Config)
 	if err != nil {
 		return err
+	}
+	if *settings {
+		return settingsReport(os.Stdout, cfg, paths.Config, cmp.Or(*dbPath, paths.Database), settingFlags{base: *base, gfx: *gfxFlag})
 	}
 	if *terminal {
 		return terminalReport(cfg, paths.Config, cmp.Or(*gfxFlag, cfg.Display.Gfx, "auto"))

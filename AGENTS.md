@@ -89,7 +89,10 @@ mock server (`internal/wkmock`, `just dev`).
 - `cmd/preview` — screen previews and the HTML gallery (`ui.Preview` does the work).
 - `cmd/yadokari` — entry point. Flags: `--base`, `--db`, `--sync` (no TUI), `--logout`,
   `--gfx auto|kitty|plain`, `--default-config` (prints `docs/config.example.toml`,
-  embedded by the `docs` package), `--terminal` (what the probe found and what was chosen: tier
+  embedded by the `docs` package), `--settings` (`settings.go`: each setting's
+  effective value and source — flag, file via `Config.IsSet`, WaniKani preference from
+  the database if it exists, default; a test fails if an example key has no row),
+  `--terminal` (what the probe found and what was chosen: tier
   and why, cell size, font, background, glyph ink, theme; `setupDisplay` serves both it
   and the app), `--version`. Logs problems to `yadokari.log` next to the
   database (`log/slog`); the UI shows them in plain words via `ui.problem` (no Go

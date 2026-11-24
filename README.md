@@ -106,6 +106,9 @@ yadokari --default-config > ~/.config/yadokari/config.toml   # a new config
 diff <(yadokari --default-config) ~/.config/yadokari/config.toml   # what's new
 ```
 
+`yadokari --settings` shows the value each setting has and where it comes from:
+a command-line flag, your config file, your WaniKani preference, or the default.
+
 ## Requirements
 
 - **A terminal with kitty graphics** for large kanji: [Ghostty](https://ghostty.org),

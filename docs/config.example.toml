@@ -11,6 +11,7 @@
 # `yadokari --default-config` prints this file for the version you run. To see
 # what's new since you wrote yours:
 #   diff <(yadokari --default-config) ~/.config/yadokari/config.toml
+# `yadokari --settings` shows each setting's value and where it comes from.
 
 # The API endpoint. Empty: the live WaniKani API. The local mock is
 # "http://127.0.0.1:8642/v2/". --base overrides it.

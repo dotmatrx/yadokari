@@ -201,6 +201,9 @@ func TestExampleConfig(t *testing.T) {
 	var check func(typ reflect.Type)
 	check = func(typ reflect.Type) {
 		for f := range typ.Fields() {
+			if !f.IsExported() {
+				continue
+			}
 			tag := f.Tag.Get("toml")
 			if f.Type.Kind() == reflect.Struct {
 				if !strings.Contains(example, "\n["+tag+"]\n") {
@@ -215,6 +218,26 @@ func TestExampleConfig(t *testing.T) {
 		}
 	}
 	check(reflect.TypeFor[Config]())
+}
+
+func TestIsSet(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.toml")
+	text := "[reviews]\norder = \"wanikani\"\n[display]\n[theme]\nkanji = \"#112233\"\n"
+	if err := os.WriteFile(path, []byte(text), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	c, err := Load(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for key, want := range map[string]bool{
+		"reviews.order": true, "theme.kanji": true, // set, even to the default
+		"reviews.limit": false, "display": false, "display.theme": false,
+	} {
+		if c.IsSet(key) != want {
+			t.Errorf("IsSet(%q) = %v, want %v", key, !want, want)
+		}
+	}
 }
 
 func TestConfigRejectsBadValues(t *testing.T) {

@@ -82,7 +82,13 @@ type Config struct {
 	Audio      Audio   `toml:"audio"`
 	Display    Display `toml:"display"`
 	Theme      Colours `toml:"theme"`
+
+	set map[string]bool // keys the file sets, e.g. "reviews.order"
 }
+
+// IsSet reports whether the file Load read sets key ("reviews.order",
+// "theme.kanji"), even to its default.
+func (c Config) IsSet(key string) bool { return c.set[key] }
 
 // Colours override single colours of the chosen theme: "#rrggbb", or a
 // terminal palette number "0"–"255" (the terminal's own shade). Ink is the
@@ -177,6 +183,15 @@ func Load(path string) (Config, error) {
 	}
 	if err := c.validate(); err != nil {
 		return Config{}, fmt.Errorf("config: %s: %w", path, err)
+	}
+	for _, k := range md.Keys() {
+		if md.Type(k...) == "Hash" {
+			continue // a [section], not a setting
+		}
+		if c.set == nil {
+			c.set = map[string]bool{}
+		}
+		c.set[k.String()] = true
 	}
 	return c, nil
 }
