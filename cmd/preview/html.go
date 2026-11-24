@@ -15,7 +15,7 @@ import (
 
 type shot struct {
 	screen string // the label: screen, theme
-	name   string // the fragment's file name: screen[-font][-theme]
+	name   string // the fragment's file name: screen[-font][-theme][-field-STYLE]
 	size   size
 	ansi   string
 }

@@ -189,6 +189,9 @@ func run() error {
 					if len(themes) > 1 {
 						name += "-" + th.Name
 					}
+					if *fieldFlag != "" {
+						name += "-field-" + *fieldFlag
+					}
 					shots = append(shots, shot{screen: label, name: name, size: sz, ansi: out})
 					if !asHTML {
 						fmt.Print(renderer.Flush())
